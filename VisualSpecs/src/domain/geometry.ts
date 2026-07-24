@@ -23,6 +23,14 @@ export interface Box {
 export const FONT_SIZE = 13;
 export const CONTAINER_HEADER = 30;
 export const CONTAINER_PADDING = 22;
+/**
+ * Width reserved in an expanded container's header, on top of the label, for the
+ * caret, paddings and the fit-to-content glyph (Issue #13). Every expanded header
+ * draws `▾ label` + the fit glyph, so the reserve applies to all of them; it is also
+ * the legibility floor a fitted container never shrinks below (§ADR-0005). Coordinated
+ * with graph/runtime's glyph metric — bump here if the header controls change.
+ */
+export const HEADER_RESERVE = 114;
 /** Boxes need room between them for the fanned-out relations that run between. */
 export const CHILD_GAP = 34;
 export const MIN_LEAF_WIDTH = 96;

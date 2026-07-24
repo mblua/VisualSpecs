@@ -58,6 +58,7 @@ const VIEW_COMMANDS = new Set<string>([
   'CollapseAll',
   'ExpandTo',
   'MoveNode',
+  'FitContainer',
   'ResetLayout',
   'SetViewport',
 ]);

@@ -45,6 +45,6 @@ test('Canvas2DRenderer passes the shared GraphRenderer conformance suite', async
   // And it must actually have RUN the input cases that FakeRenderer skips —
   // a real adapter owns real input, and that is the whole point of this file.
   expect(report.skipped, 'a DOM adapter must not skip the input cases').toBe(0);
-  expect(report.passed).toBeGreaterThanOrEqual(17);
+  expect(report.passed).toBeGreaterThanOrEqual(21);
   expect(consoleErrors).toEqual([]);
 });

@@ -84,9 +84,25 @@ export function importDoc(text: string, limits: Limits = DEFAULT_LIMITS): Loaded
     });
   }
 
+  // `fitted` (Issue #13) mirrors `expanded`: kept even when it names an absent node,
+  // so import is lossless (§3.5). A stale fitted id is inert — the size override needs
+  // `childrenShown`, which an absent id can never satisfy — so it cannot misbehave.
+  const fitted = new Set<NodeId>(doc.view?.fitted ?? []);
+  const staleFitted = [...fitted].filter((id) => !model.nodeById.has(id));
+  if (staleFitted.length > 0) {
+    allWarnings.push({
+      code: 'stale-fitted',
+      message:
+        `${staleFitted.length} fitted id(s) name nodes that are not in this graph. ` +
+        `They are retained but inert.`,
+      ids: staleFitted,
+    });
+  }
+
   const view: ViewState = {
     expanded,
     positions,
+    fitted,
     viewport: doc.view?.viewport ?? DEFAULT_VIEWPORT,
   };
 
@@ -145,6 +161,15 @@ export function refresh(
     else droppedExpanded.push(id);
   }
 
+  // `fitted` is dropped + reported on refresh, exactly like positions/expanded: a
+  // container that no longer exists cannot stay fitted (§3.5 — refresh reports loss).
+  const droppedFitted: NodeId[] = [];
+  const fitted = new Set<NodeId>();
+  for (const id of previous.view.fitted) {
+    if (model.nodeById.has(id)) fitted.add(id);
+    else droppedFitted.push(id);
+  }
+
   const newNodes = model.nodes.filter((n) => !previous.model.nodeById.has(n.id)).map((n) => n.id);
   const reparented = model.nodes
     .filter((n) => {
@@ -159,12 +184,15 @@ export function refresh(
     view: {
       expanded,
       positions,
+      fitted,
       viewport: previous.view.viewport,
     },
     // The view carried across from the previous session is AUTHORITATIVE, even when
     // it is empty. `refresh` must never re-open a map the user had collapsed.
     viewProvided: { expanded: true, positions: true, viewport: true },
-    warnings: fresh.warnings.filter((w) => w.code !== 'stale-position' && w.code !== 'stale-expanded'),
+    warnings: fresh.warnings.filter(
+      (w) => w.code !== 'stale-position' && w.code !== 'stale-expanded' && w.code !== 'stale-fitted',
+    ),
     readOnly: fresh.readOnly,
   };
 
@@ -173,6 +201,7 @@ export function refresh(
     loss: {
       droppedPositions: droppedPositions.sort(),
       droppedExpanded: droppedExpanded.sort(),
+      droppedFitted: droppedFitted.sort(),
       newNodes: [...newNodes].sort(),
       reparented: [...reparented].sort(),
     },

@@ -46,9 +46,28 @@ export function exportDoc(input: ExportInput): string {
   }
 
   mergeView(out, input.view);
+  raiseFormatVersionForFitted(out, input.view);
   canonicaliseGraphArrays(out);
 
   return canonicalStringify(out);
+}
+
+/**
+ * Version locus for `fitted` (F2a, §3.4). `exportDoc` otherwise never writes
+ * `formatVersion`, so a document that gains `view.fitted` must announce itself as 1.1 —
+ * otherwise an old reader opens it with no `unknown-minor` warning. The bump is additive
+ * and only ever raises within major 1; a doc without any fitted container is left at its
+ * original version (so it still round-trips to identical bytes).
+ */
+function raiseFormatVersionForFitted(out: JsonObject, view: ViewState): void {
+  if (view.fitted.size === 0) return;
+  const current = typeof out['formatVersion'] === 'string' ? out['formatVersion'] : '1.0';
+  const parts = current.split('.');
+  const major = Number.parseInt(parts[0] ?? '', 10);
+  const minor = Number.parseInt(parts[1] ?? '', 10);
+  if (!Number.isFinite(major) || major < 1 || (major === 1 && (!Number.isFinite(minor) || minor < 1))) {
+    out['formatVersion'] = '1.1';
+  }
 }
 
 function mergeView(out: JsonObject, view: ViewState): void {
@@ -79,6 +98,13 @@ function mergeView(out: JsonObject, view: ViewState): void {
 
   // --- expanded: a known array whose order carries no meaning. Canonicalised.
   rawView['expanded'] = [...view.expanded].sort();
+
+  // --- fitted (Issue #13): emitted ONLY when non-empty, so a document that never
+  //     used the feature exports to identical bytes (no `fitted` key appears). An
+  //     emptied set deletes the key. exportDoc raises formatVersion to 1.1 when this
+  //     is present, so an old reader gets the `unknown-minor` announce.
+  if (view.fitted.size > 0) rawView['fitted'] = [...view.fitted].sort();
+  else delete rawView['fitted'];
 
   // --- viewport: merge onto the original object, so unknown keys survive. ---
   const existingViewport = rawView['viewport'];

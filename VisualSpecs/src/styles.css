@@ -725,6 +725,22 @@ input:disabled {
   color: var(--muted);
 }
 
+/* The accessible route to "fit to content" (Issue #13 / §9.4). Accent-outlined so it
+   reads as this panel's primary action for an expanded container. */
+.detail-actions {
+  margin: 12px 0 4px;
+}
+
+.detail-action {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.detail-action:hover {
+  border-color: var(--accent);
+  background: #1b2231;
+}
+
 .chip {
   display: inline-block;
   padding: 1px 8px;

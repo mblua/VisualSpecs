@@ -25,6 +25,10 @@ export interface DetailCallbacks {
   /** Selecting an internal bucket goes through the ordinary command loop, exactly like
    *  selecting a node or an edge — so `aria-live` announces it and the state is real. */
   onSelectBucket(id: InternalBucketId): void;
+  /** Fit an expanded container to its contents (Issue #13). This is the MANDATORY
+   *  non-canvas route to the feature (§9.4, FIT-8): the on-canvas glyph is invisible to
+   *  a screen reader and unusable at small zoom, so the panel must offer real DOM. */
+  onFitContainer(id: string): void;
 }
 
 export function renderDetail(
@@ -96,6 +100,24 @@ function nodeDetail(
       ['Everything inside', String(descendants.length)],
     ]),
   );
+
+  // Fit to content — the accessible, keyboard-and-screen-reader route to the same
+  // command the header glyph fires (§9.4 / FIT-8). Only meaningful on an EXPANDED
+  // container; the command itself re-guards on childrenShown.
+  if (children.length > 0 && state.view.expanded.has(outlineId)) {
+    const isFitted = state.view.fitted.has(outlineId);
+    const fitBtn = el(
+      'button',
+      {
+        type: 'button',
+        class: 'detail-action',
+        title: 'Shrink this container to hug its contents, keeping the arrangement (H)',
+      },
+      [isFitted ? 'Re-fit to content' : 'Fit to content'],
+    );
+    fitBtn.addEventListener('click', () => cb.onFitContainer(outlineId));
+    sections.push(el('div', { class: 'detail-actions' }, [fitBtn]));
+  }
 
   if (node.metadata !== undefined && Object.keys(node.metadata).length > 0) {
     sections.push(
