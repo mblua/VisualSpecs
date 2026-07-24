@@ -975,6 +975,16 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
     };
   }
 
+  // FIT-7: true while a pointer gesture is in progress on the canvas. Read by onKey to
+  // refuse view-mutating shortcuts mid-drag.
+  let canvasGestureActive = false;
+  const markGestureStart = (): void => {
+    canvasGestureActive = true;
+  };
+  const markGestureEnd = (): void => {
+    canvasGestureActive = false;
+  };
+
   const onKey = (e: KeyboardEvent): void => {
     if (e.key === 'Escape' && activeOverlay !== null) {
       e.preventDefault();
@@ -991,10 +1001,22 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
     }
     if (isInteractionEvent(e)) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    // FIT-7: a view-mutating shortcut fired mid-gesture (a drag in progress on the
+    // canvas) would leave a stale drag to commit on top of the mutation. Ignore the
+    // view-mutating keys while a canvas pointer gesture is active; camera/panel/search
+    // keys stay live.
+    if (canvasGestureActive && 'eEcCrRhH'.includes(e.key)) return;
     switch (e.key) {
       case 'f':
       case 'F':
         controller.fit();
+        break;
+      case 'h':
+      case 'H':
+        // Fit the selected expanded container(s) to their contents (Issue #13). The
+        // keyboard route required by §9.4; a no-op with guidance when the selection is
+        // not an expanded container.
+        fitContainers(controller.state.selection.nodeIds);
         break;
       case 'e':
       case 'E':
@@ -1038,6 +1060,9 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
     }
   };
   document.addEventListener('keydown', onKey);
+  canvasHost.addEventListener('pointerdown', markGestureStart);
+  globalThis.addEventListener('pointerup', markGestureEnd);
+  globalThis.addEventListener('pointercancel', markGestureEnd);
 
   const onResize = (): void => {
     const next = layoutBand();
@@ -1091,6 +1116,32 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
   };
   globalThis.addEventListener('resize', onResize);
 
+  /**
+   * Fit every expanded container among `ids` to its contents (Issue #13), and say what
+   * happened. The status is deliberately honest (FIT-9): it never calls `Reset layout`
+   * an "undo" — `R` re-packs the whole map — and it names the container, no more.
+   *
+   * `setStatus` runs AFTER dispatch because `announce()` (fired synchronously inside
+   * dispatch for the still-selected container) would otherwise be the last word.
+   */
+  function fitContainers(ids: readonly string[]): void {
+    const state = controller.state;
+    const targets = ids.filter(
+      (id) => state.view.expanded.has(id) && state.outline.childrenOf(id).length > 0,
+    );
+    if (targets.length === 0) {
+      setStatus('Select an expanded container to fit it to its contents.');
+      return;
+    }
+    for (const id of targets) controller.dispatch({ type: 'FitContainer', id });
+    const first = state.model.nodeById.get(state.outline.entityOf(targets[0] as string));
+    setStatus(
+      targets.length === 1
+        ? `Fitted ${first?.label ?? 'container'} to its contents.`
+        : `Fitted ${targets.length} containers to their contents.`,
+    );
+  }
+
   const cb = {
     onSelectNode: (id: string): void => {
       controller.dispatch({ type: 'Select', nodeIds: [id], edgeId: null });
@@ -1100,6 +1151,9 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
     },
     onSelectBucket: (id: InternalBucketId): void => {
       controller.dispatch({ type: 'Select', nodeIds: [], edgeId: id });
+    },
+    onFitContainer: (id: string): void => {
+      fitContainers([id]);
     },
   };
 
@@ -1655,6 +1709,9 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
       unsubscribe();
       unsubscribeProject();
       document.removeEventListener('keydown', onKey);
+      canvasHost.removeEventListener('pointerdown', markGestureStart);
+      globalThis.removeEventListener('pointerup', markGestureEnd);
+      globalThis.removeEventListener('pointercancel', markGestureEnd);
       globalThis.removeEventListener('resize', onResize);
       if (IS_TEST_BUILD) {
         delete (globalThis as unknown as Record<string, unknown>)[TEST_HOOK];

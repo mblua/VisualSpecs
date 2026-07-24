@@ -16,7 +16,9 @@
 import {
   assertSceneWellFormed,
   distanceToEdge,
+  headerControlRect,
   routeEdges,
+  HEADER_STRIP_HEIGHT,
   type EdgeRoute,
   type GraphRenderer,
   type RenderEdge,
@@ -32,6 +34,9 @@ const DRAG_THRESHOLD = 3;
 const DBLCLICK_MS = 320;
 const DBLCLICK_SLOP = 6;
 const EDGE_HIT_TOLERANCE = 7;
+/** Extra hit slop around the fit control, in SCREEN pixels — keeps the small glyph a
+ *  comfortable target at any zoom, the same trick `hitEdge` uses for a thin line. */
+const CONTROL_HIT_SLOP = 5;
 const FIT_PADDING = 60;
 
 interface Pointer {
@@ -39,6 +44,9 @@ interface Pointer {
   startWorld: { x: number; y: number };
   /** Right-button gestures always pan, even when they start over a node. */
   panOnly: boolean;
+  /** The fit control the press landed on, if any. Set here so onPointerMove can
+   *  SUPPRESS the container drag (FIT-2): a press on the glyph never moves the box. */
+  controlId: string | null;
   nodeId: string | null;
   nodeStart: { x: number; y: number } | null;
   dragging: boolean;
@@ -46,7 +54,7 @@ interface Pointer {
 }
 
 interface ClickTarget {
-  kind: 'node' | 'edge' | 'background';
+  kind: 'node' | 'edge' | 'background' | 'control';
   id: string | null;
 }
 
@@ -62,6 +70,9 @@ export class Canvas2DRenderer implements GraphRenderer {
   private pointer: Pointer | null = null;
   /** While dragging, the node is drawn here instead of at its scene position. */
   private dragOverride: { id: string; x: number; y: number } | null = null;
+  /** The fit control currently under the hovering pointer — drawn highlighted, so the
+   *  first interactive header region is discoverable on a canvas that has no tooltip. */
+  private hoverControlId: string | null = null;
   private lastClick:
     | { kind: ClickTarget['kind']; id: string | null; t: number; x: number; y: number }
     | null = null;
@@ -237,27 +248,46 @@ export class Canvas2DRenderer implements GraphRenderer {
       /* no capture available */
     }
     const world = this.toWorld(e);
+    // The fit control is resolved FIRST, and it OWNS the gesture: no node is retained,
+    // no drag or pan is armed. This is what makes a press on the glyph fit the box on
+    // release and never move it (FIT-2), and never be reinterpreted as a container drag.
+    const controlId = panOnly ? null : this.hitHeaderControl(world);
     // The right button is an unconditional canvas gesture. Do not even retain the
     // node under the pointer: that makes it impossible for a later move/up branch
     // to reinterpret the gesture as a component drag or selection.
-    const node = panOnly ? null : this.hitNode(world);
+    const node = panOnly || controlId !== null ? null : this.hitNode(world);
     this.pointer = {
       startClient: { x: e.clientX, y: e.clientY },
       startWorld: world,
       panOnly,
+      controlId,
       nodeId: node?.id ?? null,
       nodeStart: node === null ? null : { ...node.position },
       dragging: false,
-      panStart: panOnly || node === null ? { x: this.viewport.x, y: this.viewport.y } : null,
+      // A control press pans nothing (panStart null) and drags nothing (nodeId null):
+      // only the background or a right-button press pans.
+      panStart:
+        panOnly || (node === null && controlId === null)
+          ? { x: this.viewport.x, y: this.viewport.y }
+          : null,
     };
-    if (this.canvas !== null) this.canvas.style.cursor = node === null ? 'grabbing' : 'grabbing';
+    if (this.canvas !== null) this.canvas.style.cursor = 'grabbing';
   }
 
   private onPointerMove(e: PointerEvent): void {
     const p = this.pointer;
     if (p === null) {
       if (this.canvas !== null) {
-        const hovering = this.hitNode(this.toWorld(e)) !== null || this.hitEdge(this.toWorld(e)) !== null;
+        const world = this.toWorld(e);
+        const overControl = this.hitHeaderControl(world);
+        // Highlight the fit glyph on hover — the only discoverability a tooltip-less
+        // canvas can offer for the header's first interactive region. Redraw only on a
+        // change, so a plain hover does not repaint every pointermove.
+        if (overControl !== this.hoverControlId) {
+          this.hoverControlId = overControl;
+          this.draw();
+        }
+        const hovering = overControl !== null || this.hitNode(world) !== null || this.hitEdge(world) !== null;
         this.canvas.style.cursor = hovering ? 'pointer' : 'grab';
       }
       return;
@@ -307,6 +337,11 @@ export class Canvas2DRenderer implements GraphRenderer {
    * produce a double-click; two clicks on a line are two clicks on the line.
    */
   private resolveTarget(p: Pointer): ClickTarget {
+    // The fit control is resolved FIRST — before edge and node — mirroring the
+    // edge-vs-backdrop discipline below. It is the ONLY way two quick taps on the glyph
+    // cannot become a node:dblclick that collapses the box (FIT-3).
+    if (p.controlId !== null) return { kind: 'control', id: p.controlId };
+
     const edge = this.hitEdge(p.startWorld);
     const node = p.nodeId === null ? undefined : this.scene.nodes.find((n) => n.id === p.nodeId);
     const isBackdrop = node !== undefined && node.isContainer && node.isExpanded;
@@ -348,6 +383,15 @@ export class Canvas2DRenderer implements GraphRenderer {
     }
 
     const target = this.resolveTarget(p);
+
+    // A tap on the fit control fits the container and NOTHING else: it is never a
+    // selection and never accumulates toward a double-click, so two taps fit twice
+    // (idempotent at the domain) and can never collapse the box (FIT-3).
+    if (target.kind === 'control' && target.id !== null) {
+      this.lastClick = null;
+      this.emit({ type: 'container:fit', id: target.id });
+      return;
+    }
 
     // Click vs double-click, both derived from pointer events, so a synthetic test
     // and a real mouse behave identically — and both keyed on the RESOLVED target.
@@ -406,6 +450,31 @@ export class Canvas2DRenderer implements GraphRenderer {
     this.viewport = { x: wx - cx / zoom, y: wy - cy / zoom, zoom };
     this.draw();
     this.emit({ type: 'viewport:change', viewport: { ...this.viewport } });
+  }
+
+  /**
+   * The fit control under a world point, or null. Reuses the CACHED scene and scans
+   * only expanded containers — never a geometry recompute (a per-pointermove recompute
+   * would make hover cost a full layout). The rect comes from the port so the paint and
+   * the hit agree, and a SCREEN-space slop keeps the small glyph a comfortable target.
+   */
+  private hitHeaderControl(world: { x: number; y: number }): string | null {
+    const slop = CONTROL_HIT_SLOP / this.viewport.zoom;
+    let best: RenderNode | null = null;
+    for (const n of this.scene.nodes) {
+      if (n.hidden || !n.isContainer || !n.isExpanded) continue;
+      const r = headerControlRect(n);
+      if (
+        world.x >= r.x - slop &&
+        world.x <= r.x + r.w + slop &&
+        world.y >= r.y - slop &&
+        world.y <= r.y + r.h + slop
+      ) {
+        // A deeper (higher-z) container wins if two headers ever overlap.
+        if (best === null || n.z > best.z) best = n;
+      }
+    }
+    return best?.id ?? null;
   }
 
   /** Topmost first: the deepest child wins over the container behind it. */
@@ -539,13 +608,17 @@ export class Canvas2DRenderer implements GraphRenderer {
 
       // Header strip.
       ctx.fillStyle = withAlpha(n.style.stroke, 0.16);
-      roundRectTop(ctx, x, y, n.size.w, 30, radius);
+      roundRectTop(ctx, x, y, n.size.w, HEADER_STRIP_HEIGHT, radius);
       ctx.fill();
 
       ctx.fillStyle = n.style.text;
       ctx.font = '600 13px ui-sans-serif, system-ui, "Segoe UI", sans-serif';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`▾ ${n.label}`, x + 12, y + 15);
+      // The label is drawn UNTRUNCATED: the derived width is floored (HEADER_RESERVE,
+      // domain) so the name + caret + fit glyph always fit — the user requires the name
+      // to stay visible on a fitted box, so we floor width instead of truncating.
+      ctx.fillText(`▾ ${n.label}`, x + 12, y + HEADER_STRIP_HEIGHT / 2);
+      this.paintFitControl(ctx, n);
       ctx.restore();
       return;
     }
@@ -608,6 +681,39 @@ export class Canvas2DRenderer implements GraphRenderer {
     }
 
     ctx.restore();
+  }
+
+  /** The per-container fit-to-content glyph: four inward crop-mark corners that read as
+   *  "hug the frame to its content". Filled backing when the container is already fitted;
+   *  brighter on hover, the canvas's only discoverability for this region. Drawn at the
+   *  rect the PORT defines, so paint and hit-test never disagree about where it is. */
+  private paintFitControl(ctx: CanvasRenderingContext2D, n: RenderNode): void {
+    const r = headerControlRect(n);
+    const hovered = this.hoverControlId === n.id;
+    const fitted = n.fitted === true;
+
+    if (fitted) {
+      ctx.fillStyle = withAlpha(n.style.stroke, hovered ? 0.5 : 0.32);
+      roundRect(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, 4);
+      ctx.fill();
+    }
+
+    const pad = 2;
+    const arm = 4;
+    const l = r.x + pad;
+    const t = r.y + pad;
+    const rr = r.x + r.w - pad;
+    const b = r.y + r.h - pad;
+
+    ctx.strokeStyle = fitted ? n.style.text : withAlpha(n.style.text, hovered ? 0.95 : 0.6);
+    ctx.lineWidth = hovered || fitted ? 1.6 : 1.3;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(l + arm, t); ctx.lineTo(l, t); ctx.lineTo(l, t + arm); // top-left
+    ctx.moveTo(rr - arm, t); ctx.lineTo(rr, t); ctx.lineTo(rr, t + arm); // top-right
+    ctx.moveTo(l + arm, b); ctx.lineTo(l, b); ctx.lineTo(l, b - arm); // bottom-left
+    ctx.moveTo(rr - arm, b); ctx.lineTo(rr, b); ctx.lineTo(rr, b - arm); // bottom-right
+    ctx.stroke();
   }
 
   private paintEdge(ctx: CanvasRenderingContext2D, e: RenderEdge, route: EdgeRoute): void {

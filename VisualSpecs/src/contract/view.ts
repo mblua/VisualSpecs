@@ -14,6 +14,13 @@ export interface ViewState {
    * in its loss report (§3.5).
    */
   readonly positions: ReadonlyMap<NodeId, Position>;
+  /**
+   * Containers the user fit to content (Issue #13). REQUIRED (not optional) so the
+   * `with*` copiers below are compiler-enforced to thread it: an optional field would
+   * let `withViewport` (fired on every pan/zoom) silently drop the hug. Like
+   * `expanded`, may carry inert ids; import keeps them, refresh drops+reports them.
+   */
+  readonly fitted: ReadonlySet<NodeId>;
   readonly viewport: Viewport;
 }
 
@@ -23,18 +30,23 @@ export function emptyView(): ViewState {
   return {
     expanded: new Set<NodeId>(),
     positions: new Map<NodeId, Position>(),
+    fitted: new Set<NodeId>(),
     viewport: DEFAULT_VIEWPORT,
   };
 }
 
 export function withExpanded(view: ViewState, expanded: ReadonlySet<NodeId>): ViewState {
-  return { expanded, positions: view.positions, viewport: view.viewport };
+  return { expanded, positions: view.positions, fitted: view.fitted, viewport: view.viewport };
 }
 
 export function withPositions(view: ViewState, positions: ReadonlyMap<NodeId, Position>): ViewState {
-  return { expanded: view.expanded, positions, viewport: view.viewport };
+  return { expanded: view.expanded, positions, fitted: view.fitted, viewport: view.viewport };
+}
+
+export function withFitted(view: ViewState, fitted: ReadonlySet<NodeId>): ViewState {
+  return { expanded: view.expanded, positions: view.positions, fitted, viewport: view.viewport };
 }
 
 export function withViewport(view: ViewState, viewport: Viewport): ViewState {
-  return { expanded: view.expanded, positions: view.positions, viewport };
+  return { expanded: view.expanded, positions: view.positions, fitted: view.fitted, viewport };
 }

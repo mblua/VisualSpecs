@@ -20,7 +20,10 @@ import { isJsonObject, scanJson, type ScanResult } from './json.ts';
 import { checkRelativePath, checkSourceRoot, describePathProblem } from './paths.ts';
 
 export const SUPPORTED_MAJOR = 1;
-export const SUPPORTED_MINOR = 0;
+// 1.1 adds `view.fitted` (Issue #13): additive and optional, read by this build.
+// Fresh extracts still emit 1.0; a doc becomes 1.1 only when it carries a fitted
+// container (see export.ts `raiseFormatVersionForFitted`).
+export const SUPPORTED_MINOR = 1;
 export const SUPPORTED_VERSION = `${SUPPORTED_MAJOR}.${SUPPORTED_MINOR}`;
 
 /** Optional capabilities this build can honour. v1 declares none, so ANY entry in
@@ -554,6 +557,12 @@ function validateView(
   if (expanded !== undefined) {
     if (!isStringArray(expanded)) problems.push('view.expanded is not an array of node ids');
     else view.expanded = expanded;
+  }
+
+  const fitted = value['fitted'];
+  if (fitted !== undefined) {
+    if (!isStringArray(fitted)) problems.push('view.fitted is not an array of node ids');
+    else view.fitted = fitted;
   }
 
   const viewport = value['viewport'];

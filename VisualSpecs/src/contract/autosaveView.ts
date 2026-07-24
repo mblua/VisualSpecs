@@ -106,6 +106,7 @@ export function viewToJson(view: VisualSpecsView): JsonObject {
     out['positions'] = positions;
   }
   if (view.expanded !== undefined) out['expanded'] = [...view.expanded].sort();
+  if (view.fitted !== undefined) out['fitted'] = [...view.fitted].sort();
   if (view.viewport !== undefined) {
     out['viewport'] = {
       x: view.viewport.x,
@@ -128,9 +129,11 @@ function parseView(
   const view: VisualSpecsView = {};
   const positions = parsePositions(value['positions'], limits, problems);
   const expanded = parseExpanded(value['expanded'], problems);
+  const fitted = parseFitted(value['fitted'], problems);
   const viewport = parseViewport(value['viewport'], limits, problems);
   if (positions !== undefined) view.positions = positions;
   if (expanded !== undefined) view.expanded = expanded;
+  if (fitted !== undefined) view.fitted = fitted;
   if (viewport !== undefined) view.viewport = viewport;
   return view;
 }
@@ -177,6 +180,15 @@ function parseExpanded(value: JsonValue | undefined, problems: string[]): NodeId
   if (value === undefined) return undefined;
   if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) {
     problems.push('view.expanded is not an array of strings');
+    return undefined;
+  }
+  return value;
+}
+
+function parseFitted(value: JsonValue | undefined, problems: string[]): NodeId[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) {
+    problems.push('view.fitted is not an array of strings');
     return undefined;
   }
   return value;

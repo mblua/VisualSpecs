@@ -10,6 +10,7 @@
 
 import {
   MalformedSceneError,
+  headerControlRect,
   routeEdges,
   type GraphRenderer,
   type RenderEdge,
@@ -316,6 +317,10 @@ export async function runConformance(opts: ConformanceOptions): Promise<Conforma
     skip('a line crossing a container is clickable', 'adapter owns no input (FakeRenderer)');
     skip('parallel relations are individually clickable', 'adapter owns no input (FakeRenderer)');
     skip('two clicks on a line never collapse the box it crosses', 'adapter owns no input (FakeRenderer)');
+    skip('two taps on the fit control never collapse the container', 'adapter owns no input (FakeRenderer)');
+    skip('the rest of the header still collapses on double-click', 'adapter owns no input (FakeRenderer)');
+    skip('press and drag on the fit control never moves the container', 'adapter owns no input (FakeRenderer)');
+    skip('one tap fits; a second tap fits again and never collapses', 'adapter owns no input (FakeRenderer)');
   } else {
     const makeInput = opts.makeInput;
 
@@ -575,6 +580,135 @@ export async function runConformance(opts: ConformanceOptions): Promise<Conforma
       assert(
         dbl.length === 1 && dbl[0]?.type === 'node:dblclick' && dbl[0].id === 'container',
         'a double-click on the container itself must still toggle it',
+      );
+      r.destroy();
+    });
+
+    // The fit-to-content control (Issue #13) is the first INTERACTIVE sub-region of a
+    // node. These four cases are the resolve-first discipline made executable: a tap on
+    // the glyph fits and nothing else, and can never be reinterpreted as the container's
+    // drag (FIT-2) or its collapse-on-double-click (FIT-3).
+    const controlPoint = (): { x: number; y: number } => {
+      const r = headerControlRect(SCENE_A.nodes[0] as RenderNode);
+      return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
+    };
+
+    await run('two taps on the fit control never collapse the container', async () => {
+      const host = opts.makeHost();
+      const r = opts.makeRenderer();
+      r.mount(host);
+      r.setViewport({ x: 0, y: 0, zoom: 1 });
+      r.render(SCENE_A);
+      const events: RendererEvent[] = [];
+      r.on((e) => events.push(e));
+      const input = makeInput(host, r);
+
+      const p = at(input, controlPoint());
+      input.dblclick(p.x, p.y); // two rapid taps, ON the glyph
+      await tick();
+
+      assert(
+        events.filter((e) => e.type === 'node:dblclick').length === 0,
+        'two taps on the fit control emitted node:dblclick and would have collapsed the container',
+      );
+      const fits = events.filter((e) => e.type === 'container:fit');
+      assert(
+        fits.length === 2 && fits.every((e) => e.type === 'container:fit' && e.id === 'container'),
+        `two taps on the control should be two container:fit for 'container', got ${JSON.stringify(events)}`,
+      );
+      r.destroy();
+    });
+
+    await run('the rest of the header still collapses on double-click', async () => {
+      const host = opts.makeHost();
+      const r = opts.makeRenderer();
+      r.mount(host);
+      r.setViewport({ x: 0, y: 0, zoom: 1 });
+      r.render(SCENE_A);
+      const events: RendererEvent[] = [];
+      r.on((e) => events.push(e));
+      const input = makeInput(host, r);
+
+      // The header, on the title side — well to the LEFT of the glyph, but still on the
+      // 30px-tall header strip (container top edge is y=100).
+      const p = at(input, { x: 160, y: 115 });
+      input.dblclick(p.x, p.y);
+      await tick();
+
+      const dbl = events.filter((e) => e.type === 'node:dblclick');
+      assert(
+        dbl.length === 1 && dbl[0]?.type === 'node:dblclick' && dbl[0].id === 'container',
+        `a double-click on the header (off the control) must still toggle the container, got ${JSON.stringify(events)}`,
+      );
+      assert(
+        events.filter((e) => e.type === 'container:fit').length === 0,
+        'a double-click on the header title must not fit',
+      );
+      r.destroy();
+    });
+
+    await run('press and drag on the fit control never moves the container', async () => {
+      const host = opts.makeHost();
+      const r = opts.makeRenderer();
+      r.mount(host);
+      r.setViewport({ x: 0, y: 0, zoom: 1 });
+      r.render(SCENE_A);
+      const events: RendererEvent[] = [];
+      r.on((e) => events.push(e));
+      const input = makeInput(host, r);
+
+      const from = at(input, controlPoint());
+      input.pointerDown(from.x, from.y);
+      input.pointerMove(from.x + 40, from.y + 30);
+      input.pointerMove(from.x + 80, from.y + 60);
+      input.pointerUp(from.x + 80, from.y + 60);
+      await tick();
+
+      assert(
+        events.every((e) => e.type !== 'node:dragend'),
+        'a drag starting on the control moved the container',
+      );
+      assert(
+        events.every((e) => e.type !== 'container:fit'),
+        'a drag off the control must not fit — only a tap fits',
+      );
+      assert(
+        events.every((e) => e.type !== 'node:click' && e.type !== 'node:dblclick'),
+        'a drag on the control must not select or toggle the container',
+      );
+      const v = r.getViewport();
+      assert(v.x === 0 && v.y === 0, `a drag on the control panned the canvas: ${JSON.stringify(v)}`);
+      r.destroy();
+    });
+
+    await run('one tap fits; a second tap fits again and never collapses', async () => {
+      const host = opts.makeHost();
+      const r = opts.makeRenderer();
+      r.mount(host);
+      r.setViewport({ x: 0, y: 0, zoom: 1 });
+      r.render(SCENE_A);
+      const events: RendererEvent[] = [];
+      r.on((e) => events.push(e));
+      const input = makeInput(host, r);
+
+      const p = at(input, controlPoint());
+      input.click(p.x, p.y);
+      await tick();
+      input.click(p.x, p.y);
+      await tick();
+
+      const fits = events.filter((e) => e.type === 'container:fit');
+      assert(
+        fits.length === 2 && fits.every((e) => e.type === 'container:fit' && e.id === 'container'),
+        `each tap on the control should emit container:fit, got ${JSON.stringify(events)}`,
+      );
+      assert(
+        events.filter((e) => e.type === 'node:dblclick').length === 0,
+        'two separate taps on the control must never become a node:dblclick collapse',
+      );
+      assert(
+        events.filter((e) => e.type === 'node:click').length === 0,
+        'a tap on the control must not select the container',
       );
       r.destroy();
     });

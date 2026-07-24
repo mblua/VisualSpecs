@@ -21,6 +21,7 @@ import { computeVisibility, type Visibility } from './visibility.ts';
 import {
   CONTAINER_HEADER,
   CONTAINER_PADDING,
+  HEADER_RESERVE,
   collapsedContainerSize,
   leafSize,
   measureText,
@@ -43,11 +44,16 @@ export interface Geometry {
 
 export const DEFAULT_AUTO_LAYOUT: AutoLayout = new GridPack();
 
+/** No container fitted — the derivation default. The one production caller (derive())
+ *  always passes `view.fitted` explicitly; this keeps existing call sites terse. */
+const NO_FITTED: ReadonlySet<OutlineNodeId> = new Set<OutlineNodeId>();
+
 export function computeGeometry(
   model: GraphModel,
   outline: Outline,
   expanded: ReadonlySet<OutlineNodeId>,
   positions: ReadonlyMap<NodeId, Position>,
+  fitted: ReadonlySet<OutlineNodeId> = NO_FITTED,
   layout: AutoLayout = DEFAULT_AUTO_LAYOUT,
 ): Geometry {
   const visibility = computeVisibility(outline, expanded);
@@ -56,11 +62,11 @@ export function computeGeometry(
   // grew. Two passes, always — deterministic and bounded.
   let sizes = computeSizes(model, outline, visibility, layout, null);
   let placed = assignPositions(outline, visibility, sizes, positions, layout);
-  sizes = growForPinnedChildren(outline, visibility, sizes, placed);
+  sizes = growForPinnedChildren(model, outline, visibility, sizes, placed, fitted);
 
   sizes = computeSizes(model, outline, visibility, layout, sizes);
   placed = assignPositions(outline, visibility, sizes, positions, layout);
-  sizes = growForPinnedChildren(outline, visibility, sizes, placed);
+  sizes = growForPinnedChildren(model, outline, visibility, sizes, placed, fitted);
 
   const box = new Map<OutlineNodeId, Box>();
   const z = new Map<OutlineNodeId, number>();
@@ -108,7 +114,7 @@ function computeSizes(
       size: grown?.get(c) ?? sizes.get(c) ?? leafSize(labelOf(model, outline, c)),
     }));
     const packed = layout.pack(items);
-    const headerWidth = measureText(label) + 90;
+    const headerWidth = measureText(label) + HEADER_RESERVE;
     sizes.set(n, {
       w: Math.round(Math.max(packed.width + CONTAINER_PADDING * 2, headerWidth)),
       h: Math.round(packed.height + CONTAINER_HEADER + CONTAINER_PADDING * 2),
@@ -185,10 +191,12 @@ function assignPositions(
 /** Grow every expanded container symmetrically about its own centre until it
  *  contains all of its children. Without pins this is exactly the identity. */
 function growForPinnedChildren(
+  model: GraphModel,
   outline: Outline,
   visibility: Visibility,
   sizes: ReadonlyMap<OutlineNodeId, Size>,
   placed: ReadonlyMap<OutlineNodeId, Point>,
+  fitted: ReadonlySet<OutlineNodeId>,
 ): Map<OutlineNodeId, Size> {
   const out = new Map<OutlineNodeId, Size>(sizes);
 
@@ -199,8 +207,20 @@ function growForPinnedChildren(
     const natural = out.get(n);
     if (centre === undefined || natural === undefined) continue;
 
-    let halfW = natural.w / 2;
-    let halfH = natural.h / 2;
+    // A fitted container (Issue #13, ADR-0005) hugs its children: its floor is the
+    // LEGIBILITY minimum — the header must still show `▾ label` + the fit glyph — not
+    // the grid-pack natural. The grow loop below still contains every pinned child, so
+    // the floor is only the starting half-extent and a child pinned outside it is
+    // never clipped. A non-fitted container keeps the natural floor unchanged.
+    let halfW: number;
+    let halfH: number;
+    if (fitted.has(n)) {
+      halfW = (measureText(labelOf(model, outline, n)) + HEADER_RESERVE) / 2;
+      halfH = (CONTAINER_HEADER + CONTAINER_PADDING * 2) / 2;
+    } else {
+      halfW = natural.w / 2;
+      halfH = natural.h / 2;
+    }
 
     for (const c of outline.childrenOf(n)) {
       const cp = placed.get(c);

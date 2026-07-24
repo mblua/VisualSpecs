@@ -28,7 +28,7 @@ describe('GraphRenderer conformance — FakeRenderer', () => {
       makeRenderer: () => new FakeRenderer(),
       makeHost: () => ({}) as HTMLElement,
     });
-    expect(report.skipped).toBe(8);
+    expect(report.skipped).toBe(12);
     for (const r of report.results.filter((x) => x.status === 'skip')) {
       expect(r.message).toContain('FakeRenderer');
     }

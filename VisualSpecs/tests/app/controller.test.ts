@@ -327,11 +327,88 @@ describe('dispatch atomicity under a throwing install (resilience A2-P3 hardenin
       controller.dispatch({
         type: 'Refresh',
         loaded: { ...loaded, model: poisonedModel as never },
-        loss: { droppedPositions: [], droppedExpanded: [], newNodes: [], reparented: [] },
+        loss: { droppedPositions: [], droppedExpanded: [], droppedFitted: [], newNodes: [], reparented: [] },
       }),
     ).toThrow('poisoned model');
 
     expect(controller.state).toBe(before);
     expect(controller.derived).toBe(beforeDerived);
+  });
+});
+
+describe('the fit-to-content control (Issue #13)', () => {
+  it('a container:fit event maps to FitContainer: the box joins view.fitted and its children are pinned', () => {
+    const { renderer, controller } = boot();
+    renderer.emit({ type: 'node:dblclick', id: 'pkg-a' }); // expand it first
+    expect(controller.state.view.expanded.has('pkg-a')).toBe(true);
+    expect(controller.state.view.fitted.has('pkg-a')).toBe(false);
+
+    renderer.emit({ type: 'container:fit', id: 'pkg-a' });
+
+    // Only FitContainer adds to `fitted`: this is the proof the renderer event reached
+    // the command through the controller wiring.
+    expect(controller.state.view.fitted.has('pkg-a')).toBe(true);
+    // …and its effect propagated — freezing pins the visible children at drawn centres.
+    expect(controller.state.view.positions.get('dir-a')?.pinned).toBe(true);
+  });
+
+  it('is a safe no-op on a collapsed container (the childrenShown guard)', () => {
+    const { renderer, controller } = boot();
+    const before = controller.state;
+
+    renderer.emit({ type: 'container:fit', id: 'pkg-b' }); // pkg-b is collapsed
+
+    expect(controller.state.view.fitted.has('pkg-b')).toBe(false);
+    // A no-op view command returns the same view, so dispatch short-circuits: same state.
+    expect(controller.state).toBe(before);
+  });
+
+  it('removes the wasted band: the visible box shrinks to hug its children (before/after evidence)', () => {
+    const { renderer, controller } = boot();
+    renderer.emit({ type: 'node:dblclick', id: 'pkg-a' });
+    renderer.emit({ type: 'node:dblclick', id: 'dir-a' });
+    expect(renderer.nodeIds()).toContain('file-a1');
+    expect(renderer.nodeIds()).toContain('file-a2');
+
+    // Drag one child far off-centre. The container grows SYMMETRICALLY about its stored
+    // centre to contain it, so the opposite side becomes an empty band — the exact waste
+    // (Frontend in the corpus) this feature exists to remove.
+    const child = renderer.node('file-a2');
+    expect(child).toBeDefined();
+    renderer.emit({
+      type: 'node:dragend',
+      id: 'file-a2',
+      position: { x: (child as { position: { x: number } }).position.x, y: (child as { position: { y: number } }).position.y + 500 },
+    });
+
+    // The symmetric-growth box before the fit — tall, because half of it is the empty
+    // band mirroring the dragged child (measured: 270×1112 for this scenario).
+    const beforeH = renderer.node('dir-a')?.size.h ?? 0;
+    expect(beforeH).toBeGreaterThan(0);
+
+    renderer.emit({ type: 'container:fit', id: 'dir-a' });
+
+    const after = renderer.node('dir-a');
+    expect(after).toBeDefined();
+    // The band is gone: the fitted box is strictly shorter than the symmetric one
+    // (measured: 1112 → 612, the ~500px band removed).
+    expect(after?.size.h).toBeLessThan(beforeH);
+    // The glyph will render "fitted".
+    expect(after?.fitted).toBe(true);
+
+    // …and every visible child still sits inside the fitted box — a hug loses nothing.
+    const box = {
+      l: (after as NonNullable<typeof after>).position.x - (after as NonNullable<typeof after>).size.w / 2,
+      r: (after as NonNullable<typeof after>).position.x + (after as NonNullable<typeof after>).size.w / 2,
+      t: (after as NonNullable<typeof after>).position.y - (after as NonNullable<typeof after>).size.h / 2,
+      b: (after as NonNullable<typeof after>).position.y + (after as NonNullable<typeof after>).size.h / 2,
+    };
+    for (const id of ['file-a1', 'file-a2']) {
+      const c = renderer.node(id) as NonNullable<ReturnType<typeof renderer.node>>;
+      expect(c.position.x - c.size.w / 2).toBeGreaterThanOrEqual(box.l - 0.5);
+      expect(c.position.x + c.size.w / 2).toBeLessThanOrEqual(box.r + 0.5);
+      expect(c.position.y - c.size.h / 2).toBeGreaterThanOrEqual(box.t - 0.5);
+      expect(c.position.y + c.size.h / 2).toBeLessThanOrEqual(box.b + 0.5);
+    }
   });
 });

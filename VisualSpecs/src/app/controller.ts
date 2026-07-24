@@ -78,6 +78,11 @@ export class Controller {
       case 'node:dragend':
         this.dispatch({ type: 'MoveNode', id: event.id, position: event.position });
         return;
+      case 'container:fit':
+        // The header's fit control. The command guards on `childrenShown`, so a fit on
+        // a non-visible container is a safe no-op (§ADR-0005 / F1).
+        this.dispatch({ type: 'FitContainer', id: event.id });
+        return;
       case 'edge:click':
         this.dispatch({
           type: 'Select',
@@ -190,6 +195,7 @@ export class Controller {
     const view: ViewState = {
       expanded: this.currentState.view.expanded,
       positions,
+      fitted: this.currentState.view.fitted,
       viewport: this.currentState.view.viewport,
     };
     return exportDoc({ raw: this.currentState.raw, view, readOnly: this.currentState.readOnly });
@@ -264,7 +270,13 @@ export class Controller {
 }
 
 export function derive(state: AppState): Derived {
-  const geometry = computeGeometry(state.model, state.outline, state.view.expanded, state.view.positions);
+  const geometry = computeGeometry(
+    state.model,
+    state.outline,
+    state.view.expanded,
+    state.view.positions,
+    state.view.fitted,
+  );
   const graph = project(state.model, state.outline, state.view.expanded);
   const scene = buildScene(state, geometry, graph);
   return { geometry, graph, scene };

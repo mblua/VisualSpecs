@@ -5,10 +5,10 @@
 import type { NodeId, Position, Viewport } from '../contract/types.ts';
 import type { GraphModel } from '../contract/model.ts';
 import type { ViewState } from '../contract/view.ts';
-import { withExpanded, withPositions, withViewport } from '../contract/view.ts';
+import { withExpanded, withFitted, withPositions, withViewport } from '../contract/view.ts';
 import type { Outline, OutlineNodeId } from './outline.ts';
 import type { Geometry } from './layoutEngine.ts';
-import type { Point } from './geometry.ts';
+import { CONTAINER_HEADER, type Point } from './geometry.ts';
 
 export type ViewCommand =
   | { type: 'Expand'; id: OutlineNodeId }
@@ -18,6 +18,7 @@ export type ViewCommand =
   | { type: 'CollapseAll' }
   | { type: 'ExpandTo'; id: OutlineNodeId }
   | { type: 'MoveNode'; id: OutlineNodeId; position: Point }
+  | { type: 'FitContainer'; id: OutlineNodeId }
   | { type: 'ResetLayout' }
   | { type: 'SetViewport'; viewport: Viewport };
 
@@ -56,6 +57,8 @@ export function applyViewCommand(
     }
     case 'MoveNode':
       return moveNode(ctx, view, cmd.id, cmd.position);
+    case 'FitContainer':
+      return fitContainer(ctx, view, cmd.id);
     case 'ResetLayout': {
       // Clears the layout the user made. INERT positions — those naming ids that
       // are not in this graph — are kept, because they are not this graph's layout
@@ -65,7 +68,13 @@ export function applyViewCommand(
       for (const [id, p] of view.positions) {
         if (!ctx.model.nodeById.has(id)) next.set(id, p);
       }
-      return withPositions(view, next);
+      // R is the fit escape hatch: it un-fits every container it re-packs. Inert
+      // fitted ids (not in this graph) are kept for the same §3.5 reason as positions.
+      const nextFitted = new Set<NodeId>();
+      for (const id of view.fitted) {
+        if (!ctx.model.nodeById.has(id)) nextFitted.add(id);
+      }
+      return withFitted(withPositions(view, next), nextFitted);
     }
     case 'SetViewport':
       return withViewport(view, cmd.viewport);
@@ -122,6 +131,58 @@ function moveNode(
 
   positions.set(ctx.outline.entityOf(id), { x: target.x, y: target.y, pinned: true });
   return withPositions(view, positions);
+}
+
+/**
+ * Fit a container to its contents (Issue #13, ADR-0005). Preserves the children's
+ * arrangement: it freezes them where they are and marks the container `fitted`, so the
+ * size derivation hugs their bounding box down to the legibility floor.
+ *
+ * Guarded on `childrenShown` (not `expanded`): an expanded-but-ancestor-collapsed
+ * container has no visible children, so its bbox would be empty → NaN. That guard, plus
+ * the finite check on the centre, makes it impossible to write an I11-invalid position.
+ */
+function fitContainer(ctx: CommandContext, view: ViewState, id: OutlineNodeId): ViewState {
+  if (!ctx.geometry.visibility.childrenShown.has(id)) return view;
+
+  const positions = new Map<NodeId, Position>(view.positions);
+  let left = Infinity;
+  let right = -Infinity;
+  let top = Infinity;
+  let bottom = -Infinity;
+  let frozen = 0;
+
+  // 1. Freeze: pin every visible child at its current drawn centre; nothing moves on
+  //    screen. Accumulate the children's bounding box.
+  for (const c of ctx.outline.childrenOf(id)) {
+    const box = ctx.geometry.box.get(c);
+    if (box === undefined) continue;
+    positions.set(ctx.outline.entityOf(c), {
+      x: box.x + box.w / 2,
+      y: box.y + box.h / 2,
+      pinned: true,
+    });
+    left = Math.min(left, box.x);
+    right = Math.max(right, box.x + box.w);
+    top = Math.min(top, box.y);
+    bottom = Math.max(bottom, box.y + box.h);
+    frozen += 1;
+  }
+  if (frozen === 0) return view;
+
+  // 2. Recentre the container on the children's bbox. The `-CONTAINER_HEADER` offset in
+  //    Cy absorbs the header, so the symmetric grow + legibility floor hug tightly.
+  //    Defense in depth (I11): never write a non-finite centre.
+  const cx = (left + right) / 2;
+  const cy = (top + bottom - CONTAINER_HEADER) / 2;
+  if (!Number.isFinite(cx) || !Number.isFinite(cy)) return view;
+  positions.set(ctx.outline.entityOf(id), { x: cx, y: cy, pinned: true });
+
+  // 3. Mark the container fitted — drives the legibility-floor size derivation.
+  const fitted = new Set<OutlineNodeId>(view.fitted);
+  fitted.add(id);
+
+  return withFitted(withPositions(view, positions), fitted);
 }
 
 export function allOutlineNodes(outline: Outline): OutlineNodeId[] {

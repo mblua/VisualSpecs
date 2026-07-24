@@ -46,6 +46,10 @@ export interface RenderNode {
   hidden: boolean;
   style: { fill: string; stroke: string; text: string; shape: NodeShape };
   badge?: string;
+  /** The user has "fit to content" this container (Issue #13). Purely presentational:
+   *  the fit glyph is drawn filled when true, outline when false/absent. Absent → not
+   *  fitted. Only meaningful on an expanded container. */
+  fitted?: boolean;
 }
 
 export interface RenderEdge {
@@ -73,6 +77,12 @@ export type RendererEvent =
   | { type: 'node:dragend'; id: string; position: { x: number; y: number } }
   | { type: 'edge:click'; id: string }
   | { type: 'background:click' }
+  // The per-container "fit to content" control on an expanded header (Issue #13).
+  // It is its OWN event, not a node:click: the control is the first interactive
+  // sub-region of a node, and folding it into node:click would make a fit collapse
+  // the box on the second tap (the same class of bug resolveTarget already guards
+  // for a line crossing a container). The controller maps it to FitContainer.
+  | { type: 'container:fit'; id: string }
   | { type: 'viewport:change'; viewport: Viewport };
 
 export interface GraphRenderer {
@@ -104,6 +114,49 @@ export interface GraphRenderer {
   resize(): void;
   /** idempotent */
   destroy(): void;
+}
+
+// ---------------------------------------------------------------------------
+// The expanded-container header, and its fit-to-content control, are part of the
+// CONTRACT — like edge routing — not an adapter's private taste (Issue #13).
+//
+// The control is the first INTERACTIVE sub-region of a node in this renderer:
+// hit-testing whole boxes is not enough for it. Stating its world rectangle here is
+// what lets the shared conformance suite drive a real click at the glyph without any
+// adapter-private knowledge, exactly as `routeEdges` lets a test know where a line is.
+// ---------------------------------------------------------------------------
+
+/** The header strip height of an expanded container, in world units. MUST equal the
+ *  domain's `CONTAINER_HEADER`; the port may not import the domain, so it is restated
+ *  here as the rendering contract every adapter draws to. */
+export const HEADER_STRIP_HEIGHT = 30;
+
+/** The fit-to-content control's square and its inset from the box's right/top, world units. */
+export const HEADER_CONTROL_SIZE = 14;
+export const HEADER_CONTROL_MARGIN = 9;
+
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** The world-space rectangle of a container's fit-to-content control. Only meaningful
+ *  for an EXPANDED container (its header is where the control lives). The adapter DRAWS
+ *  here and hit-tests here; the conformance suite CLICKS here. One source of truth. */
+export function headerControlRect(node: {
+  position: { x: number; y: number };
+  size: { w: number; h: number };
+}): Rect {
+  const left = node.position.x - node.size.w / 2;
+  const top = node.position.y - node.size.h / 2;
+  return {
+    x: left + node.size.w - HEADER_CONTROL_MARGIN - HEADER_CONTROL_SIZE,
+    y: top + (HEADER_STRIP_HEIGHT - HEADER_CONTROL_SIZE) / 2,
+    w: HEADER_CONTROL_SIZE,
+    h: HEADER_CONTROL_SIZE,
+  };
 }
 
 // ---------------------------------------------------------------------------

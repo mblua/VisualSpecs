@@ -1421,6 +1421,7 @@ function toVisualSpecsView(view: ViewState): VisualSpecsView {
   return {
     positions,
     expanded: [...view.expanded].sort(),
+    fitted: [...view.fitted].sort(),
     viewport: view.viewport,
   };
 }
@@ -1434,6 +1435,7 @@ function toViewState(view: VisualSpecsView, fallback: ViewState): ViewState {
   return {
     positions,
     expanded: view.expanded === undefined ? fallback.expanded : new Set(view.expanded),
+    fitted: view.fitted === undefined ? fallback.fitted : new Set(view.fitted),
     viewport: view.viewport ?? fallback.viewport,
   };
 }
@@ -1442,6 +1444,7 @@ function cloneView(view: ViewState): ViewState {
   return {
     positions: new Map(view.positions),
     expanded: new Set(view.expanded),
+    fitted: new Set(view.fitted),
     viewport: { ...view.viewport },
   };
 }

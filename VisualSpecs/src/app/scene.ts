@@ -59,6 +59,9 @@ export function buildScene(state: AppState, geometry: Geometry, graph: VisibleGr
       size: { w: size.w, h: size.h },
       isContainer,
       isExpanded,
+      // Only an expanded container can show the "fitted" affordance; the flag is
+      // presentational (glyph filled vs outline), the geometry is already derived tight.
+      fitted: isExpanded && view.fitted.has(n),
       z: geometry.z.get(n) ?? 0,
       selected: selectedNodes.has(n),
       dimmed: searching && !search.matches.has(entity),

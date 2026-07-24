@@ -88,6 +88,13 @@ export interface Viewport {
 export interface VisualSpecsView {
   positions?: Record<NodeId, Position>;
   expanded?: NodeId[];
+  /**
+   * Containers the user "fit to content" (Issue #13). Parallel to `expanded`: a set
+   * of ids serialized as an array. A fitted container's size is derived from its
+   * children's bounding box + a legibility floor, not the grid-pack natural. Added in
+   * doc formatVersion 1.1; absent → no container is fitted (current behavior).
+   */
+  fitted?: NodeId[];
   viewport?: Viewport;
 }
 
@@ -166,6 +173,7 @@ export type Warning =
   | { code: 'unknown-minor'; message: string }
   | { code: 'stale-position'; message: string; ids: string[] }
   | { code: 'stale-expanded'; message: string; ids: string[] }
+  | { code: 'stale-fitted'; message: string; ids: string[] }
   | { code: 'absolute-path-in-free-form-field'; message: string; where: string }
   | { code: 'read-only'; message: string; requires: string[] }
   | { code: 'snippet-present'; message: string; count: number };
@@ -174,6 +182,7 @@ export type Warning =
 export interface LossReport {
   droppedPositions: string[];
   droppedExpanded: string[];
+  droppedFitted: string[];
   newNodes: string[];
   reparented: string[];
 }
