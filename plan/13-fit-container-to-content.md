@@ -7,6 +7,15 @@
 - **Status:** **READY_FOR_IMPLEMENTATION (Step 6, 2026-07-24).** B-full (Hug Total) + legibility floor. Round-2: 3-of-3 constructive SUPPORT; resilience NO-BLOCK (FIT-1 fixed, measured); semantic P1 **F2** (serializer under-enumeration) resolved by the complete `fitted` serialization thread below — semantic verifies the doc-path round-trip at the final gate (Step 9). F1 fold verified. All non-blocking findings folded; two v1 limitations documented (FIT-11 re-fit-to-retighten, NR-2 nested whitespace).
 - **Target repo:** repo-VisualSpecs (`mblua/VisualSpecs`)
 
+## Implementation status (Step 7-8, 2026-07-24)
+
+**Core lane (vs-spec-core-lead): DONE + verified, uncommitted** (shared working tree; awaiting graph/runtime green before the combined commit). Plan + ADR committed at `e52884e`.
+- Command + geometry: `domain/commands.ts` (`FitContainer` + guard + finite refusal; `ResetLayout` clears `fitted`), `domain/layoutEngine.ts` (`growForPinnedChildren` legibility floor for `fitted`; `computeGeometry` gains an optional `fitted` param defaulting to `NO_FITTED`), `domain/geometry.ts` (`HEADER_RESERVE = 114`), `app/state.ts` (`VIEW_COMMANDS` += `FitContainer`), `app/controller.ts` (derive passes `view.fitted`).
+- Full `fitted` serialization thread (F2): `contract/types.ts` (`VisualSpecsView.fitted`, `stale-fitted`, `LossReport.droppedFitted`), `contract/view.ts` (`ViewState.fitted` **required** + `withFitted` + copiers), `contract/validate.ts` (parse + `SUPPORTED_MINOR = 1`), `contract/export.ts` (`mergeView` conditional emit + `raiseFormatVersionForFitted` locus), `contract/autosaveView.ts` (`viewToJson`/`parseView` optional key, NO version bump), `contract/load.ts` (import inert `stale-fitted` / refresh `droppedFitted`), `app/projectController.ts` (three view helpers).
+- Verified: **100/100** domain/contract/projection tests pass incl. 9 new in `tests/domain/fit-container.test.ts` (FIT-1 floor-lowered-but-legible, no-clip, collapsed no-op, `fit∘fit==fit`, never-non-finite, export→import restores hug @1.1, no-fit doc stays 1.0, refresh `droppedFitted`). Core files typecheck-clean.
+
+**Graph/runtime lane: in progress** (shared tree — `adapters/canvas2d/*`, `app/scene.ts`, `ports/renderer.ts`, `ui/*`, the `container:fit` case in `controller.ts`). Awaiting their green ping, then combined `verify:core` + one commit + Step 9 gates.
+
 ## Scope
 
 Add a per-container action that shrinks an expanded container to hug its children with only the standard padding as margin, **preserving the children's positions and relative arrangement**. Confirmed product decision: preserve arrangement, do NOT re-pack.
