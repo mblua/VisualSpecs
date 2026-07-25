@@ -35,7 +35,10 @@ export function boot(input: {
       displayLabel: 'AgentsCommander',
     });
 
-    mountUi(input.root, controller, projectController);
+    // The renderer is handed over so the UI can hear `node:contextmenu` (#17 §8.3.1).
+    // A menu is presentation, not state, so it does not travel through the command
+    // loop — and `ui/` still knows only the PORT, never this adapter.
+    mountUi(input.root, controller, projectController, input.renderer);
     input.renderer.mount(canvasHostOf(input.root));
     controller.start();
     controller.fit();

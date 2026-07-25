@@ -10,6 +10,7 @@
 import { describe, expect, it } from 'vitest';
 import { exportDoc } from '../../src/contract/export.ts';
 import { importDoc } from '../../src/contract/load.ts';
+import { DEFAULT_LIMITS, LimitsError } from '../../src/contract/limits.ts';
 import { FOCUS_TRANSPARENCY_DEFAULT, withFocus, type FocusMark } from '../../src/contract/view.ts';
 import type { JsonObject } from '../../src/contract/types.ts';
 import { docText, edge, node } from '../support/doc.ts';
@@ -40,6 +41,34 @@ function reexport(text: string): JsonObject {
   const out = exportDoc({ raw: loaded.raw, view: loaded.view, readOnly: false });
   return JSON.parse(out) as JsonObject;
 }
+
+describe('an unusable transparency band is a CALLER bug and is rejected', () => {
+  // `limits.ts` promised in as many words that a cosmetic policy value must not be able
+  // to fail a port invariant, and nothing enforced it: four consumers read
+  // `maxFocusTransparency` and none validated it. At 100 the derived opacity is 0, which
+  // is exactly what the renderer port's `0 < opacity <= 1` assertion exists to catch.
+  const band = (over: Partial<typeof DEFAULT_LIMITS>) => ({ ...DEFAULT_LIMITS, ...over });
+
+  it('rejects maxFocusTransparency at 100, where the opacity would be 0', () => {
+    expect(() => importDoc(docWith(FULL_VIEW), band({ maxFocusTransparency: 100 }))).toThrow(
+      LimitsError,
+    );
+  });
+
+  it('rejects a band that is inverted or non-integer', () => {
+    expect(() =>
+      importDoc(docWith(FULL_VIEW), band({ minFocusTransparency: 80, maxFocusTransparency: 78 })),
+    ).toThrow(LimitsError);
+    expect(() => importDoc(docWith(FULL_VIEW), band({ maxFocusTransparency: 77.5 }))).toThrow(
+      LimitsError,
+    );
+  });
+
+  it('accepts the shipped band, so the guard is not simply refusing everything', () => {
+    // Without this a broken `assertLimits` that always threw would pass both cases above.
+    expect(() => importDoc(docWith(FULL_VIEW), DEFAULT_LIMITS)).not.toThrow();
+  });
+});
 
 describe('export invents nothing under view.focus', () => {
   it('a document with NO focus key round-trips byte-identically and gains none', () => {

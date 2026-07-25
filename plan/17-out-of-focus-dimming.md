@@ -833,9 +833,10 @@ Core:
 4. Unused feature exports byte-identical **at `exportDoc`** — AC 10 is scoped there, because
    `Controller.exportText` injects a position for every visible node and is never byte-identical
    independently of this feature.
-5. Version locus off the **typed** state: focus non-default → 1.2; the §5.2 key-preserved-but-default
-   document stays at its declared version; clearing every mark returns it there; a 1.3 document is not
-   lowered.
+5. Version locus off the **typed** state: focus non-default → 1.2; a document whose `focus` key was
+   preserved but whose typed state is default is not raised; a 1.3 document is not lowered. **Clearing
+   every mark does NOT return a document to its earlier version** — see §13; asserting that it does was a
+   test contradicting a rule.
 6. `validate`: clamps and warns on out-of-band `transparency` at or below `SUPPORTED_MINOR`; preserves
    verbatim above it; rejects an unrecognised mark value at a known minor and warns above; rejects over
    `maxFocusMarks`; rejects an over-long mark key; rejects `maxFocusTransparency >= 100`. Bounds
@@ -927,10 +928,24 @@ unconditionally and reads it never, nothing in provenance or evidence can see fo
   escape.
 - **A transparency keystroke re-runs layout and projection** (p50 3.82 ms) for a paint constant.
   Restructuring belongs with #19.
-- **A document written at 1.2 stays at 1.2 even after every mark is cleared**, so a 1.1 reader keeps
-  getting `unknown-minor` for a document carrying no focus information. `raiseFormatVersion` never
-  lowers, and it must not: lowering would suppress `unknown-minor` for any other 1.2 extension the raw
-  envelope carries.
+- **Once raised, a document never comes back down — and it is not merely "stays at 1.2".** Measured: a
+  1.0 document that gains a mark exports at 1.2; clearing every mark leaves it at 1.2 with
+  `focus: {"marks":{}}` still emitted; and a document that legitimately declared **1.1** for `fitted`,
+  gained a mark and lost it, ends at **1.2** — so it does not just fail to return to 1.0, it fails to
+  return to the version it actually needs.
+
+  Two rules interact and neither is wrong alone. §5.2 deletes the key only when it was absent from `raw`,
+  and after the first export the key *is* in `raw`. §5.3 computes "no minor required" for a default focus
+  state and returns early, because `raiseFormatVersion` **only ever raises** — which is the safe
+  direction: lowering would suppress `unknown-minor` for any other 1.2 extension the envelope is
+  carrying, which is worse than a stale minor.
+
+  So "returns to its declared version" is **unachievable by construction**: the original declaration was
+  overwritten on the first export and nothing remembers it. An earlier claim that this was resolved for
+  free by keying the locus off the typed state was wrong, and it was a *test* asserting something a *rule*
+  forbids — the first contradiction in this issue between those two rather than between two rules.
+  Consequence: a 1.1-capable reader gets an `unknown-minor` banner for a document carrying no focus
+  information. Accepted.
 - **"Show everything" reaches only the vocabulary this build understands.** A mark whose id IS in the
   model but whose token comes from a newer minor is an **active** mark this build cannot read — not an
   inert one. `SetAllFocus` and `Clear all focus` operate on the typed state, so `Show everything` leaves

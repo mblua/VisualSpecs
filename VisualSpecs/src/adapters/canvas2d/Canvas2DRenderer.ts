@@ -39,6 +39,35 @@ const EDGE_HIT_TOLERANCE = 7;
 const CONTROL_HIT_SLOP = 5;
 const FIT_PADDING = 60;
 
+// --- what this adapter actually paints with, exported so a test pins the real
+// --- numbers instead of a copy of them (Issue #17) --------------------------
+
+/** The canvas backdrop every composite lands on. */
+export const CANVAS_BACKGROUND = '#0b0e16';
+/** The selection ring, in its two branches. */
+export const SELECTION_RING_LEAF = '#f8fafc';
+export const SELECTION_RING_CONTAINER = '#e2e8f0';
+/** What makes an expanded container see-through: its fill and its border. */
+export const CONTAINER_FILL_ALPHA = 0.55;
+export const CONTAINER_BORDER_ALPHA = 0.75;
+export const CONTAINER_HEADER_ALPHA = 0.16;
+
+/**
+ * The selection ring is drawn at `max(opacity, RING_FLOOR)`, not at the node's own
+ * opacity, because a ring attenuated alongside its box loses contrast against it:
+ * at the default transparency of 70 a selected out-of-focus node's ring sits at
+ * 2.62:1, and at the maximum at 1.95:1.
+ *
+ * The measured minima that hold 3:1 across every kind and the whole band are 0.35
+ * for the leaf ring and **0.38** for the container ring — not the 0.34 a leaf-only
+ * sweep suggests. 0.40 is the shipped value and its real margin is 0.02, so anyone
+ * "optimising" toward a believed 0.34 breaks containers immediately. The sweep is
+ * `tests/adapters/ringFloor.test.ts`; it pins 0.38 / 3.30.
+ *
+ * A no-op at full opacity, so nothing about an in-focus map changes.
+ */
+export const RING_FLOOR = 0.4;
+
 interface Pointer {
   startClient: { x: number; y: number };
   startWorld: { x: number; y: number };
@@ -109,7 +138,25 @@ export class Canvas2DRenderer implements GraphRenderer {
     on('pointerup', (e) => this.onPointerUp(e));
     on('pointercancel', () => this.onPointerCancel());
     on('wheel', (e) => this.onWheel(e), { passive: false });
-    on('contextmenu', (e) => e.preventDefault());
+    on('contextmenu', (e) => {
+      // The native menu is suppressed either way: this canvas has its own gestures,
+      // and a right-drag pans.
+      e.preventDefault();
+      const mouse = e as MouseEvent;
+      if (typeof mouse.clientX !== 'number') return;
+      // A right-drag that is already panning is a camera gesture, not a request for a
+      // menu. `hitNode` filters `hidden` and NEVER opacity, so an out-of-focus node is
+      // still a target — which is exactly what makes this the escape hatch for a node
+      // the sidebar will not list.
+      if (this.pointer?.dragging === true) return;
+      const node = this.hitNode(this.toWorld(mouse));
+      if (node === null) return; // empty canvas, or an edge: neither has a menu
+      this.emit({
+        type: 'node:contextmenu',
+        id: node.id,
+        client: { x: mouse.clientX, y: mouse.clientY },
+      });
+    });
     // Native dblclick is suppressed: this adapter derives it from pointer events,
     // so behaviour is identical under synthetic events in a test.
     on('dblclick', (e) => e.preventDefault());
@@ -545,7 +592,7 @@ export class Canvas2DRenderer implements GraphRenderer {
     const ch = canvas.clientHeight || 1;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = '#0b0e16';
+    ctx.fillStyle = CANVAS_BACKGROUND;
     ctx.fillRect(0, 0, cw, ch);
     this.paintGrid(ctx, cw, ch);
 
@@ -590,7 +637,10 @@ export class Canvas2DRenderer implements GraphRenderer {
     const p = n.position;
     const x = p.x - n.size.w / 2;
     const y = p.y - n.size.h / 2;
-    const alpha = n.dimmed ? 0.22 : 1;
+    // The scene hands over a resolved number. This file does not know, and must not
+    // learn, WHY the number is what it is.
+    const alpha = n.opacity;
+    const ringAlpha = Math.max(alpha, RING_FLOOR);
 
     ctx.save();
     ctx.globalAlpha = alpha;
@@ -599,15 +649,22 @@ export class Canvas2DRenderer implements GraphRenderer {
     const radius = n.style.shape === 'rect' ? 4 : 10;
 
     if (expanded) {
-      ctx.fillStyle = withAlpha(n.style.fill, 0.55);
-      ctx.strokeStyle = n.selected ? '#e2e8f0' : withAlpha(n.style.stroke, 0.75);
+      ctx.fillStyle = withAlpha(n.style.fill, CONTAINER_FILL_ALPHA);
+      ctx.strokeStyle = n.selected
+        ? SELECTION_RING_CONTAINER
+        : withAlpha(n.style.stroke, CONTAINER_BORDER_ALPHA);
       ctx.lineWidth = n.selected ? 2.5 : 1.4;
       roundRect(ctx, x, y, n.size.w, n.size.h, radius);
       ctx.fill();
-      ctx.stroke();
+      // The border keeps the path the fill just used; only the ring changes alpha.
+      // An unselected border needs no floor: `withAlpha(stroke, 0.75)` already
+      // exceeds a dimmed leaf box at every transparency (1.077 vs 1.032 at the max).
+      this.strokeAt(ctx, n.selected ? ringAlpha : alpha, alpha);
 
-      // Header strip.
-      ctx.fillStyle = withAlpha(n.style.stroke, 0.16);
+      // Header strip. Deliberately NOT floored: raising it to a perceptibility bar
+      // means undoing the ×0.55 that makes an expanded container see-through, so the
+      // floor is stated on the border instead and this is a recorded resignation.
+      ctx.fillStyle = withAlpha(n.style.stroke, CONTAINER_HEADER_ALPHA);
       roundRectTop(ctx, x, y, n.size.w, HEADER_STRIP_HEIGHT, radius);
       ctx.fill();
 
@@ -617,7 +674,15 @@ export class Canvas2DRenderer implements GraphRenderer {
       // The label is drawn UNTRUNCATED: the derived width is floored (HEADER_RESERVE,
       // domain) so the name + caret + fit glyph always fit — the user requires the name
       // to stay visible on a fitted box, so we floor width instead of truncating.
-      ctx.fillText(`▾ ${n.label}`, x + 12, y + HEADER_STRIP_HEIGHT / 2);
+      const header = `▾ ${n.label}`;
+      ctx.fillText(header, x + 12, y + HEADER_STRIP_HEIGHT / 2);
+      if (n.marker !== undefined) {
+        ctx.fillText(
+          n.marker,
+          x + 12 + ctx.measureText(header).width + 6,
+          y + HEADER_STRIP_HEIGHT / 2,
+        );
+      }
       this.paintFitControl(ctx, n);
       ctx.restore();
       return;
@@ -634,13 +699,13 @@ export class Canvas2DRenderer implements GraphRenderer {
     ctx.fill();
 
     if (n.selected) {
-      ctx.strokeStyle = '#f8fafc';
+      ctx.strokeStyle = SELECTION_RING_LEAF;
       ctx.lineWidth = 2.5;
     } else {
       ctx.strokeStyle = n.style.stroke;
       ctx.lineWidth = 1.2;
     }
-    ctx.stroke();
+    this.strokeAt(ctx, n.selected ? ringAlpha : alpha, alpha);
 
     // Kind stripe on the left edge — cheap, and it makes the map readable at a glance.
     if (n.style.shape !== 'hex') {
@@ -667,20 +732,41 @@ export class Canvas2DRenderer implements GraphRenderer {
     const prefix = n.isContainer ? '▸ ' : '';
     ctx.fillText(`${prefix}${n.label}`, x + 12, y + n.size.h / 2);
 
+    // The badge and the marker share a right-aligned run: the badge is the outermost,
+    // the marker sits just inside it. `badge` says how much is folded in here;
+    // `marker` is whatever else the scene wants said about this box. Neither is
+    // interpreted.
+    let rightEdge = x + n.size.w - 8;
     if (n.badge !== undefined) {
       const text = n.badge;
       ctx.font = '11px ui-sans-serif, system-ui, sans-serif';
       const bw = ctx.measureText(text).width + 12;
-      const bx = x + n.size.w - bw - 8;
+      const bx = rightEdge - bw;
       const by = y + n.size.h / 2 - 8;
       ctx.fillStyle = withAlpha(n.style.stroke, 0.28);
       roundRect(ctx, bx, by, bw, 16, 8);
       ctx.fill();
       ctx.fillStyle = n.style.text;
       ctx.fillText(text, bx + 6, by + 8);
+      rightEdge = bx - 4;
+    }
+    if (n.marker !== undefined) {
+      ctx.font = '11px ui-sans-serif, system-ui, sans-serif';
+      ctx.fillStyle = n.style.text;
+      ctx.fillText(n.marker, rightEdge - ctx.measureText(n.marker).width, y + n.size.h / 2);
     }
 
     ctx.restore();
+  }
+
+  /** Stroke the current path at `alpha`, then put `restore` back for whatever the
+   *  caller draws next. The selection ring is the one thing on a node that does not
+   *  fade with it, so it needs its own alpha without a second `save()`/`restore()`
+   *  pair around every box. */
+  private strokeAt(ctx: CanvasRenderingContext2D, alpha: number, restore: number): void {
+    if (alpha !== restore) ctx.globalAlpha = alpha;
+    ctx.stroke();
+    if (alpha !== restore) ctx.globalAlpha = restore;
   }
 
   /** The per-container fit-to-content glyph: four inward crop-mark corners that read as
@@ -719,8 +805,11 @@ export class Canvas2DRenderer implements GraphRenderer {
   private paintEdge(ctx: CanvasRenderingContext2D, e: RenderEdge, route: EdgeRoute): void {
     const { a, b, control, mid } = route;
     ctx.save();
-    ctx.globalAlpha = e.dimmed ? 0.14 : 1;
-    ctx.strokeStyle = e.selected ? '#f8fafc' : e.style.color;
+    // A selected edge is a selection indication like a node's ring, and fails the same
+    // way when it fades with what it marks — so it takes the same floor. The rest of
+    // the line, the arrow and the count pill fade normally.
+    ctx.globalAlpha = e.selected ? Math.max(e.opacity, RING_FLOOR) : e.opacity;
+    ctx.strokeStyle = e.selected ? SELECTION_RING_LEAF : e.style.color;
     ctx.lineWidth = e.selected ? e.style.width + 1.4 : e.style.width;
     ctx.setLineDash(e.style.dash === null ? [] : [...e.style.dash]);
     ctx.beginPath();
@@ -738,14 +827,14 @@ export class Canvas2DRenderer implements GraphRenderer {
       ctx.lineTo(b.x - size * Math.cos(angle - 0.42), b.y - size * Math.sin(angle - 0.42));
       ctx.lineTo(b.x - size * Math.cos(angle + 0.42), b.y - size * Math.sin(angle + 0.42));
       ctx.closePath();
-      ctx.fillStyle = e.selected ? '#f8fafc' : e.style.color;
+      ctx.fillStyle = e.selected ? SELECTION_RING_LEAF : e.style.color;
       ctx.fill();
     }
 
     if (e.label !== undefined) {
       ctx.font = '600 11px ui-sans-serif, system-ui, sans-serif';
       const w = ctx.measureText(e.label).width + 12;
-      ctx.fillStyle = '#0b0e16';
+      ctx.fillStyle = CANVAS_BACKGROUND;
       roundRect(ctx, mid.x - w / 2, mid.y - 9, w, 18, 9);
       ctx.fill();
       ctx.strokeStyle = e.style.color;

@@ -549,6 +549,191 @@ input:disabled {
   font-variant-numeric: tabular-nums;
 }
 
+/* --- focus (Issue #17) ------------------------------------------------------
+   Both controls sit here, under the counts box, because below 1664px the Project
+   rail and the Explorer are mutually exclusive and a transparency control in the
+   rail could not be adjusted while looking at the list it dims. */
+
+.focus-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+
+.focus-toggle {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+}
+
+.focus-toggle:hover {
+  border-color: var(--accent);
+}
+
+.focus-marks-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.focus-summary {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-disclosure,
+.focus-clear {
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.focus-disclosure:hover,
+.focus-clear:hover {
+  border-color: var(--accent);
+}
+
+.focus-marks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 22vh;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.focus-field {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.focus-slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.focus-range {
+  flex: 1;
+  min-width: 0;
+}
+
+.focus-number {
+  width: 4.5em;
+  padding: 3px 6px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-pct {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.focus-note:empty {
+  display: none;
+}
+
+.focus-note {
+  font-size: 12px;
+  color: #f0b37e;
+}
+
+.focus-confirm-box {
+  padding: 8px 10px;
+  border: 1px solid #6b5a2c;
+  border-radius: 6px;
+  background: #241f13;
+  font-size: 12px;
+}
+
+.focus-confirm-box p {
+  margin: 0 0 8px;
+}
+
+.focus-confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.focus-confirm-actions button {
+  padding: 4px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+
+/* The row context menu lives in the top layer, so it is neither clipped by the
+   list's own scroll box nor in a z-index contest with the project overlay. */
+.row-menu {
+  position: fixed;
+  margin: 0;
+  padding: 4px;
+  min-width: 12rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--text);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 55%);
+}
+
+.row-menu:not(:popover-open) {
+  display: none;
+}
+
+/* What the menu will act on. The canvas draws representatives, so "this box" and
+   "the entity you are pointing at" are not always the same thing. */
+.row-menu-label {
+  margin: 2px 4px 6px;
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 22rem;
+}
+
+.row-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.row-menu-item:hover,
+.row-menu-item:focus-visible {
+  background: #1d2740;
+  border-color: #33406a;
+}
+
 /* --- node list ------------------------------------------------------------- */
 
 .node-list {
@@ -589,9 +774,39 @@ input:disabled {
 }
 
 .node-kind,
-.node-hidden {
+.node-hidden,
+.node-focus {
   color: var(--muted);
   font-size: 11px;
+}
+
+/* A row that is effectively out of focus reads attenuated, like its box on the map.
+   Not below the map's own floor: `opacity` here composites over the panel, and a row
+   you cannot read is a row you cannot use to undo the thing that dimmed it. */
+.node-row.out-of-focus .node-label,
+.node-row.out-of-focus .node-kind,
+.node-row.out-of-focus .swatch {
+  opacity: 0.55;
+}
+
+/* The glyph is the row's own statement and never fades — it is the only evidence
+   that a mark exists at all, and §4.6 keeps marks that agree with what they would
+   have inherited. Shape, not colour: `◐` explicit out, `○` an explicit override. */
+.node-row .node-focus {
+  opacity: 1;
+  color: var(--text);
+}
+
+/* An inert mark names an id this graph does not have. There is no label, kind or
+   path to show, so the row shows the raw id — and keeps its menu, because deleting
+   the mark is the one meaningful thing left to do to it. */
+.node-row.inert .node-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}
+
+.node-row.inert .node-kind {
+  color: #f0b37e;
 }
 
 /* The legend swatch carries the node's SHAPE, not only its colour — so a crate is

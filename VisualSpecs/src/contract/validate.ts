@@ -16,7 +16,7 @@ import type {
   Unresolved,
   Warning,
 } from './types.ts';
-import { DEFAULT_LIMITS, type Limits } from './limits.ts';
+import { assertLimits, DEFAULT_LIMITS, type Limits } from './limits.ts';
 import { IncompatibleVersionError, IntegrityError, SchemaError } from './errors.ts';
 import { isJsonObject, scanJson, type ScanResult } from './json.ts';
 import { checkRelativePath, checkSourceRoot, describePathProblem } from './paths.ts';
@@ -49,6 +49,9 @@ export function validate(
   limits: Limits = DEFAULT_LIMITS,
   scan?: ScanResult,
 ): ValidationResult {
+  // A misconfigured band is a caller bug and must not reach the renderer as an opacity of
+  // 0. Checked here because `validate` is where injected `Limits` enter the contract.
+  assertLimits(limits);
   const s = scan ?? scanJson(raw, limits);
   const warnings: Warning[] = [];
   const problems: string[] = [];

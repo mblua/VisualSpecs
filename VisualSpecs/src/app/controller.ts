@@ -103,6 +103,12 @@ export class Controller {
       case 'background:click':
         this.dispatch({ type: 'Select', nodeIds: [], edgeId: null });
         return;
+      // A right-click on a node opens a MENU, which is presentation, not state (#17
+      // §8.3.1). The UI subscribes to the renderer for it and dispatches whatever the
+      // user then chooses, through this same loop. Named rather than left to
+      // `default:` so the exhaustiveness check keeps meaning what it says.
+      case 'node:contextmenu':
+        return;
       case 'viewport:change':
         // The renderer already moved the camera. Record it, tell the UI, but do
         // NOT push it back into the renderer — that is the feedback loop.

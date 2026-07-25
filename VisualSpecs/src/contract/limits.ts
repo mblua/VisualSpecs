@@ -80,3 +80,36 @@ export const DEFAULT_LIMITS: Limits = {
 /** Keys that are never legal, anywhere, at any depth (§11: prototype pollution).
  *  This is the one place forward-compatibility yields to safety. */
 export const DANGEROUS_KEYS: readonly string[] = ['__proto__', 'constructor', 'prototype'];
+
+/**
+ * A misconfigured `Limits` is a CALLER bug, not a document defect, so it throws here
+ * rather than making some innocent document invalid.
+ *
+ * `maxFocusTransparency` is the one that needed a check: at 100 the derived opacity is
+ * `1 - 100/100 = 0`, which fails the renderer port's `0 < opacity <= 1` assertion — so a
+ * cosmetic policy value would break a port invariant, which the field's own comment
+ * promises is impossible. The comment promised it and nothing enforced it; four consumers
+ * read the value and no one validated it.
+ */
+export class LimitsError extends Error {
+  constructor(problems: readonly string[]) {
+    super(`Limits are not usable: ${problems.join('; ')}`);
+    this.name = 'LimitsError';
+  }
+}
+
+export function assertLimits(limits: Limits): void {
+  const problems: string[] = [];
+  if (!Number.isInteger(limits.minFocusTransparency) || limits.minFocusTransparency < 0) {
+    problems.push('minFocusTransparency must be an integer >= 0');
+  }
+  if (!Number.isInteger(limits.maxFocusTransparency) || limits.maxFocusTransparency >= 100) {
+    // Strictly below 100: at 100 the opacity is 0, which is indistinguishable from absent
+    // and fails the port assertion.
+    problems.push('maxFocusTransparency must be an integer < 100');
+  }
+  if (limits.minFocusTransparency > limits.maxFocusTransparency) {
+    problems.push('minFocusTransparency must not exceed maxFocusTransparency');
+  }
+  if (problems.length > 0) throw new LimitsError(problems);
+}
