@@ -610,6 +610,13 @@ and popover light-dismiss is pointer-driven so it does not fire on a keydown: ri
 `[`, and the menu would be left floating over the canvas still holding a valid id. The underlying
 rebuild cost is #19.
 
+**The trap is not "controller notifications" — it is anything that runs per-notification.** A first
+implementation put the close at the top of `applyLayout`, reasoning about `[` and `]`, and an interaction
+test caught the menu dying on an unrelated zoom: `renderProjectState` → `applyLayout` fires on **every
+project notification**, so it is the same defect wearing a different hat, and it would have killed the menu
+once a second on a followed document. `applyLayout` reads like a layout event and is not one. It closes only
+when the band changes or the sidebar actually becomes hidden.
+
 **Escape needs an explicit early return in `onKey` guarded on "menu open".** `ui/app.ts:989-1002` runs
 its overlay-Escape branch **before** `isInteractionEvent`, so in the narrow and hybrid bands Escape
 would close the whole sidebar and take the anchor row with it. The native popover does **not** discharge
@@ -650,8 +657,15 @@ node list
 A `range` with a live numeric readout, because this is a perceptual setting: you watch the map fade
 while dragging. The readout is the typed and accessible entry, bound to the same command; empty or
 out-of-range leaves the last valid value in force and says so inline. Dispatches coalesce to one per
-animation frame. Budget: **p95 ≤ 16 ms input → painted frame at expand-all**, reported with numbers;
-fallback is committing on `change`. `derive()` is p50 3.82 ms / p95 5.26 ms at expand-all, of which
+animation frame. Budget: **driving the control must not cost a frame** — `driven p95 ≤ idle p95 + 8 ms`,
+measured in a real browser at expand-all on the committed corpus.
+
+An earlier form, "p95 ≤ 16 ms from input to painted frame", was **unmeetable by any rAF-coalesced
+implementation, including one that does no work**: the wait for the next vsync is up to 16.7 ms before the
+render even begins, so the number mostly measured the display. A budget that fails for a reason outside the
+code teaches people to ignore it — the first measurement against it read 40 ms and was nearly taken as a
+failure. Measured on 787 nodes / 1713 drawn lines: idle frame interval p95 16.80 ms, driven p95 16.80 ms —
+**0.1 ms of stretch, not one dropped frame** — so the `change`-commit fallback is not needed. `derive()` is p50 3.82 ms / p95 5.26 ms at expand-all, of which
 `resolveFocus` is 0.049 ms; a transparency keystroke re-running layout and projection for a paint
 constant is architecturally wrong, within budget, and resigned in §13.
 
@@ -890,6 +904,29 @@ the refresh banner names fitted ids and focus marks.
 Extraction: the extractor emits `1.0` and no `focus` anywhere (landed, `000e190`); then
 extract → apply focus → re-extract, asserting projection, every count and every observation are
 bit-identical with and without focus state.
+
+### Method: never assert on a value the test rebuilds
+
+Two invariance checks in this issue were **structurally incapable of failing**, both found by mutation and
+both the same error in different costumes:
+
+- An absence test asserted on the **validated `doc`** rather than the **emitted bytes**. `validateView` is
+  an allowlist that copies four keys and drops the rest, so `expect(doc.view.focus).toBeUndefined()` passes
+  *even when the extractor emits focus*.
+- A projection-invariance test computed `project(model, outline, view.expanded)` and compared it to itself.
+  No focus command touches `expanded`, so it is `project(E)` against `project(E)` — true by construction and
+  blind to a leak reaching the projection inside `derive()`. The cases that appeared to catch that leak were
+  catching it on `counts()`; the headline claim contributed nothing.
+
+The rule both teach: **assert on the value the system produces, not one the test reconstructs from inputs
+the mutation cannot reach.** The reconstructed form looks more rigorous, which is why someone will reach for
+it again. Where the reconstruction was proving something real — that `expanded` did not move — that becomes
+its own explicit assertion rather than a side effect of another one.
+
+I-F1 has the same altitude problem in the app: `buildScene` receives an already-built `VisibleGraph`, so a
+check written there passes while `derive()` threads the view into `project` three lines away. It is checked
+at **`derive()`**, and the check carries a case proving it can fail. Two owners reached that conclusion
+independently, one from the implementation side and one by mutation.
 
 **AC ↔ verification:** AC1–AC2 → graph/runtime menu and keyboard; AC3 → 11.12, 11.15, plus §4.3's
 internal-bucket statement; AC4 → 11.11, 11.13; AC5 → 11.11, 11.12, 11.14; AC6 → §8.4's three
