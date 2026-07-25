@@ -697,6 +697,41 @@ that same sentence for the other mask**, and the parallel is worth preserving in
 §11's presence assertion would have passed either way — it checks presence at a moment, and neither
 failure above is a failure of presence at that moment.
 
+### 8.3.1 Right-click on a canvas node — in scope, at the user's request
+
+**Requested by the user after seeing it in the running app**, with the reason three reviewers had
+already reached independently: a `file` node is drawn on the canvas and has **no sidebar row**, so
+there was no surface to right-click and no way to bring it back into focus. The screenshot that made
+the case is a single `run.js` box.
+
+`contextmenu` on the canvas host hit-tests to a node and opens **the same menu instance** with that
+node's id, and — as a left click already does — selects it. So the user's "when an element is selected
+on the canvas" is satisfied without demanding a prior selection, which would have cost two gestures.
+
+**This costs almost nothing, and the reason is a design decision taken for something else.** §8.1's
+menu holds a **node id**, never a row element, because `renderList` destroys rows on every controller
+notification. That same choice makes the menu reusable from a second, completely different surface with
+no new menu machinery: one more producer of an id.
+
+- `hitNode` filters `hidden` only and never dimming, so an **out-of-focus node is still hit-testable** —
+  which is precisely what makes this the escape hatch for a node with no row. §7's decision not to make
+  focus a filter is what makes this work, and §7's perceptibility ceiling is what makes the target
+  findable.
+- The renderer port emits a `node:contextmenu` event alongside `node:click` / `background:click`. Port
+  change, so cross-cutting: graph/runtime proposes and owns it, core supports — **2 of 3**, no dissent.
+- **Right-click on an edge does nothing**, stated so it is not discovered: an edge has no focus state of
+  its own, it derives one from its endpoints (§4.3), so a menu there would have nothing to offer.
+- Right-click on empty canvas does nothing. A background menu is a different feature.
+- **Keyboard parity is already covered** and needs no canvas key handling: §8.4.3's detail panel is the
+  accessible route to the same actions for any selected entity, which is where #13 put the accessible
+  route for `FitContainer` for the same reason.
+
+**What this supersedes.** §8.4's mark counter was accepted by both red teams as the mitigation for the
+1.3%-of-entities reachability problem, and it remains valuable — it is the only surface that *reports*
+what is marked. But the canvas menu is a strictly better answer to "how do I get this one thing back",
+because it works on the thing the user is looking at rather than on a list they must first make show it.
+Both ship.
+
 ### 8.4 Row state, and the counter that makes an unlisted mark reachable
 
 `renderList` filters `file` and `directory` out on an empty query, so the list shows **10 rows of 787
@@ -886,8 +921,7 @@ unconditionally and reads it never, nothing in provenance or evidence can see fo
 - **`positions`/`expanded`/`fitted`/`viewport` stay all-or-nothing in the autosave.** Pre-existing.
 - **A CLI re-extraction over the same `--out` replaces the whole `view` subtree with no warning.**
   Pre-existing, executable, owner extraction.
-- **Out of scope:** canvas right-click; any other menu item; coupling the transparency to search
-  dimming; #18; #19.
+- **Out of scope:** any other menu item; coupling the transparency to search dimming; #18; #19.
 - **Multi-placement:** `focus.marks` joins `expanded`, `fitted` and `positions` in the fields keyed by
   node id *because* `OutlineNodeId === NodeId` today; relaxing I10 makes the nearest marked ancestor
   non-unique and this field re-keys with the others. Appended to `MULTI_PLACEMENT_NOTE`.
