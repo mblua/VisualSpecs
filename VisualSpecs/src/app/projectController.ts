@@ -1454,7 +1454,18 @@ function toVisualSpecsView(view: ViewState): VisualSpecsView {
   const positions: VisualSpecsView['positions'] = Object.create(null) as NonNullable<
     VisualSpecsView['positions']
   >;
-  for (const [id, p] of view.positions) {
+  // Sorted here as well as in `viewToJson`, on purpose, so that NEITHER sort is
+  // load-bearing alone.
+  //
+  // Before this line, `viewToJson` held two sorts that look identical: the `marks` one
+  // was a verified no-op (this function already sorted marks), and the `positions` one
+  // was the only thing making `viewKey` order-insensitive. Deleting the positions sort
+  // survived the entire suite. Anyone tidying that function on the evidence in front of
+  // them removes both — the redundant one and the load-bearing one — and reintroduces a
+  // spurious dirty per reordering on a path that runs once per pan pointermove.
+  for (const id of [...view.positions.keys()].sort()) {
+    const p = view.positions.get(id);
+    if (p === undefined) continue;
     positions[id] = p.pinned === true ? { x: p.x, y: p.y, pinned: true } : { x: p.x, y: p.y };
   }
   const marks: Record<NodeId, FocusMarkToken> = Object.create(null) as Record<

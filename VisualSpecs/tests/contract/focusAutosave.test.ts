@@ -17,11 +17,12 @@ import {
   AUTOSAVE_VIEW_SCHEMA,
   autosaveViewText,
   parseAutosaveView,
+  viewToJson,
 } from '../../src/contract/autosaveView.ts';
 import { SchemaError } from '../../src/contract/errors.ts';
 import { DEFAULT_LIMITS } from '../../src/contract/limits.ts';
 import type { DocRevision } from '../../src/contract/revision.ts';
-import type { JsonObject, JsonValue } from '../../src/contract/types.ts';
+import type { JsonObject, JsonValue, VisualSpecsView } from '../../src/contract/types.ts';
 
 const REVISION = ('sha256:' + 'a'.repeat(64)) as DocRevision;
 
@@ -67,6 +68,63 @@ function expectSessionIntact(view: {
   expect(view.fitted).toEqual(['c0']);
   expect(view.viewport).toEqual({ x: 12, y: 34, zoom: 1.5 });
 }
+
+describe('§11.9 — the autosave projection is insertion-order-independent, per field', () => {
+  // This exists because deleting `.sort()` from `viewToJson`'s positions loop SURVIVED the
+  // entire suite. `viewKey` — the dirty/autosave trigger — routes through `viewToJson`
+  // precisely so it is order-canonical, and nothing asserted that it is. So the fix that
+  // closed the original ordering defect could be reverted in silence, on a path that runs
+  // once per pan pointermove.
+  //
+  // Asserted on `viewToJson` rather than on `dirty`, because that is the value the trigger
+  // is a function of: a test at the `dirty` layer would pass on any implementation that
+  // happens to compare something else.
+
+  function keyOf(view: VisualSpecsView): string {
+    return JSON.stringify(viewToJson(view));
+  }
+
+  function positionsIn(order: readonly string[]): VisualSpecsView {
+    const positions: Record<string, { x: number; y: number }> = Object.create(null) as Record<
+      string,
+      { x: number; y: number }
+    >;
+    for (const id of order) positions[id] = { x: id.length, y: id.length * 2 };
+    return { positions, expanded: [], fitted: [], viewport: { x: 0, y: 0, zoom: 1 } };
+  }
+
+  function marksIn(order: readonly string[]): VisualSpecsView {
+    const marks: Record<string, 'out-of-focus'> = Object.create(null) as Record<
+      string,
+      'out-of-focus'
+    >;
+    for (const id of order) marks[id] = 'out-of-focus';
+    return { focus: { transparency: 70, marks }, viewport: { x: 0, y: 0, zoom: 1 } };
+  }
+
+  it('positions: the same values in a different insertion order produce the same key', () => {
+    expect(keyOf(positionsIn(['alpha', 'be', 'c']))).toBe(keyOf(positionsIn(['c', 'be', 'alpha'])));
+  });
+
+  it('marks: the same set in a different insertion order produces the same key', () => {
+    // Currently sorted twice — `toVisualSpecsView` and `viewToJson` — deliberately, so that
+    // neither sort is load-bearing alone. Both are asserted here for the same reason.
+    expect(keyOf(marksIn(['a', 'b', 'c']))).toBe(keyOf(marksIn(['c', 'a', 'b'])));
+  });
+
+  it('expanded and fitted: order-independent too', () => {
+    const one: VisualSpecsView = { expanded: ['x', 'y'], fitted: ['p', 'q'] };
+    const other: VisualSpecsView = { expanded: ['y', 'x'], fitted: ['q', 'p'] };
+    expect(keyOf(one)).toBe(keyOf(other));
+  });
+
+  it('but a real difference in any field still changes the key', () => {
+    // Without this, an implementation returning a constant would satisfy every case above.
+    expect(keyOf(positionsIn(['a', 'b']))).not.toBe(keyOf(positionsIn(['a', 'b', 'c'])));
+    expect(keyOf(marksIn(['a']))).not.toBe(keyOf(marksIn(['a', 'b'])));
+    expect(keyOf({ expanded: ['x'] })).not.toBe(keyOf({ expanded: ['y'] }));
+  });
+});
 
 describe('§11.8 — shapes the plan calls RECOVERABLE keep the rest of the view', () => {
   const recoverable: Array<[string, JsonValue]> = [
