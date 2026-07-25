@@ -26,10 +26,35 @@ export interface VisualSpecsAutosaveViewV1 {
   view: VisualSpecsView;
 }
 
+/**
+ * What `parseAutosaveView` returns: the document, plus what it had to REPAIR to return
+ * one. `recovered` is deliberately not part of `VisualSpecsAutosaveViewV1` — it is a
+ * report about reading the file, not a field of the file, and `autosaveViewText` must
+ * not be able to write it.
+ *
+ * **This is the fatal/recoverable split**, and it has to live in the return type rather
+ * than in `problems[]`: everything pushed into `problems` makes `parseAutosaveView`
+ * throw, and its only caller answers a throw by discarding the whole cache — 787
+ * positions, the expansion and the viewport — behind "autosave-view.json is corrupt and
+ * was ignored".
+ *
+ * The first cut of this feature wrote its recovery text into `problems`, so a line that
+ * literally read "focus marks were reset" reset nothing and threw everything away. A
+ * recoverable case with no channel of its own is not recoverable; it is a comment.
+ *
+ * Empty means nothing was repaired. Non-empty reaches the user through
+ * `ProjectController`'s `warnings`, which already flows into the status message — the
+ * fatal case has `corruptAutosaveIgnored`, and silence here would be the same
+ * mute-report defect one level down.
+ */
+export interface ParsedAutosaveView extends VisualSpecsAutosaveViewV1 {
+  recovered: string[];
+}
+
 export function parseAutosaveView(
   text: string,
   limits: Limits = DEFAULT_LIMITS,
-): VisualSpecsAutosaveViewV1 {
+): ParsedAutosaveView {
   const raw = parseJson(text, limits);
   const scan = scanJson(raw, limits);
   if (scan.dangerousKeyPaths.length > 0) {
@@ -63,7 +88,8 @@ export function parseAutosaveView(
   if (savedAtUtc !== null && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(savedAtUtc)) {
     problems.push('savedAtUtc must be an ISO UTC timestamp');
   }
-  const view = parseView(raw['view'], limits, problems);
+  const recovered: string[] = [];
+  const view = parseView(raw['view'], limits, problems, recovered);
 
   if (problems.length > 0) throw new SchemaError(problems);
   if (projectId === null || docId === null || baseRevision === null || savedAtUtc === null || view === null) {
@@ -77,6 +103,7 @@ export function parseAutosaveView(
     baseRevision,
     savedAtUtc,
     view,
+    recovered,
   };
 }
 
@@ -146,6 +173,7 @@ function parseView(
   value: JsonValue | undefined,
   limits: Limits,
   problems: string[],
+  recovered: string[],
 ): VisualSpecsView | null {
   if (!isJsonObject(value)) {
     problems.push('view is missing or is not an object');
@@ -156,7 +184,7 @@ function parseView(
   const expanded = parseExpanded(value['expanded'], problems);
   const fitted = parseFitted(value['fitted'], problems);
   const viewport = parseViewport(value['viewport'], limits, problems);
-  const focus = parseFocus(value['focus'], problems);
+  const focus = parseFocus(value['focus'], limits, recovered);
   if (positions !== undefined) view.positions = positions;
   if (expanded !== undefined) view.expanded = expanded;
   if (fitted !== undefined) view.fitted = fitted;
@@ -193,43 +221,87 @@ function parseView(
  * strings, so those shapes still discard the whole cache. A document-wide safety scan
  * with a per-field exception is a worse trade than this sentence.
  */
-function parseFocus(value: JsonValue | undefined, problems: string[]): VisualSpecsFocus | undefined {
+function parseFocus(
+  value: JsonValue | undefined,
+  limits: Limits,
+  recovered: string[],
+): VisualSpecsFocus | undefined {
   if (value === undefined) return undefined;
+
+  // NOTHING in this function may touch `problems`. Every branch below is a repair, and
+  // `problems` is the array that throws away the user's whole layout.
   if (!isJsonObject(value)) {
-    problems.push('view.focus is not an object');
+    recovered.push('The saved out-of-focus state was unreadable and was reset. Nothing else was lost.');
     return undefined;
   }
+
   const out: VisualSpecsFocus = {};
 
+  // Clamped here as well as in `load.ts`, because this is a third entry point into
+  // `ViewState` and it was the one that leaked: an unclamped 200 reaches
+  // `focusOpacity` as `1 - 200/100 = -1`, which fails the renderer port's
+  // `0 < opacity <= 1` assertion. A band enforced at two of three doors is not enforced.
   const transparency = value['transparency'];
   if (transparency !== undefined) {
-    if (typeof transparency !== 'number' || !Number.isInteger(transparency)) {
-      problems.push('view.focus.transparency is not an integer');
+    if (typeof transparency !== 'number' || !Number.isFinite(transparency)) {
+      recovered.push('The saved transparency was not a number and the default was used.');
     } else {
-      out.transparency = transparency;
+      const clamped = Math.min(
+        limits.maxFocusTransparency,
+        Math.max(limits.minFocusTransparency, Math.round(transparency)),
+      );
+      if (clamped !== transparency) {
+        recovered.push(`The saved transparency ${transparency} was adjusted to ${clamped}.`);
+      }
+      out.transparency = clamped;
     }
   }
 
   const marks = value['marks'];
   if (marks !== undefined) {
     if (!isJsonObject(marks)) {
-      problems.push('view.focus.marks is not an object');
+      recovered.push('The saved out-of-focus marks were unreadable and were reset.');
+      // Explicitly empty rather than absent: "reset" and "not present" resolve the same
+      // way downstream, but only one of them is what happened.
+      out.marks = Object.create(null) as Record<NodeId, FocusMarkToken>;
       return out;
     }
     const accepted: Record<NodeId, FocusMarkToken> = Object.create(null) as Record<
       NodeId,
       FocusMarkToken
     >;
+    let unknownTokens = 0;
     for (const id of Object.keys(marks)) {
       const mark = marks[id];
       if (mark === 'out-of-focus' || mark === 'in-focus') {
         accepted[id] = mark;
         continue;
       }
-      if (typeof mark === 'string') continue; // a token from a newer minor: ignored, not fatal
-      // Structurally invalid: reset as a unit rather than re-resolve a subtree silently.
-      problems.push('view.focus.marks contains a non-string value; focus marks were reset');
+      if (typeof mark === 'string') {
+        // A token a newer build introduced. DROPPED here, not preserved — and the
+        // difference from the document path is deliberate. The document keeps it through
+        // the raw envelope, which the autosave does not have; carrying it would mean
+        // `ViewState` holding a value the domain cannot act on, threaded through five
+        // copiers, for a document version that does not exist. Dropping it changes
+        // nothing about what THIS build resolves, because it was never applied; what is
+        // lost is a newer build's state when it reopens the cache, which is the same
+        // class of loss the autosave's missing version locus already resigns.
+        unknownTokens += 1;
+        continue;
+      }
+      // Structurally invalid. `marks` resets AS A UNIT, because its entries are coupled
+      // through inheritance: dropping one entry re-resolves an arbitrarily large
+      // subtree — measured at 76 nodes for a child mark and 390 of 787 for a parent —
+      // and dropping a child leaves the map DARKER than the user left it, which does
+      // not look broken, it looks like a decision.
+      recovered.push('Some saved out-of-focus marks were invalid, so all of them were reset.');
+      out.marks = Object.create(null) as Record<NodeId, FocusMarkToken>;
       return out;
+    }
+    if (unknownTokens > 0) {
+      recovered.push(
+        `${unknownTokens} saved out-of-focus mark(s) came from a newer version and were dropped.`,
+      );
     }
     out.marks = accepted;
   }

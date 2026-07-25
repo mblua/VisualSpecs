@@ -882,6 +882,13 @@ export class ProjectController {
           })
         ) {
           pendingAutosave = autosave.view;
+          // The RECOVERABLE half of the autosave split, surfaced. `warnings` already
+          // reaches the user through `message`, so this needs no new state field and no
+          // new render — which is the right answer, because the failure this guards
+          // against is a report that is constructed and never shown. Only reported when
+          // the autosave was actually adopted: notes about a cache we discarded for a
+          // revision mismatch are noise.
+          warnings.push(...autosave.recovered);
         }
       } catch {
         warnings.push(CORRUPT_AUTOSAVE_WARNING);

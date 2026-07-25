@@ -99,12 +99,27 @@ export interface VisualSpecsView {
    * Out-of-focus state (Issue #17). Added in doc formatVersion 1.2; absent → every node
    * is in focus.
    *
-   * I-F10 — NOTHING UNDER `view.*` IS EVER AN OBSERVATION. `positions`, `expanded` and
-   * `fitted` are decisions about how structure is DISPLAYED; `focus.marks` is a claim
-   * about where a person is LOOKING. It must never be read as a claim about the system,
-   * which is why its values are spelled `"out-of-focus"` / `"in-focus"` rather than
-   * `"out"` / `"in"` — a bare `"out"` on a node is one reading from "out of scope",
-   * "excluded" or "dead".
+   * I-F10, in TWO parts, because the two halves have different scopes and conflating
+   * them gives the invariant a visible counterexample:
+   *
+   *   (a) `view.*` CARRIES NO OBSERVATIONS — nothing under `view` is a claim about the
+   *       code, **even when a machine writes it**. The extractor emits
+   *       `view: { expanded: [<repo>] }` on every run (`tools/extractor/extract.ts`);
+   *       that is a suggested starting view, not a finding. An observation is precisely a
+   *       claim carrying `evidence[]` and `confidence`, and nothing under `view` has
+   *       either — which is *why* none of it is one.
+   *
+   *   (b) `view.focus` SPECIFICALLY IS A HUMAN DECISION — no machine writes it. A machine
+   *       suggestion about attention ("auto-dim tests", "auto-dim vendor") must travel
+   *       under a different, derived, recomputed-every-run key that the UI can name.
+   *
+   * Stating (b) as though it held for all of `view` is what would make (a) look false:
+   * "no machine writes under `view`" is refutable in a minute, and an invariant with a
+   * visible counterexample stops being quoted.
+   *
+   * `focus.marks` is a claim about where a person is LOOKING, which is why its values are
+   * spelled `"out-of-focus"` / `"in-focus"` rather than `"out"` / `"in"` — a bare `"out"`
+   * on a node is one reading from "out of scope", "excluded" or "dead".
    *
    * I-F9 — focus lives only here. Never in `nodes[].metadata`, `edges[].metadata`,
    * `evidence[]` or `unresolved[]`: `metadata` is a free-form record the validator

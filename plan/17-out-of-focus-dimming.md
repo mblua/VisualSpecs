@@ -788,9 +788,25 @@ the requirement is real: it changes what the user sees, and under follow-file it
   `view.focus`. `metadata` is a free-form `Record<string, unknown>` the validator accepts without
   inspection *and regenerates every run*, so a mark parked there would be indistinguishable from an
   observation and destroyed at the next extraction. Executable: `tests/extractor/focus.test.ts`.
-- **I-F10 `view.*` is never an observation.** Stated in `contract/types.ts` and ARCHITECTURE. A future
-  machine suggestion about attention must travel under a different, derived, recomputed key that the UI
-  can name, because `view.focus.marks` means *a person said so*.
+- **I-F10, in two parts.** (a) **`view.*` carries no observations** — nothing under `view` is a claim
+  about the code, *even when a machine writes it*. An observation is precisely a claim carrying
+  `evidence[]` and `confidence`, and nothing under `view` has either, which is *why* none of it is one.
+  (b) **`view.focus` specifically is a human decision** — no machine writes it, and a machine suggestion
+  about attention must travel under a different, derived, recomputed-every-run key the UI can name.
+
+  The split matters. Stating (b) as though it covered all of `view` gives (a) a visible counterexample:
+  the extractor emits `view: { expanded: [<repo>] }` on **every run**. That is a suggested starting view,
+  not a finding — but "no machine writes under `view`" is refutable in a minute, and an invariant with a
+  refutable form stops being quoted.
+
+  Stated in `contract/types.ts`, in **`VisualSpecs/README.md`'s document section** — where a consumer of
+  the artifact actually looks, rather than only where an implementer does — in ARCHITECTURE, and in
+  ADR-0006. **Not in the document itself**: an explanatory key would break I-F4 and AC 10 by making a
+  document that never used the feature stop exporting byte-identically.
+
+  Machine-checked in both directions by extraction: nothing under `view` ever grows `evidence`,
+  `confidence`, `path` or `line`, and no observation ever grows a focus key. That is the checkable form of
+  the whole invariant, and it follows from the definition rather than restating the prose.
 
 ## 10. Allowed files
 
