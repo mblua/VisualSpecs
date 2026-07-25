@@ -129,9 +129,32 @@ interacted and the interaction had not been revisited. The fraction is free — 
 `sourceEdgeIds`, and `scene.ts:89-93` **already** maps `sourceEdgeIds → model.edgeById` for the
 `allHeuristic` dash rule, three lines above where this goes.
 
-The presentation function — the continuous form above, or three discrete levels — is
-`vs-graph-runtime-dev`'s call as a legibility decision. The semantics above are the constraint:
-monotone in the switched-off fraction, exact at `×1`, and composed under `min` (§7).
+**Fourth constraint, and it is semantic rather than a matter of taste: a non-zero bright fraction must
+be PERCEPTIBLY distinct from a zero one.** The first three constraints — monotone, exact at ×1,
+composed under `min` — are all satisfied by the plain continuous form, and the plain continuous form
+makes a fine-grained override *imperceptible* on exactly the aggregates where this rule was needed.
+Measured in §7's own metric at the default transparency, on the ×136 aggregate:
+
+| bright / total | opacity | contrast | Δ vs all-off |
+| --- | --- | --- | --- |
+| 0/136 | 0.3000 | 1.610:1 | — |
+| **1/136** | 0.3051 | 1.617:1 | **0.007** — one 8-bit step, gone |
+| 14/136 | 0.3721 | 1.856:1 | 0.246 — visible |
+| 136/136 | 1.0000 | 6.387:1 | 4.776 |
+
+§7 rejects `transparency = 95` because 1.02–1.09:1 is perceptually gone; this is the same argument
+applied to a *difference* rather than a value. Without the fourth constraint the chain reads: v1 hid one
+relation the user wanted, v2 showed 122 the user did not, v3 shows the fraction and loses the override
+again at the fine end — present in the number, below threshold on the screen.
+
+So `aggregateFocusOpacity` lifts **any** non-zero bright fraction by at least a floor's worth of the
+available range, preserving the fraction above that floor. Three discrete levels also satisfy all four
+constraints and are a legitimate alternative.
+
+The presentation function is `vs-graph-runtime-dev`'s call as a legibility decision, and **the floor's
+value is theirs to calibrate against the contrast metric, with a conformance case pinning it** — the
+same division that produced `RING_FLOOR`, where core stated the property and the owner measured the
+constant. The four constraints are the boundary that choice moves inside.
 
 **Guard against vacuous truth.** A carrier with zero resolvable logical relations must **not** dim:
 `[].every(…)` is `true`, which would dim a line with no marks present at all and break I-F4 at the
@@ -300,8 +323,14 @@ Keying off *whether the key appears in the output* would make §5.2 and §5.3 co
 document that motivated §5.2's fix — 1.0, `view.focus = { groups: [...] }`, no marks, default
 transparency — correctly keeps its key, and would then have been raised to 1.2 with a `unknown-minor`
 warning for a 1.1 reader, on a document whose focus state is empty and where the user did nothing.
-This also means a document that clears every mark returns to its original declared version rather than
-being permanently 1.2.
+A document that clears every mark is **not raised**. A document already written at 1.2 **stays** 1.2,
+because `raiseFormatVersion` never lowers and must not: lowering would suppress `unknown-minor` for any
+*other* 1.2 extension the raw envelope is carrying, which is a worse failure than a stale minor.
+Measured on the precedent — session 1 exports 1.1, session 2 reopens and clears everything and still
+exports 1.1 — so an earlier claim that a cleared document "returns to its original declared version"
+held only *within* one editing session, while `raw` was still the unraised file. Once reopened, the
+raised version **is** its declared version. `vs-resilience-red-team`'s "permanently 1.2" finding is
+therefore accepted and resigned in §13, not closed.
 
 The old-reader path needs no new code and was verified independently by extraction (a 1.1-era reader
 against a hand-written 1.2 document: `unknown-minor` taken, `raw.view.focus` verbatim) and by semantic
@@ -436,13 +465,30 @@ idempotent on a destructive action.
 **v1's "one undoable state change" is deleted.** There is no undo anywhere in this application, and
 the autosave persists the destruction before the user can decline to save.
 
-**Confirmation predicate: confirm whenever the action deletes explicit marks that the inverse action
-would not recreate.** `SetAllFocus` destroys in **both** directions, and the casually-pressed one is
-`Show everything` — *"let me see everything for a second"* — which is the exact scenario the finding
-was raised on and the one a reader would not classify as "the destructive direction". With only root
-marks present, `Show everything` → `Dim everything` restores the state exactly, so no confirmation is
-warranted; with any override present, it is. `Clear all focus` always confirms when it will delete
-anything.
+**Confirmation predicate, stated as the property itself rather than a case analysis:**
+
+```
+confirm  ⟺  inverse(apply(view)).marks ≠ view.marks
+```
+
+Both commands are pure and O(marks), so running the pair to decide costs nothing and needs no reasoning
+about roots or overrides. `SetAllFocus` destroys in **both** directions, and the casually-pressed one is
+`Show everything` — *"let me see everything for a second"* — the exact scenario this was raised on, and
+the one no reader would classify as "the destructive direction". `Clear all focus` obeys the same test.
+
+Two earlier formulations were wrong and the corpus could not have shown it. "Confirm when the action
+deletes marks the inverse would not recreate" misses the two-root case, where the damage is done by
+*adding* a mark: roots `r1`, `r2`, `marks = {r1: out-of-focus}`, no overrides, label `Dim everything`
+(not *every* root is marked) — pressing it gives `{r1: out, r2: out}` and the inverse gives `{}`, so a
+deliberate "half the map dimmed" is unrecoverable while `r1`'s mark was deleted and faithfully
+recreated. And "with only root marks present, no confirmation is warranted" is false for the same
+reason. **§6 states that the committed corpus has exactly one root, so a test written against the corpus
+is green forever** — this is the class of defect a code gate cannot find, which is why §11's test uses a
+**two-root fixture** rather than the corpus.
+
+The reversibility intent is preserved exactly where it was right: single root with only root marks →
+the round trip is equal → no confirmation. A confirmation on a genuinely reversible act trains people
+to click through confirmations, which costs more than it buys.
 
 `VIEW_COMMANDS` becomes `Record<ViewCommand['type'], true>` with a test asserting every
 `ViewCommand['type']` routes to `applyViewCommand`. Today it is an untyped `Set<string>` with no
@@ -802,6 +848,10 @@ unconditionally and reads it never, nothing in provenance or evidence can see fo
   escape.
 - **A transparency keystroke re-runs layout and projection** (p50 3.82 ms) for a paint constant.
   Restructuring belongs with #19.
+- **A document written at 1.2 stays at 1.2 even after every mark is cleared**, so a 1.1 reader keeps
+  getting `unknown-minor` for a document carrying no focus information. `raiseFormatVersion` never
+  lowers, and it must not: lowering would suppress `unknown-minor` for any other 1.2 extension the raw
+  envelope carries.
 - **`focus.transparency` is repaired on load at known minors**, unlike inert marks.
 - **The autosave has no version locus**, and two hostile shapes (`1e400`, `__proto__`) bypass §5.6's
   per-entry degradation because `scanJson` runs first and discards the whole cache.
