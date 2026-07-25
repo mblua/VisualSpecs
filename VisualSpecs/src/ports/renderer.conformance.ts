@@ -487,8 +487,12 @@ export async function runConformance(opts: ConformanceOptions): Promise<Conforma
       r.on((e) => events.push(e));
       const input = makeInput(host, r);
 
+      // A STATIONARY right press/release. The event is derived from the pointer
+      // gesture, not from the browser's `contextmenu` — which fires on the press,
+      // when a click and a pan are still the same gesture.
       const onNode = at(input, { x: 380, y: 250 });
       assert(input.contextMenu(onNode.x, onNode.y), 'the canvas did not suppress its context menu');
+      input.rightDrag(onNode.x, onNode.y, onNode.x, onNode.y);
       await tick();
       const menu = events.filter((e) => e.type === 'node:contextmenu');
       assert(menu.length === 1, `expected one node:contextmenu, got ${menu.length}`);
@@ -516,10 +520,26 @@ export async function runConformance(opts: ConformanceOptions): Promise<Conforma
         input.contextMenu(onBackground.x, onBackground.y),
         'the canvas did not suppress its context menu on the backdrop',
       );
+      input.rightDrag(onBackground.x, onBackground.y, onBackground.x, onBackground.y);
       await tick();
       assert(
         events.every((e) => e.type !== 'node:contextmenu'),
         'a right-click on empty canvas emitted node:contextmenu',
+      );
+
+      // A right DRAG pans and must open nothing: it is a camera gesture, and the
+      // browser fires `contextmenu` at its start.
+      events.length = 0;
+      input.contextMenu(onNode.x, onNode.y);
+      input.rightDrag(onNode.x, onNode.y, onNode.x + 60, onNode.y + 25);
+      await tick();
+      assert(
+        events.every((e) => e.type !== 'node:contextmenu'),
+        'a right DRAG emitted node:contextmenu',
+      );
+      assert(
+        events.some((e) => e.type === 'viewport:change'),
+        'a right drag stopped panning',
       );
       r.destroy();
     });

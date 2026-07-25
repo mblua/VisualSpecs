@@ -138,25 +138,13 @@ export class Canvas2DRenderer implements GraphRenderer {
     on('pointerup', (e) => this.onPointerUp(e));
     on('pointercancel', () => this.onPointerCancel());
     on('wheel', (e) => this.onWheel(e), { passive: false });
-    on('contextmenu', (e) => {
-      // The native menu is suppressed either way: this canvas has its own gestures,
-      // and a right-drag pans.
-      e.preventDefault();
-      const mouse = e as MouseEvent;
-      if (typeof mouse.clientX !== 'number') return;
-      // A right-drag that is already panning is a camera gesture, not a request for a
-      // menu. `hitNode` filters `hidden` and NEVER opacity, so an out-of-focus node is
-      // still a target — which is exactly what makes this the escape hatch for a node
-      // the sidebar will not list.
-      if (this.pointer?.dragging === true) return;
-      const node = this.hitNode(this.toWorld(mouse));
-      if (node === null) return; // empty canvas, or an edge: neither has a menu
-      this.emit({
-        type: 'node:contextmenu',
-        id: node.id,
-        client: { x: mouse.clientX, y: mouse.clientY },
-      });
-    });
+    // The native menu is suppressed; `node:contextmenu` is NOT emitted from here.
+    // Chrome fires `contextmenu` on the right-button PRESS, before anyone can know
+    // whether the gesture is a click or a pan — so emitting here would select a node
+    // and open a menu at the start of every right-drag. It is derived from the pointer
+    // gesture in `onPointerUp` instead, exactly as dblclick is, and for the same
+    // reason: a synthetic test and a real mouse then behave identically.
+    on('contextmenu', (e) => e.preventDefault());
     // Native dblclick is suppressed: this adapter derives it from pointer events,
     // so behaviour is identical under synthetic events in a test.
     on('dblclick', (e) => e.preventDefault());
@@ -421,11 +409,29 @@ export class Canvas2DRenderer implements GraphRenderer {
       return;
     }
 
-    // A stationary right click is neither a selection nor a background click. Its
-    // only meaning is "the user entered canvas-pan mode"; the context menu is also
-    // suppressed by the listener installed in mount().
+    // A stationary right click is neither a selection nor a background click, and a
+    // right DRAG is only "the user entered canvas-pan mode" — the drag branch above
+    // has already returned for that one, which is what keeps a pan from selecting
+    // anything.
+    //
+    // What a stationary right click on a node now means is "open the focus menu"
+    // (#17 §8.3.1). Derived here rather than from the `contextmenu` event because
+    // that one fires on the PRESS, when a click and a pan are still the same gesture.
+    // `hitNode` filters `hidden` and never opacity, so an out-of-focus node is still a
+    // target — which is exactly what makes this the escape hatch for the 98.7% of
+    // entities the sidebar will not list on an empty query.
     if (p.panOnly) {
       this.lastClick = null;
+      const node = this.hitNode(p.startWorld);
+      // Empty canvas, or a line: neither has a menu. An edge has no focus state of
+      // its own — it derives one from its endpoints — so there would be nothing to offer.
+      if (node !== null) {
+        this.emit({
+          type: 'node:contextmenu',
+          id: node.id,
+          client: { x: e.clientX, y: e.clientY },
+        });
+      }
       return;
     }
 
