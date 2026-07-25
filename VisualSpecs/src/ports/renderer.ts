@@ -42,10 +42,28 @@ export interface RenderNode {
   /** containers render behind their children */
   z: number;
   selected: boolean;
-  dimmed: boolean;
+  /**
+   * How strongly this element is attenuated. `1` is full strength; the port never
+   * sees `0` (`assertSceneWellFormed`).
+   *
+   * REQUIRED, and one number rather than a flag plus a level. Two fields that both
+   * mean "how faded" have an undefined interaction — `{dimmed: true, alpha: 0.9}`
+   * has no answer in this contract, so each adapter would invent one — and an enum
+   * of REASONS would force the adapter to hold the policy table, i.e. to learn what
+   * search and focus are. The port is handed the resolved number; WHY something is
+   * faded is the scene's business, and the strengths live in `app/scene.ts`.
+   */
+  opacity: number;
   hidden: boolean;
   style: { fill: string; stroke: string; text: string; shape: NodeShape };
   badge?: string;
+  /**
+   * A short presentational glyph, chosen by the scene, drawn beside the badge.
+   * Exactly the `badge` bargain: the port renders it without knowing what it means.
+   * A field named for its meaning — `subtreeHasOutOfFocus` and friends — would put
+   * an application concept into the port, which is the thing this file does not do.
+   */
+  marker?: string;
   /** The user has "fit to content" this container (Issue #13). Purely presentational:
    *  the fit glyph is drawn filled when true, outline when false/absent. Absent → not
    *  fitted. Only meaningful on an expanded container. */
@@ -61,7 +79,9 @@ export interface RenderEdge {
   /** e.g. "×34" */
   label?: string;
   selected: boolean;
-  dimmed: boolean;
+  /** See `RenderNode.opacity`. An aggregate's value is not a bit: a line standing for
+   *  many relations can be partly attenuated (§4.3 of the focus RFC). */
+  opacity: number;
   hidden: boolean;
   style: { color: string; width: number; dash: readonly number[] | null; arrow: ArrowShape };
 }
@@ -76,6 +96,18 @@ export type RendererEvent =
   | { type: 'node:dblclick'; id: string }
   | { type: 'node:dragend'; id: string; position: { x: number; y: number } }
   | { type: 'edge:click'; id: string }
+  // A right-click that landed on a node (Issue #17 §8.3.1). It exists because a
+  // `file` has no sidebar row while the search box is empty — 777 of 787 entities on
+  // the real corpus — so for most of the graph the canvas is the ONLY surface a
+  // person can act on. It is its own event rather than a flag on `node:click` for the
+  // same reason `container:fit` is: a right-click is not a selection gesture, and
+  // folding it in would make every menu open also mean "and toggle whatever a click
+  // would have toggled".
+  //
+  // `client` is the pointer in CLIENT coordinates, because a menu is anchored to the
+  // pointer and not to the world. Still only numbers, and the port already states the
+  // screen↔world relation at the top of this file, so nothing leaks.
+  | { type: 'node:contextmenu'; id: string; client: { x: number; y: number } }
   | { type: 'background:click' }
   // The per-container "fit to content" control on an expanded header (Issue #13).
   // It is its OWN event, not a node:click: the control is the first interactive
@@ -327,6 +359,7 @@ export function assertSceneWellFormed(scene: RenderScene): void {
     if (!Number.isFinite(n.size.w) || !Number.isFinite(n.size.h) || n.size.w < 0 || n.size.h < 0) {
       throw new MalformedSceneError(`node ${n.id} has an invalid size`);
     }
+    assertOpacity(n.opacity, `node ${n.id}`);
   }
   const edgeIds = new Set<string>();
   for (const e of scene.edges) {
@@ -341,5 +374,20 @@ export function assertSceneWellFormed(scene: RenderScene): void {
     if (!ids.has(e.targetId)) {
       throw new MalformedSceneError(`edge ${e.id} names a target node that is not in the scene`);
     }
+    assertOpacity(e.opacity, `edge ${e.id}`);
+  }
+}
+
+/**
+ * I-F6 at the port boundary, rather than as prose in a plan.
+ *
+ * `0` is excluded on purpose: an element the port is handed is an element the user
+ * can still see, select and inspect. Attenuating something to nothing while it stays
+ * in the hit-test produces a target you can click and cannot find — which is worse
+ * than hiding it, and `hidden` is how a scene says "do not draw this".
+ */
+function assertOpacity(opacity: number, where: string): void {
+  if (!Number.isFinite(opacity) || opacity <= 0 || opacity > 1) {
+    throw new MalformedSceneError(`${where} has an opacity outside (0, 1]: ${String(opacity)}`);
   }
 }

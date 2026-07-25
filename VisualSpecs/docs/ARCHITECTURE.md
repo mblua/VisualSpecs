@@ -430,7 +430,7 @@ Two distinct operations, because they have opposite obligations:
 | Purpose | Open a document. | Re-extract on a newer commit and **keep my layout**. |
 | Discards | **Nothing.** | Positions/expansion for ids that no longer exist. |
 | Stale `view.positions` referencing unknown nodes | Kept in `raw`, warned, not rendered — so load→export stays lossless. | Dropped, deliberately. |
-| Returns | `LoadedDoc` + warnings. | `LoadedDoc` + a **loss report**: `{ droppedPositions, droppedExpanded, newNodes, reparented }`. |
+| Returns | `LoadedDoc` + warnings. | `LoadedDoc` + a **loss report**: `{ droppedPositions, droppedExpanded, droppedFitted, droppedFocus, newNodes, reparented }`. |
 
 The "re-extract and keep your layout" capability lives entirely in `refresh`, where the loss is explicit and shown to the user. `import` never quietly throws data away.
 

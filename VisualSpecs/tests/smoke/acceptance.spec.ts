@@ -158,7 +158,11 @@ test('the map opens on the real AgentsCommander dataset, and the canvas is not b
 
   expect(await inkCoverage(page), 'the canvas is blank').toBeGreaterThan(0.01);
 
-  await expect(page.locator('.counts-grid')).toContainText('744');
+  // The COMMITTED corpus, `data/agentscommander.json` at `e94f003`. These numbers went
+  // stale when that refresh landed after this file was last touched, and the gate has
+  // been red on them ever since — the assertion is unchanged in strictness, only in
+  // which dataset it is true of.
+  await expect(page.locator('.counts-grid')).toContainText('787');
   await expect(page.locator('.node-list')).toContainText('AgentsCommander');
 
   // A quiet map is not a trustworthy map.
@@ -360,7 +364,7 @@ test('clicking the aggregated command edge lists every relation behind it, with 
   const edge = scene.edges.find((e) => e.kind === 'tauri-command' && !e.hidden);
   expect(edge, 'no aggregated tauri-command edge is drawn').toBeDefined();
   if (edge === undefined) throw new Error('unreachable');
-  expect(edge.count).toBe(133);
+  expect(edge.count).toBe(136);
 
   const route = routeEdges(scene as unknown as RenderScene).get(edge.id);
   expect(route).toBeDefined();
@@ -370,7 +374,7 @@ test('clicking the aggregated command edge lists every relation behind it, with 
 
   // THIS is where the product delivers its promise.
   await expect(page.locator('.detail .chip')).toContainText('tauri-command');
-  await expect(page.locator('.detail')).toContainText('133 logical relations behind this line');
+  await expect(page.locator('.detail')).toContainText('136 logical relations behind this line');
 
   const first = page.locator('.logical').first();
   await expect(first.locator('.confidence')).toContainText('resolved');
@@ -386,7 +390,7 @@ test('clicking the aggregated command edge lists every relation behind it, with 
   // …and an aggregated relation is ANNOUNCED. The thing this product exists to say
   // out loud was, for one release, the one thing it would not say.
   await expect(page.locator('.status')).toContainText('Selected relation tauri-command');
-  await expect(page.locator('.status')).toContainText('133 logical relations');
+  await expect(page.locator('.status')).toContainText('136 logical relations');
 
   await shot(page, testInfo, 'edge-detail');
 });

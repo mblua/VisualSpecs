@@ -5,6 +5,8 @@ import type {
   Confidence,
   Coverage,
   Evidence,
+  FocusMarkToken,
+  VisualSpecsFocus,
   VisualSpecsDoc,
   VisualSpecsEdge,
   VisualSpecsNode,
@@ -14,16 +16,17 @@ import type {
   Unresolved,
   Warning,
 } from './types.ts';
-import { DEFAULT_LIMITS, type Limits } from './limits.ts';
+import { assertLimits, DEFAULT_LIMITS, type Limits } from './limits.ts';
 import { IncompatibleVersionError, IntegrityError, SchemaError } from './errors.ts';
 import { isJsonObject, scanJson, type ScanResult } from './json.ts';
 import { checkRelativePath, checkSourceRoot, describePathProblem } from './paths.ts';
 
 export const SUPPORTED_MAJOR = 1;
 // 1.1 adds `view.fitted` (Issue #13): additive and optional, read by this build.
-// Fresh extracts still emit 1.0; a doc becomes 1.1 only when it carries a fitted
-// container (see export.ts `raiseFormatVersionForFitted`).
-export const SUPPORTED_MINOR = 1;
+// 1.2 adds `view.focus` (Issue #17): likewise.
+// Fresh extracts still emit 1.0; a doc becomes 1.1 or 1.2 only when it carries the
+// corresponding state (see export.ts `raiseFormatVersion`).
+export const SUPPORTED_MINOR = 2;
 export const SUPPORTED_VERSION = `${SUPPORTED_MAJOR}.${SUPPORTED_MINOR}`;
 
 /** Optional capabilities this build can honour. v1 declares none, so ANY entry in
@@ -46,6 +49,9 @@ export function validate(
   limits: Limits = DEFAULT_LIMITS,
   scan?: ScanResult,
 ): ValidationResult {
+  // A misconfigured band is a caller bug and must not reach the renderer as an opacity of
+  // 0. Checked here because `validate` is where injected `Limits` enter the contract.
+  assertLimits(limits);
   const s = scan ?? scanJson(raw, limits);
   const warnings: Warning[] = [];
   const problems: string[] = [];
@@ -148,7 +154,12 @@ export function validate(
 
   const coverage = validateCoverage(raw['coverage'], problems);
   const unresolved = validateUnresolved(raw['unresolved'], limits, problems);
-  const view = validateView(raw['view'], limits, problems);
+  // The declared minor is threaded in because §5.4's repair rules are CONDITIONAL on
+  // it: at or below what this build knows, an unrecognised value is a problem; above
+  // it, the same value is a warning and is preserved verbatim on export. Without the
+  // condition a 1.3 document would fail to open while `validate` was simultaneously
+  // telling the user "unknown fields are preserved verbatim on export".
+  const view = validateView(raw['view'], limits, problems, parsedVersion.minor, warnings);
   const source = validateSource(raw['source'], problems);
   const generator = validateGenerator(raw['generator'], problems);
 
@@ -506,6 +517,8 @@ function validateView(
   value: JsonValue | undefined,
   limits: Limits,
   problems: string[],
+  declaredMinor: number,
+  warnings: Warning[],
 ): VisualSpecsView | undefined {
   if (value === undefined) return undefined;
   if (!isJsonObject(value)) {
@@ -563,6 +576,89 @@ function validateView(
   if (fitted !== undefined) {
     if (!isStringArray(fitted)) problems.push('view.fitted is not an array of node ids');
     else view.fitted = fitted;
+  }
+
+  const focus = value['focus'];
+  if (focus !== undefined) {
+    if (!isJsonObject(focus)) {
+      problems.push('view.focus is not an object');
+    } else {
+      const out: VisualSpecsFocus = {};
+
+      // `transparency` is CLAMPED on load rather than rejected (see load.ts), so an
+      // out-of-band value is not a problem here. Only a non-integer is, and only at a
+      // minor this build knows: above that, a widened band in a newer minor is not
+      // this build's business to reject.
+      const transparency = focus['transparency'];
+      if (transparency !== undefined) {
+        if (typeof transparency !== 'number' || !Number.isInteger(transparency)) {
+          problems.push('view.focus.transparency is not an integer');
+        } else {
+          out.transparency = transparency;
+        }
+      }
+
+      const marks = focus['marks'];
+      if (marks !== undefined) {
+        if (!isJsonObject(marks)) {
+          problems.push('view.focus.marks is not an object');
+        } else {
+          const ids = Object.keys(marks);
+          if (ids.length > limits.maxFocusMarks) {
+            problems.push(
+              `view.focus.marks has ${ids.length} entries, over the ${limits.maxFocusMarks} cap`,
+            );
+          } else {
+            const accepted: Record<string, FocusMarkToken> = Object.create(null) as Record<
+              string,
+              FocusMarkToken
+            >;
+            let unknownTokens = 0;
+            for (const id of ids) {
+              // `scanJson` bounds string VALUES, never object KEYS, so without this an
+              // arbitrarily long id parses cleanly and is then rendered as sidebar row
+              // text for an inert mark. Not an injection risk — `el()` reaches the DOM
+              // only through `createTextNode` — but a layout hazard on a new surface.
+              if (id.length > limits.maxFocusMarkKeyLength) {
+                problems.push(
+                  `view.focus.marks has a key longer than ${limits.maxFocusMarkKeyLength} characters`,
+                );
+                continue;
+              }
+              const mark = marks[id];
+              if (mark === 'out-of-focus' || mark === 'in-focus') {
+                accepted[id] = mark;
+                continue;
+              }
+              if (declaredMinor > SUPPORTED_MINOR) {
+                // A newer minor may extend the value domain of this known key. The
+                // additive-minor contract has to hold on the one axis this shape
+                // extends, or the object map costs more than it was argued to: the
+                // entry is ignored for resolution and preserved verbatim on export
+                // through the raw envelope (see export.ts `mergeView`).
+                unknownTokens += 1;
+                continue;
+              }
+              problems.push(
+                `view.focus.marks["${id}"] must be "out-of-focus" or "in-focus"`,
+              );
+            }
+            if (unknownTokens > 0) {
+              warnings.push({
+                code: 'unknown-focus-mark',
+                message:
+                  `${unknownTokens} focus mark(s) use a value this build does not know. ` +
+                  `They are ignored when deciding what is dimmed, and preserved unchanged on export.`,
+                count: unknownTokens,
+              });
+            }
+            out.marks = accepted;
+          }
+        }
+      }
+
+      view.focus = out;
+    }
   }
 
   const viewport = value['viewport'];

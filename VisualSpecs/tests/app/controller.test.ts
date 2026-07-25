@@ -6,6 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { FakeRenderer } from '../../src/adapters/fake/FakeRenderer.ts';
 import { Controller } from '../../src/app/controller.ts';
+import { SEARCH_NODE_OPACITY } from '../../src/app/scene.ts';
 import { stateFromLoaded } from '../../src/app/state.ts';
 import { importDoc } from '../../src/contract/load.ts';
 import { sampleDoc } from '../support/doc.ts';
@@ -79,12 +80,15 @@ describe('the loop', () => {
 
     // ExpandTo opened every ancestor: repo → pkg-a → dir-a.
     expect(renderer.nodeIds()).toContain('file-a2');
-    expect(renderer.node('file-a2')?.dimmed).toBe(false);
+    // These followed the semantics rather than the field name when `dimmed: boolean`
+    // became `opacity: number` (#17): the strength search dims at is now app policy
+    // in `app/scene.ts`, so the assertion names the constant instead of a literal.
+    expect(renderer.node('file-a2')?.opacity).toBe(1);
     // A visible node that does not match is dimmed, not hidden.
-    expect(renderer.node('pkg-b')?.dimmed).toBe(true);
+    expect(renderer.node('pkg-b')?.opacity).toBe(SEARCH_NODE_OPACITY);
     expect(renderer.node('pkg-b')?.hidden).toBe(false);
     // A sibling that does not match is dimmed too.
-    expect(renderer.node('file-a1')?.dimmed).toBe(true);
+    expect(renderer.node('file-a1')?.opacity).toBe(SEARCH_NODE_OPACITY);
   });
 
   it('a filter masks the scene without re-projecting it', () => {
@@ -327,7 +331,14 @@ describe('dispatch atomicity under a throwing install (resilience A2-P3 hardenin
       controller.dispatch({
         type: 'Refresh',
         loaded: { ...loaded, model: poisonedModel as never },
-        loss: { droppedPositions: [], droppedExpanded: [], droppedFitted: [], newNodes: [], reparented: [] },
+        loss: {
+          droppedPositions: [],
+          droppedExpanded: [],
+          droppedFitted: [],
+          droppedFocus: [],
+          newNodes: [],
+          reparented: [],
+        },
       }),
     ).toThrow('poisoned model');
 

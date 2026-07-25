@@ -43,7 +43,7 @@ export function renderDetail(
   if (selection.edgeId !== null) {
     const visible = derived.graph.visibleEdgeById.get(selection.edgeId as never);
     if (visible !== undefined) {
-      host.appendChild(edgeDetail(state, visible, cb));
+      host.appendChild(edgeDetail(state, derived, visible, cb));
       return;
     }
     const bucket = derived.graph.internalBucketById.get(selection.edgeId as never);
@@ -101,6 +101,14 @@ function nodeDetail(
     ]),
   );
 
+  // Focus (Issue #17). This is the affordance that works for an entity with NO
+  // sidebar row: the list drops `file` and `directory` on an empty query, which is
+  // 777 of 787 entities on the committed corpus, and caps at 400 on a broad search.
+  // It is also the only place a canvas glyph can be explained, since there are no
+  // tooltips out there.
+  const focusRow = focusSection(state, derived, outlineId, entity, buckets);
+  if (focusRow !== null) sections.push(focusRow);
+
   // Fit to content — the accessible, keyboard-and-screen-reader route to the same
   // command the header glyph fires (§9.4 / FIT-8). Only meaningful on an EXPANDED
   // container; the command itself re-guards on childrenShown.
@@ -150,6 +158,90 @@ function nodeDetail(
   return el('div', { class: 'detail' }, sections);
 }
 
+/**
+ * What focus is doing to this entity, and WHY — own mark, or inherited from whom.
+ *
+ * Returns `null` when nothing is marked anywhere, so a document that has never used
+ * the feature shows no new section at all.
+ *
+ * The folded-away line exists because the canvas is silent about it: 89.6% of this
+ * corpus's relations live inside internal buckets in the default view, and buckets
+ * carry no pixel. "Focus fades every relation touching an entity" is therefore
+ * quietly false for the overwhelming majority of relations until the user expands,
+ * and this is the one number that says so.
+ */
+function focusSection(
+  state: AppState,
+  derived: Derived,
+  outlineId: string,
+  entity: string,
+  buckets: readonly InternalBucket[],
+): HTMLElement | null {
+  const resolved = derived.scene.focus;
+  if (resolved === null) return null;
+
+  const effective = resolved.effective.get(outlineId) ?? 'in';
+  const mark = state.view.focus.marks.get(entity);
+  const pairs: (readonly [string, string])[] = [];
+
+  if (mark !== undefined) {
+    pairs.push([
+      'Focus',
+      mark === 'out-of-focus'
+        ? 'Out of focus — you marked this entity'
+        : 'In focus — you marked this entity, overriding an out-of-focus ancestor',
+    ]);
+  } else if (effective === 'out') {
+    const ancestor = nearestMarked(state, entity);
+    const label = ancestor === null ? null : state.model.nodeById.get(ancestor)?.label ?? ancestor;
+    pairs.push(['Focus', label === null ? 'Out of focus — inherited' : `Out of focus — inherited from ${label}`]);
+  } else {
+    pairs.push(['Focus', 'In focus']);
+  }
+
+  if (resolved.subtreeDiffers.has(outlineId)) {
+    pairs.push([
+      'Inside this box',
+      'Something folded in here is in a different focus state — that is what the ▣ marks',
+    ]);
+  }
+
+  if (buckets.length > 0) {
+    let out = 0;
+    let total = 0;
+    for (const bucket of buckets) {
+      for (const id of bucket.sourceEdgeIds) {
+        const edge = state.model.edgeById.get(id);
+        if (edge === undefined) continue;
+        total += 1;
+        if (
+          resolved.effective.get(edge.sourceId) === 'out' ||
+          resolved.effective.get(edge.targetId) === 'out'
+        ) {
+          out += 1;
+        }
+      }
+    }
+    if (total > 0) {
+      pairs.push([
+        'Folded-away relations out of focus',
+        `${String(out)} of ${String(total)} — no line is drawn for these, so the map cannot show it`,
+      ]);
+    }
+  }
+
+  return section('Focus', kv(pairs));
+}
+
+function nearestMarked(state: AppState, entity: string): string | null {
+  let current = state.model.nodeById.get(entity)?.parentId ?? null;
+  while (current !== null) {
+    if (state.view.focus.marks.has(current)) return current;
+    current = state.model.nodeById.get(current)?.parentId ?? null;
+  }
+  return null;
+}
+
 function bucketRow(state: AppState, bucket: InternalBucket, cb: DetailCallbacks): HTMLElement {
   const style = edgeStyle(bucket.kind);
   const summary = el(
@@ -178,10 +270,47 @@ function bucketRow(state: AppState, bucket: InternalBucket, cb: DetailCallbacks)
   return el('li', {}, [details]);
 }
 
-function edgeDetail(state: AppState, visible: VisibleEdge, cb: DetailCallbacks): HTMLElement {
+function edgeDetail(
+  state: AppState,
+  derived: Derived,
+  visible: VisibleEdge,
+  cb: DetailCallbacks,
+): HTMLElement {
   const style = edgeStyle(visible.kind);
   const source = state.model.nodeById.get(state.outline.entityOf(visible.sourceId));
   const target = state.model.nodeById.get(state.outline.entityOf(visible.targetId));
+
+  // §4.3 draws a FRACTION on an aggregate, and a half-lit line is otherwise something
+  // the map shows and cannot explain — there is no edge menu, and §8.4.3's
+  // folded-away count answers a different question (the internal buckets under a
+  // selected container). A left click already selects a line and lands here.
+  const resolved = derived.scene.focus;
+  let focusNote: HTMLElement | null = null;
+  if (resolved !== null) {
+    let out = 0;
+    for (const id of visible.sourceEdgeIds) {
+      const edge = state.model.edgeById.get(id);
+      if (edge === undefined) continue;
+      if (
+        resolved.effective.get(edge.sourceId) === 'out' ||
+        resolved.effective.get(edge.targetId) === 'out'
+      ) {
+        out += 1;
+      }
+    }
+    focusNote = section(
+      'Focus',
+      kv([
+        [
+          'Out of focus',
+          `${String(out)} of ${String(visible.count)} relation${visible.count === 1 ? '' : 's'} behind this line`,
+        ],
+      ]),
+      out > 0 && out < visible.count
+        ? 'The line is drawn part-way faded because what it stands for is mixed.'
+        : undefined,
+    );
+  }
 
   return el('div', { class: 'detail' }, [
     el('header', { class: 'detail-head' }, [
@@ -189,6 +318,7 @@ function edgeDetail(state: AppState, visible: VisibleEdge, cb: DetailCallbacks):
       el('h2', {}, [`${source?.label ?? visible.sourceId} → ${target?.label ?? visible.targetId}`]),
     ]),
     el('p', { class: 'muted' }, [style.title]),
+    focusNote,
     section(
       `${visible.count} logical relation${visible.count === 1 ? '' : 's'} behind this line`,
       logicalEdgeList(state, visible.sourceEdgeIds, cb),

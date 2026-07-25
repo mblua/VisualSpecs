@@ -67,7 +67,7 @@ function node(id: string, x: number, y: number, over: Partial<RenderNode> = {}):
     isExpanded: false,
     z: 1,
     selected: false,
-    dimmed: false,
+    opacity: 1,
     hidden: false,
     style: { fill: '#1e293b', stroke: '#475569', text: '#e2e8f0', shape: 'round-rect' },
     ...over,
@@ -82,7 +82,7 @@ function edge(id: string, sourceId: string, targetId: string): RenderEdge {
     targetId,
     count: 1,
     selected: false,
-    dimmed: false,
+    opacity: 1,
     hidden: false,
     style: { color: '#64748b', width: 1.5, dash: null, arrow: 'triangle' },
   };
@@ -283,6 +283,57 @@ export async function runConformance(opts: ConformanceOptions): Promise<Conforma
     r.destroy();
   });
 
+  // --- opacity (Issue #17) --------------------------------------------------
+  // The port carries a resolved number, not a reason. These cases pin the two
+  // things an adapter can get wrong: refusing to draw a partly-attenuated scene,
+  // and accepting one that has been attenuated out of existence.
+
+  await run('a partly-attenuated scene renders, at node, edge and aggregate levels', () => {
+    const host = opts.makeHost();
+    const r = opts.makeRenderer();
+    r.mount(host);
+    r.render({
+      nodes: [
+        node('a', 230, 250, { opacity: 0.22 }),
+        node('b', 380, 250, { opacity: 1 }),
+        // A collapsed container carrying the scene's partial affordance.
+        node('c', 300, 400, { opacity: 0.3, isContainer: true, badge: '12', marker: '◐' }),
+      ],
+      edges: [
+        // The fractional aggregate: neither fully faded nor fully bright.
+        { ...edge('e1', 'a', 'b'), count: 136, label: '×136', opacity: 0.64 },
+        { ...edge('e2', 'b', 'c'), opacity: 1 },
+      ],
+    });
+    r.destroy();
+  });
+
+  await run('opacity outside (0, 1] is a malformed scene', () => {
+    const host = opts.makeHost();
+    const r = opts.makeRenderer();
+    const bad: Array<[string, RenderScene]> = [
+      ['zero', { nodes: [node('x', 0, 0, { opacity: 0 })], edges: [] }],
+      ['above one', { nodes: [node('x', 0, 0, { opacity: 1.5 })], edges: [] }],
+      ['negative', { nodes: [node('x', 0, 0, { opacity: -0.2 })], edges: [] }],
+      ['not a number', { nodes: [node('x', 0, 0, { opacity: Number.NaN })], edges: [] }],
+      [
+        'on an edge',
+        { nodes: [node('x', 0, 0), node('y', 200, 0)], edges: [{ ...edge('e', 'x', 'y'), opacity: 0 }] },
+      ],
+    ];
+    r.mount(host);
+    for (const [why, scene] of bad) {
+      let threw = false;
+      try {
+        r.render(scene);
+      } catch (err) {
+        threw = err instanceof MalformedSceneError;
+      }
+      assert(threw, `an opacity of ${why} must throw MalformedSceneError`);
+    }
+    r.destroy();
+  });
+
   await run('destroy() twice is safe', () => {
     const host = opts.makeHost();
     const r = opts.makeRenderer();
@@ -423,6 +474,73 @@ export async function runConformance(opts: ConformanceOptions): Promise<Conforma
         `right drag moved or selected the node under it: ${JSON.stringify(events)}`,
       );
       assert(input.contextMenu(from.x, from.y), 'the canvas did not suppress its context menu');
+      r.destroy();
+    });
+
+    await run('a right-click on a node emits node:contextmenu; elsewhere it does not', async () => {
+      const host = opts.makeHost();
+      const r = opts.makeRenderer();
+      r.mount(host);
+      r.setViewport({ x: 0, y: 0, zoom: 1 });
+      r.render(SCENE_A);
+      const events: RendererEvent[] = [];
+      r.on((e) => events.push(e));
+      const input = makeInput(host, r);
+
+      // A STATIONARY right press/release. The event is derived from the pointer
+      // gesture, not from the browser's `contextmenu` — which fires on the press,
+      // when a click and a pan are still the same gesture.
+      const onNode = at(input, { x: 380, y: 250 });
+      assert(input.contextMenu(onNode.x, onNode.y), 'the canvas did not suppress its context menu');
+      input.rightDrag(onNode.x, onNode.y, onNode.x, onNode.y);
+      await tick();
+      const menu = events.filter((e) => e.type === 'node:contextmenu');
+      assert(menu.length === 1, `expected one node:contextmenu, got ${menu.length}`);
+      assert(
+        menu[0] !== undefined && menu[0].type === 'node:contextmenu' && menu[0].id === 'b',
+        'node:contextmenu named the wrong node',
+      );
+      assert(
+        menu[0] !== undefined &&
+          menu[0].type === 'node:contextmenu' &&
+          Number.isFinite(menu[0].client.x) &&
+          Number.isFinite(menu[0].client.y),
+        'node:contextmenu carried no usable pointer position',
+      );
+      // A right-click must not double as a selection gesture.
+      assert(
+        events.every((e) => e.type !== 'node:click'),
+        'a right-click also emitted node:click',
+      );
+
+      // Empty canvas has no menu: a background menu is a different feature.
+      events.length = 0;
+      const onBackground = at(input, { x: 300, y: 560 });
+      assert(
+        input.contextMenu(onBackground.x, onBackground.y),
+        'the canvas did not suppress its context menu on the backdrop',
+      );
+      input.rightDrag(onBackground.x, onBackground.y, onBackground.x, onBackground.y);
+      await tick();
+      assert(
+        events.every((e) => e.type !== 'node:contextmenu'),
+        'a right-click on empty canvas emitted node:contextmenu',
+      );
+
+      // A right DRAG pans and must open nothing: it is a camera gesture, and the
+      // browser fires `contextmenu` at its start.
+      events.length = 0;
+      input.contextMenu(onNode.x, onNode.y);
+      input.rightDrag(onNode.x, onNode.y, onNode.x + 60, onNode.y + 25);
+      await tick();
+      assert(
+        events.every((e) => e.type !== 'node:contextmenu'),
+        'a right DRAG emitted node:contextmenu',
+      );
+      assert(
+        events.some((e) => e.type === 'viewport:change'),
+        'a right drag stopped panning',
+      );
       r.destroy();
     });
 

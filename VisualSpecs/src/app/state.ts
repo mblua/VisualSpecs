@@ -50,18 +50,36 @@ export type AppCommand =
   | { type: 'Import'; loaded: LoadedDoc }
   | { type: 'Refresh'; loaded: LoadedDoc; loss: LossReport };
 
-const VIEW_COMMANDS = new Set<string>([
-  'Expand',
-  'Collapse',
-  'ToggleExpand',
-  'ExpandAll',
-  'CollapseAll',
-  'ExpandTo',
-  'MoveNode',
-  'FitContainer',
-  'ResetLayout',
-  'SetViewport',
-]);
+/**
+ * Every `ViewCommand` type, routed to `applyViewCommand`.
+ *
+ * A `Record<ViewCommand['type'], true>` and NOT a `Set<string>`: as a set this was a
+ * hand-maintained duplicate of the union with no exhaustiveness check and no test, so
+ * adding a command and forgetting the set compiled cleanly and made `apply()` fall
+ * through to `default: return state` — the command silently swallowed, `tsc` happy.
+ * Both red teams found that independently. As a Record, forgetting one is a compile
+ * error, and adding a stale key is too.
+ */
+const VIEW_COMMANDS: Record<ViewCommand['type'], true> = {
+  Expand: true,
+  Collapse: true,
+  ToggleExpand: true,
+  ExpandAll: true,
+  CollapseAll: true,
+  ExpandTo: true,
+  MoveNode: true,
+  FitContainer: true,
+  ResetLayout: true,
+  SetViewport: true,
+  SetFocus: true,
+  SetFocusInherited: true,
+  SetAllFocus: true,
+  SetFocusTransparency: true,
+};
+
+function isViewCommand(type: string): type is ViewCommand['type'] {
+  return Object.hasOwn(VIEW_COMMANDS, type);
+}
 
 export function stateFromLoaded(loaded: LoadedDoc, loss: LossReport | null = null): AppState {
   const outline = new OwnershipOutline(loaded.model);
@@ -157,7 +175,7 @@ function carrySelection(previous: AppState, next: AppState): AppState['selection
 }
 
 export function apply(state: AppState, cmd: AppCommand, ctx: CommandContext): AppState {
-  if (VIEW_COMMANDS.has(cmd.type)) {
+  if (isViewCommand(cmd.type)) {
     const view = applyViewCommand(ctx, state.view, cmd as ViewCommand);
     return view === state.view ? state : { ...state, view };
   }

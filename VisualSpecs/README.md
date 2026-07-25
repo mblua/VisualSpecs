@@ -319,6 +319,34 @@ reads it and writes it back.
 }
 ```
 
+### `view` is never an observation
+
+**Nothing under `view` is a claim about the code — even when a machine writes it.** An observation in this
+document is precisely a claim carrying `evidence[]` and `confidence`, and nothing under `view` has either,
+which is *why* none of it is one. `view.expanded` is written by the extractor on every run and it is a
+suggested starting view, not a finding.
+
+One key deserves saying twice, because it looks like a fact about the system and is not:
+
+```jsonc
+"view": {
+  "focus": {
+    "transparency": 70,
+    "marks": { "dir:src/shared": "out-of-focus", "file:src/shared/ipc.ts": "in-focus" }
+  }
+}
+```
+
+`focus.marks` records **where a person chose to look**. `"out-of-focus"` does not mean out of scope,
+excluded, unused or dead — it means someone pushed that entity into the visual background and can push it
+back. It is spelled in full for exactly that reason: a bare `"out"` invites the other reading.
+
+**No machine writes `focus`.** If a tool ever wants to suggest attention — "dim the tests", "dim vendor" —
+that belongs under a different, derived, recomputed-every-run key that the UI can name as a suggestion,
+because `focus.marks` means *a person said so* and has to keep meaning only that. Machine-checked in both
+directions: nothing under `view` grows `evidence`/`confidence`/`path`/`line`, and no node, edge or
+`unresolved` entry grows a focus key.
+
 ### The round-trip promise
 
 > A load→save cycle preserves **every known and unknown JSON value reachable in the

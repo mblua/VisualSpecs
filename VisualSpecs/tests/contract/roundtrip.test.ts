@@ -10,6 +10,7 @@
 // `Position`, which is exactly the loss the envelope exists to prevent.
 
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_LIMITS } from '../../src/contract/limits.ts';
 import { exportDoc, ReadOnlyExportError } from '../../src/contract/export.ts';
 import { importDoc } from '../../src/contract/load.ts';
 import { applyViewCommand } from '../../src/domain/commands.ts';
@@ -67,7 +68,7 @@ function reexport(text: string, mutate = true): JsonObject {
   if (mutate) {
     const outline = new OwnershipOutline(loaded.model);
     const geometry = computeGeometry(loaded.model, outline, view.expanded, view.positions);
-    const ctx = { model: loaded.model, outline, geometry };
+    const ctx = { model: loaded.model, outline, geometry, limits: DEFAULT_LIMITS };
     // The exact sequence the dissent asked for: MoveNode, then ToggleExpand.
     view = applyViewCommand(ctx, view, { type: 'MoveNode', id: 'b', position: { x: 111, y: 222 } });
     view = applyViewCommand(ctx, view, { type: 'ToggleExpand', id: 'repo' });

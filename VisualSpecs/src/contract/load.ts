@@ -14,7 +14,28 @@ import { DEFAULT_LIMITS, type Limits } from './limits.ts';
 import { buildModel, type GraphModel } from './model.ts';
 import { deepFreeze, parseJson, scanJson } from './json.ts';
 import { validate } from './validate.ts';
-import { DEFAULT_VIEWPORT, type ViewState } from './view.ts';
+import {
+  DEFAULT_VIEWPORT,
+  FOCUS_TRANSPARENCY_DEFAULT,
+  type FocusMark,
+  type FocusState,
+  type ViewState,
+} from './view.ts';
+
+/**
+ * The transparency band is a `Limits` value and an out-of-band number is REPAIRED,
+ * not rejected. Refusing to open a 787-node map over a cosmetic alpha is
+ * disproportionate, and module constants plus a hard error would have made every
+ * document written by a build with a different band unopenable, on a field that
+ * controls nothing but an alpha, with no minor bump available to signal it.
+ *
+ * Repaired and not preserved, unlike an inert mark: a mark names real human work for
+ * another graph; an out-of-range integer is not work. That asymmetry is deliberate.
+ */
+function clampTransparency(value: number | undefined, limits: Limits): number {
+  if (value === undefined || !Number.isFinite(value)) return FOCUS_TRANSPARENCY_DEFAULT;
+  return Math.min(limits.maxFocusTransparency, Math.max(limits.minFocusTransparency, Math.round(value)));
+}
 
 /**
  * WHICH parts of `view` the document actually provided.
@@ -99,10 +120,26 @@ export function importDoc(text: string, limits: Limits = DEFAULT_LIMITS): Loaded
     });
   }
 
+  // `focus` (Issue #17) mirrors `fitted` in keeping inert entries so import is
+  // lossless — and DELIBERATELY does NOT warn about them, which is where it stops
+  // mirroring `fitted`. A `stale-focus` warning would be the fourth `stale-*` code
+  // the banner allowlist drops on the floor: a Warning no consumer reads is worse
+  // than no warning, because its existence reads as evidence that staleness IS
+  // reported. Inert marks reach the user through the sidebar's mark counter, which
+  // has to enumerate them anyway to render their rows — and where the user can act
+  // on them instead of watching a banner scroll away.
+  const marks = new Map<NodeId, FocusMark>();
+  for (const [id, mark] of Object.entries(doc.view?.focus?.marks ?? {})) marks.set(id, mark);
+  const focus: FocusState = {
+    marks,
+    transparency: clampTransparency(doc.view?.focus?.transparency, limits),
+  };
+
   const view: ViewState = {
     expanded,
     positions,
     fitted,
+    focus,
     viewport: doc.view?.viewport ?? DEFAULT_VIEWPORT,
   };
 
@@ -170,6 +207,19 @@ export function refresh(
     else droppedFitted.push(id);
   }
 
+  // Focus marks are dropped + reported on refresh, like positions/expanded/fitted.
+  // The difference is what the loss MEANS: a dropped position costs a layout that
+  // auto-layout re-derives, while nothing in this system can re-derive an attention
+  // decision. That is why §8.5 requires `droppedFocus` to reach the loss BANNER and
+  // not merely the report object — `droppedFitted` has been in `LossReport` since #13
+  // and printed by nothing, and under follow-file this refresh fires unattended.
+  const droppedFocus: NodeId[] = [];
+  const marks = new Map<NodeId, FocusMark>();
+  for (const [id, mark] of previous.view.focus.marks) {
+    if (model.nodeById.has(id)) marks.set(id, mark);
+    else droppedFocus.push(id);
+  }
+
   const newNodes = model.nodes.filter((n) => !previous.model.nodeById.has(n.id)).map((n) => n.id);
   const reparented = model.nodes
     .filter((n) => {
@@ -185,6 +235,9 @@ export function refresh(
       expanded,
       positions,
       fitted,
+      // `transparency` carries unchanged: it is a preference about how to look, not a
+      // fact about the graph, so a re-extraction has nothing to say about it.
+      focus: { marks, transparency: previous.view.focus.transparency },
       viewport: previous.view.viewport,
     },
     // The view carried across from the previous session is AUTHORITATIVE, even when
@@ -202,6 +255,7 @@ export function refresh(
       droppedPositions: droppedPositions.sort(),
       droppedExpanded: droppedExpanded.sort(),
       droppedFitted: droppedFitted.sort(),
+      droppedFocus: droppedFocus.sort(),
       newNodes: [...newNodes].sort(),
       reparented: [...reparented].sort(),
     },

@@ -12,11 +12,15 @@
 // width — a strip of pixels in which nothing can be read, selected, or believed.
 
 import { VisualSpecsError } from '../contract/errors.ts';
+import { DEFAULT_LIMITS } from '../contract/limits.ts';
 import { ancestryOf } from '../contract/model.ts';
+import type { FocusMark } from '../contract/view.ts';
+import { applyViewCommand } from '../domain/commands.ts';
 import type { Controller, Derived } from '../app/controller.ts';
 import type { ProjectController, ProjectControllerState } from '../app/projectController.ts';
 import type { AppState } from '../app/state.ts';
 import { edgeStyle, nodeStyle } from '../app/registry.ts';
+import type { GraphRenderer } from '../ports/renderer.ts';
 import type { StoredDocRef } from '../ports/projectStore.ts';
 import type { InternalBucketId } from '../projection/types.ts';
 import { clear, button, el } from './dom.ts';
@@ -28,6 +32,10 @@ export interface AppUi {
 
 const WIDE_MIN_WIDTH = 1664;
 const HYBRID_MIN_WIDTH = 1200;
+/** How many rows either list renders before it says "… and N more". Shared by the
+ *  node list and the marks disclosure, so a large mark set is capped the same way and
+ *  `Clear all focus` stays the global escape. */
+const LIST_CAP = 400;
 const ZOOM_STEP = 1.25;
 const PROJECT_ID_COLUMNS_PER_LINE = 24;
 
@@ -173,7 +181,12 @@ export function restoreConfirmationCopy(
 const IS_TEST_BUILD = import.meta.env.DEV || import.meta.env.MODE === 'test';
 const TEST_HOOK = '__visualSpecs';
 
-export function mountUi(root: HTMLElement, controller: Controller, projectController: ProjectController): AppUi {
+export function mountUi(
+  root: HTMLElement,
+  controller: Controller,
+  projectController: ProjectController,
+  renderer?: GraphRenderer,
+): AppUi {
   clear(root);
 
   const canvasHost = el('div', { class: 'canvas-host', id: 'canvas-host' }, []);
@@ -194,6 +207,24 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
   });
   const statusHost = el('div', { class: 'status', role: 'status', 'aria-live': 'polite' }, []);
   const countsHost = el('div', { class: 'counts' }, []);
+  /** Everything about out-of-focus dimming (#17), directly under the counts box. */
+  const focusHost = el('div', { class: 'focus-controls' }, []);
+  /**
+   * The row context menu, created ONCE and parented to `shell` — never to a row.
+   *
+   * Two independent reasons, each alone fatal to an in-row menu: `renderList` runs on
+   * every controller notification and opens with `clear(listHost)`, so `SetFocus`
+   * would destroy the anchor of the menu that dispatched it; and `.node-list` is
+   * `overflow-y: auto`, which CLIPS an absolutely-positioned child exactly where the
+   * last rows are. `popover="auto"` then buys light-dismiss and top-layer rendering
+   * from the platform instead of from a z-index contest with the project overlay.
+   */
+  const rowMenu = el('div', {
+    class: 'row-menu',
+    role: 'menu',
+    popover: 'auto',
+    'aria-label': 'Focus actions',
+  });
 
   const shell = el('div', { class: 'shell' }, []);
   let currentProjectState = projectController.snapshot();
@@ -360,6 +391,7 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
 
   function applyLayout(): void {
     const band = layoutBand();
+    const bandChanged = band !== currentBand;
     currentBand = band;
     const hasProject = currentProjectState.manifestProjectId !== null;
     projectOpen =
@@ -373,6 +405,15 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
           : activeOverlay === 'sidebar';
     detailOpen =
       band === 'narrow' ? activeOverlay === 'detail' : detailPreference === 'open';
+
+    // Close the menu when the layout actually MOVES, and not merely when this runs.
+    // `applyLayout` is called from `renderProjectState`, i.e. on every ProjectController
+    // notification — so an unconditional close here is the same defect as closing on
+    // every controller notification, wearing a different hat: the menu would die once a
+    // second on a followed document. `[` and `]` hide the sidebar without firing
+    // `resize`, and popover light-dismiss is pointer-driven and does not fire on a
+    // keydown, so the real cases still have to be caught — they are, by the predicate.
+    if (bandChanged || !sidebarOpen) closeRowMenu();
 
     shell.classList.toggle('wide', band === 'wide');
     shell.classList.toggle('hybrid', band === 'hybrid');
@@ -424,6 +465,10 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
     sidebar.hidden = !sidebarOpen;
     detailPanel.hidden = !detailOpen;
     positionProjectOverlay();
+    // The off-Explorer focus banner depends on whether the Explorer is open, and the
+    // panel toggles do not go through the controller — so the banners are re-rendered
+    // from the state we already have rather than waiting for the next notification.
+    if (lastRendered !== null) renderBanners(lastRendered.state, lastRendered.derived);
     scheduleResize();
   }
 
@@ -835,6 +880,12 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
   const sidebar = el('aside', { class: 'panel sidebar', id: 'explorer-panel', 'aria-label': 'Explorer' }, [
     el('div', { class: 'field' }, [search]),
     countsHost,
+    // The user placed the toggle "immediately below the counts box" and the
+    // transparency control "in the left rail". Below 1664px the Project rail and the
+    // Explorer are mutually exclusive (`applyLayout`), so a control in the rail could
+    // not be adjusted while looking at the list it dims — and the leftmost panel that
+    // holds the counts box and the node list satisfies both statements at once.
+    focusHost,
     listHost,
     el('h3', { class: 'legend-title' }, ['Legend']),
     legendHost,
@@ -856,6 +907,7 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
   ]);
   const workspace = el('div', { class: 'workspace' }, [projectRail, workspaceMain]);
   shell.appendChild(workspace);
+  shell.appendChild(rowMenu);
   root.appendChild(shell);
 
   // --- behaviour -----------------------------------------------------------
@@ -986,6 +1038,23 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
   };
 
   const onKey = (e: KeyboardEvent): void => {
+    // The menu consumes Escape FIRST. The overlay branch below runs before
+    // `isInteractionEvent`, so in the narrow and hybrid bands Escape would otherwise
+    // close the whole sidebar and take the anchor row with it. The native popover
+    // does not discharge this: light-dismiss closes the popover, and this
+    // document-level listener still fires on the same keystroke.
+    if (e.key === 'Escape' && menuNodeId !== null) {
+      e.preventDefault();
+      closeRowMenu();
+      return;
+    }
+    if (e.key === 'Escape' && pendingConfirm !== null) {
+      e.preventDefault();
+      pendingConfirm = null;
+      refreshFocus();
+      focusToggle.focus({ preventScroll: true });
+      return;
+    }
     if (e.key === 'Escape' && activeOverlay !== null) {
       e.preventDefault();
       const closing = activeOverlay;
@@ -1142,6 +1211,563 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
     );
   }
 
+  // ─── focus: controls, menu and the counter (Issue #17) ─────────────────────
+
+  const FOCUS_MIN = DEFAULT_LIMITS.minFocusTransparency;
+  const FOCUS_MAX = DEFAULT_LIMITS.maxFocusTransparency;
+
+  /** The row the open menu acts on. The menu holds the ID, never the row element:
+   *  `renderList` rebuilds every row on every notification, including the one the
+   *  menu's own command causes. */
+  let menuNodeId: string | null = null;
+  /** Every row currently mounted, by node id — the menu's anchor lookup and the
+   *  focus restore both need it, and neither can hold an element across a rebuild. */
+  const rowsById = new Map<string, HTMLElement>();
+  /** Which ids the node list is actually showing. `renderList` drops `file` and
+   *  `directory` on an empty query and caps at 400, so a mark can be UNREACHABLE
+   *  rather than merely invisible; this is what the counter counts. */
+  let listedIds = new Set<string>();
+  /** The counter's disclosure — unlisted marks, as real rows. */
+  let marksOpen = false;
+  let pendingConfirm: { copy: string; run: () => void } | null = null;
+  let transparencyNote = '';
+  let transparencyFrame: number | null = null;
+  let pendingTransparency: number | null = null;
+
+  const focusToggle = button('Dim everything', () => onToggleAll(), {
+    class: 'focus-toggle',
+    id: 'focus-toggle',
+  });
+  const focusSummary = el('span', { class: 'focus-summary' }, []);
+  const clearAll = button('Clear all focus', () => onClearAll(), { class: 'focus-clear' });
+  const marksDisclosure = button('', () => {
+    marksOpen = !marksOpen;
+    refreshFocus();
+  }, { class: 'focus-disclosure', 'aria-expanded': 'false' });
+  const marksList = el('div', { class: 'focus-marks', role: 'listbox', 'aria-label': 'Marked entities not in the list' }, []);
+  const transparencyRange = el('input', {
+    type: 'range',
+    class: 'focus-range',
+    id: 'focus-transparency',
+    min: FOCUS_MIN,
+    max: FOCUS_MAX,
+    step: 1,
+    'aria-label': 'Out-of-focus transparency, percent',
+  });
+  const transparencyNumber = el('input', {
+    type: 'number',
+    class: 'focus-number',
+    id: 'focus-transparency-value',
+    min: FOCUS_MIN,
+    max: FOCUS_MAX,
+    step: 1,
+    'aria-label': 'Out-of-focus transparency, percent (typed)',
+  });
+  const transparencyNoteHost = el('span', { class: 'focus-note', role: 'status' }, []);
+  const confirmHost = el('div', { class: 'focus-confirm' }, []);
+
+  focusHost.append(
+    focusToggle,
+    el('div', { class: 'focus-marks-row' }, [focusSummary, marksDisclosure, clearAll]),
+    marksList,
+    el('label', { class: 'focus-field', for: 'focus-transparency' }, ['Out-of-focus transparency']),
+    el('div', { class: 'focus-slider' }, [
+      transparencyRange,
+      transparencyNumber,
+      el('span', { class: 'focus-pct' }, ['%']),
+    ]),
+    transparencyNoteHost,
+    confirmHost,
+  );
+
+  transparencyRange.addEventListener('input', () => {
+    commitTransparency(transparencyRange.value, 'range');
+  });
+  transparencyNumber.addEventListener('input', () => {
+    commitTransparency(transparencyNumber.value, 'number');
+  });
+
+  /**
+   * A `range` fires continuously, so dispatches coalesce to one per animation frame.
+   * Measured: `derive()` is p50 3.82 ms at expand-all, which leaves the rest of the
+   * frame for the paint. A transparency keystroke re-running layout and projection
+   * for what is only a paint constant is architecturally wrong and stays within
+   * budget; restructuring belongs with #19.
+   */
+  function commitTransparency(raw: string, from: 'range' | 'number'): void {
+    const value = Number(raw);
+    if (raw.trim() === '' || !Number.isFinite(value) || value < FOCUS_MIN || value > FOCUS_MAX) {
+      // Never write an invalid state: the last valid value stays in force, and the
+      // control says so instead of silently snapping.
+      transparencyNote = `Enter a whole number between ${FOCUS_MIN} and ${FOCUS_MAX}. Keeping ${currentTransparency()}%.`;
+      renderTransparencyNote();
+      return;
+    }
+    transparencyNote = '';
+    renderTransparencyNote();
+    // Mirror the sibling control immediately so the pair never disagrees mid-drag.
+    if (from === 'range') transparencyNumber.value = String(Math.round(value));
+    else transparencyRange.value = String(Math.round(value));
+
+    pendingTransparency = Math.round(value);
+    if (transparencyFrame !== null) return;
+    transparencyFrame = requestAnimationFrame(() => {
+      transparencyFrame = null;
+      const percent = pendingTransparency;
+      pendingTransparency = null;
+      if (destroyed || percent === null) return;
+      controller.dispatch({ type: 'SetFocusTransparency', percent });
+    });
+  }
+
+  function renderTransparencyNote(): void {
+    clear(transparencyNoteHost);
+    if (transparencyNote !== '') transparencyNoteHost.appendChild(el('span', {}, [transparencyNote]));
+  }
+
+  function currentTransparency(): number {
+    return lastRendered?.state.view.focus.transparency ?? DEFAULT_LIMITS.maxFocusTransparency;
+  }
+
+  /** Marks that `SetAllFocus` can actually delete, and the inert ones it preserves. */
+  function markCounts(state: AppState): { clearable: number; inert: number } {
+    let clearable = 0;
+    let inert = 0;
+    for (const id of state.view.focus.marks.keys()) {
+      if (state.model.nodeById.has(id)) clearable += 1;
+      else inert += 1;
+    }
+    return { clearable, inert };
+  }
+
+  /**
+   * Confirm ⟺ `inverse(apply(view)).marks ≠ view.marks`.
+   *
+   * The property itself, run rather than reasoned about. A case analysis of "which
+   * marks would the inverse recreate" is wrong for more than one root, where the
+   * damage is done by ADDING a mark rather than by deleting one; both commands are
+   * pure and O(marks), so running the pair costs nothing and cannot drift from the
+   * command it is predicting.
+   *
+   * `SetAllFocus` destroys in BOTH directions, and the casually-pressed one is
+   * `Show everything` — "let me see everything for a second". There is no undo in
+   * this application, and the autosave persists the loss before anyone can decline it.
+   */
+  function isReversible(state: AppState, mark: FocusMark): boolean {
+    // `limits` only bounds `SetFocusTransparency`, which this pair never touches.
+    const ctx = {
+      model: state.model,
+      outline: state.outline,
+      geometry: controller.derived.geometry,
+      limits: DEFAULT_LIMITS,
+    };
+    const inverse: FocusMark = mark === 'out-of-focus' ? 'in-focus' : 'out-of-focus';
+    const applied = applyViewCommand(ctx, state.view, { type: 'SetAllFocus', mark });
+    const back = applyViewCommand(ctx, applied, { type: 'SetAllFocus', mark: inverse });
+    return sameMarks(back.focus.marks, state.view.focus.marks);
+  }
+
+  function sameMarks(
+    a: ReadonlyMap<string, FocusMark>,
+    b: ReadonlyMap<string, FocusMark>,
+  ): boolean {
+    if (a.size !== b.size) return false;
+    for (const [id, mark] of a) {
+      if (b.get(id) !== mark) return false;
+    }
+    return true;
+  }
+
+  function everyRootOut(state: AppState): boolean {
+    const roots = state.outline.roots();
+    return roots.length > 0 && roots.every((r) => state.view.focus.marks.get(r) === 'out-of-focus');
+  }
+
+  /**
+   * An in-app confirmation, NOT `globalThis.confirm`. Chrome's "prevent this page from
+   * creating additional dialogs" makes that return `false` for the rest of the page's
+   * life; the app's two existing uses are rare project-lifecycle actions, but a focus
+   * toggle is not, so one ticked box would turn `Dim everything` into a permanent
+   * silent no-op. `null` copy means no confirmation is warranted, matching
+   * `discardConfirmationCopy`.
+   */
+  function ask(copy: string | null, run: () => void): void {
+    if (copy === null) {
+      run();
+      return;
+    }
+    pendingConfirm = { copy, run };
+    refreshFocus();
+    const confirmButton = confirmHost.querySelector('.focus-confirm-yes');
+    if (confirmButton instanceof HTMLElement) confirmButton.focus({ preventScroll: true });
+  }
+
+  function onToggleAll(): void {
+    const state = lastRendered?.state;
+    if (state === undefined) return;
+    const showing = everyRootOut(state);
+    const mark: FocusMark = showing ? 'in-focus' : 'out-of-focus';
+    const { clearable } = markCounts(state);
+    const copy = isReversible(state, mark)
+      ? null
+      : `${showing ? 'Show everything' : 'Dim everything'} changes ${clearable} explicit mark(s) ` +
+        `in a way pressing it again will not put back. There is no undo. Continue?`;
+    ask(copy, () => {
+      controller.dispatch({ type: 'SetAllFocus', mark });
+    });
+  }
+
+  function onClearAll(): void {
+    const state = lastRendered?.state;
+    if (state === undefined) return;
+    const { clearable } = markCounts(state);
+    if (clearable === 0) return;
+    ask(
+      `Clear all focus deletes ${clearable} explicit mark(s). There is no undo. Continue?`,
+      () => {
+        controller.dispatch({ type: 'SetAllFocus', mark: 'in-focus' });
+      },
+    );
+  }
+
+  function effectiveFocusOf(derived: Derived, id: string): 'in' | 'out' {
+    return derived.scene.focus?.effective.get(id) ?? 'in';
+  }
+
+  /** The nearest ancestor carrying an explicit mark — what an inherited row inherits
+   *  FROM, which is the half of "inherited" a bare label leaves out. */
+  function markedAncestorOf(state: AppState, id: string): string | null {
+    let current = state.model.nodeById.get(id)?.parentId ?? null;
+    while (current !== null) {
+      if (state.view.focus.marks.has(current)) return current;
+      current = state.model.nodeById.get(current)?.parentId ?? null;
+    }
+    return null;
+  }
+
+  function focusRowTitle(state: AppState, derived: Derived, id: string): string {
+    const effective = effectiveFocusOf(derived, id);
+    const mark = state.view.focus.marks.get(id);
+    if (mark !== undefined) {
+      return mark === 'out-of-focus'
+        ? 'Out of focus — you marked this row.'
+        : 'In focus — you marked this row, overriding an out-of-focus ancestor.';
+    }
+    if (effective === 'out') {
+      const ancestor = markedAncestorOf(state, id);
+      const label = ancestor === null ? null : state.model.nodeById.get(ancestor)?.label ?? ancestor;
+      return label === null
+        ? 'Out of focus — inherited.'
+        : `Out of focus — inherited from ${label}.`;
+    }
+    return 'In focus.';
+  }
+
+  /** Glyph present ⟺ you said something about this row. Two shapes, not two colours,
+   *  for the same reason the port distinguishes a crate by `cut-rect`. */
+  function focusGlyph(mark: FocusMark | undefined): string | null {
+    if (mark === 'out-of-focus') return '◐';
+    if (mark === 'in-focus') return '○';
+    return null;
+  }
+
+  // --- the row menu ---------------------------------------------------------
+
+  function menuItems(state: AppState, derived: Derived, id: string): HTMLButtonElement[] {
+    const effective = effectiveFocusOf(derived, id);
+    const mark = state.view.focus.marks.get(id);
+    // `<button role="menuitem">`, not `<div>`: `isInteractionEvent` whitelists BUTTON
+    // by tag and knows nothing about `menuitem`, so a div would leave the bare-key
+    // shortcuts live under typeahead — and `Reset to inherited` starts with `r`,
+    // which is `ResetLayout`, which wipes a hand-made layout with no undo.
+    const item = (label: string, run: () => void): HTMLButtonElement =>
+      button(label, () => {
+        closeRowMenu();
+        run();
+      }, { role: 'menuitem', class: 'row-menu-item' });
+
+    const items: HTMLButtonElement[] = [
+      effective === 'out'
+        ? item('Bring into focus', () => {
+            controller.dispatch({ type: 'SetFocus', id, requested: 'in-focus' });
+          })
+        : item('Send out of focus', () => {
+            controller.dispatch({ type: 'SetFocus', id, requested: 'out-of-focus' });
+          }),
+    ];
+    if (mark !== undefined) {
+      items.push(
+        item('Reset to inherited', () => {
+          controller.dispatch({ type: 'SetFocusInherited', id });
+        }),
+      );
+    }
+    return items;
+  }
+
+  function openRowMenu(id: string, x: number, y: number): void {
+    const rendered = lastRendered;
+    if (rendered === null) return;
+    closeRowMenu();
+    menuNodeId = id;
+    clear(rowMenu);
+    // Name what this will act on. The canvas draws REPRESENTATIVES, not entities, so
+    // right-clicking a collapsed box marks the container — correct, and not always
+    // what the person is pointing at, especially when they are pointing at it because
+    // the ▣ says something inside it differs.
+    const node = rendered.state.model.nodeById.get(id);
+    const collapsed =
+      rendered.state.outline.childrenOf(id).length > 0 && !rendered.state.view.expanded.has(id);
+    rowMenu.appendChild(
+      el('p', { class: 'row-menu-label' }, [
+        collapsed ? `${node?.label ?? id} and everything inside it` : node?.label ?? id,
+      ]),
+    );
+    const items = menuItems(rendered.state, rendered.derived, id);
+    for (const i of items) rowMenu.appendChild(i);
+    rowMenu.style.left = `${String(Math.round(x))}px`;
+    rowMenu.style.top = `${String(Math.round(y))}px`;
+    rowMenu.showPopover();
+    // Clamp AFTER showing: the size is only known once it is in the top layer.
+    const box = rowMenu.getBoundingClientRect();
+    const maxLeft = Math.max(0, globalThis.innerWidth - box.width - 4);
+    const maxTop = Math.max(0, globalThis.innerHeight - box.height - 4);
+    rowMenu.style.left = `${String(Math.round(Math.min(x, maxLeft)))}px`;
+    rowMenu.style.top = `${String(Math.round(Math.min(y, maxTop)))}px`;
+    // NOT through `scheduleFocus`: it keeps a single rAF slot and cancels whatever is
+    // pending, so a follow tick or a pan would steal the menu's focus back to a row —
+    // once a second under `extract:watch`.
+    items[0]?.focus({ preventScroll: true });
+  }
+
+  function closeRowMenu(): void {
+    if (menuNodeId === null) return;
+    const id = menuNodeId;
+    menuNodeId = null;
+    rowMenu.hidePopover();
+    const row = rowsById.get(id);
+    if (row !== undefined && row.isConnected) row.focus({ preventScroll: true });
+  }
+
+  rowMenu.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Home' && e.key !== 'End') return;
+    const items = [...rowMenu.querySelectorAll('.row-menu-item')].filter(
+      (n): n is HTMLElement => n instanceof HTMLElement,
+    );
+    if (items.length === 0) return;
+    e.preventDefault();
+    const at = items.findIndex((n) => n === document.activeElement);
+    const next =
+      e.key === 'Home'
+        ? 0
+        : e.key === 'End'
+          ? items.length - 1
+          : e.key === 'ArrowDown'
+            ? (at + 1 + items.length) % items.length
+            : (at - 1 + items.length) % items.length;
+    items[next]?.focus({ preventScroll: true });
+  });
+
+  // Light-dismiss closes the popover without telling us, so the id has to be synced
+  // back or the next open would think one is already up.
+  rowMenu.addEventListener('toggle', (e) => {
+    const state = (e as unknown as { newState?: string }).newState;
+    if (state === 'closed') menuNodeId = null;
+  });
+
+  // A scrolling list moves the anchor out from under a fixed menu.
+  listHost.addEventListener('scroll', () => {
+    closeRowMenu();
+  });
+
+  /**
+   * The canvas is the second producer of a node id (§8.3.1), and it needed no new menu
+   * machinery: the menu already holds an id rather than a row, because `renderList`
+   * destroys rows. The constraint that forced that design is what makes this cheap.
+   *
+   * It matters most for the 98.7% of entities the sidebar will not list on an empty
+   * query — a `file` box you can see, right-click and act on, with no search first.
+   */
+  const offRenderer =
+    renderer?.on((event) => {
+      if (event.type !== 'node:contextmenu') return;
+      // Right-clicking MAKES it the selection, as a left click does. Demanding a prior
+      // selection would cost two gestures for nothing.
+      controller.dispatch({ type: 'Select', nodeIds: [event.id], edgeId: null });
+      openRowMenu(event.id, event.client.x, event.client.y);
+    }) ?? null;
+
+  // A right-drag pans, and `contextmenu` fires at the start of it on Windows — so the
+  // menu can open and then the camera moves out from under it. The first move with a
+  // button held is the moment that stops being a click.
+  canvasHost.addEventListener('pointermove', (e) => {
+    if (e.buttons !== 0) closeRowMenu();
+  });
+
+  // --- the shared row, used by the node list AND by the counter's disclosure ---
+
+  /**
+   * One row builder, so an unlisted mark is reachable in exactly the same way as a
+   * listed one — same glyph, same context menu, same `Reset to inherited`. A tooltip
+   * would have made an unreachable mark *visible* and left it unreachable, which is
+   * the easier half of the problem.
+   *
+   * `node === null` is an INERT mark: an id the model does not have. There is no
+   * label, kind or path to render, so the row shows the raw id — and it keeps the
+   * menu, because deleting an inert mark is the one meaningful thing you can do to it.
+   */
+  function buildNodeRow(
+    state: AppState,
+    derived: Derived,
+    id: string,
+    node: { label: string; kind: string; path?: string } | null,
+    inList: boolean,
+  ): HTMLElement {
+    const style = nodeStyle(node?.kind ?? 'file');
+    const selected = state.selection.nodeIds.includes(id);
+    const effective = effectiveFocusOf(derived, id);
+    const mark = state.view.focus.marks.get(id);
+    const glyph = focusGlyph(mark);
+    const visible = inList && derived.graph.visibleNodes.includes(id);
+
+    const row = el(
+      'button',
+      {
+        type: 'button',
+        class:
+          `node-row${selected ? ' selected' : ''}` +
+          `${effective === 'out' ? ' out-of-focus' : ''}${node === null ? ' inert' : ''}`,
+        role: 'option',
+        'aria-selected': selected ? 'true' : 'false',
+        'data-node-id': id,
+        title: node === null ? `${id} — not in this graph` : node.path ?? id,
+      },
+      [
+        el('span', { class: `swatch shape-${style.shape}`, style: `--swatch:${style.stroke}` }, []),
+        el('span', { class: 'node-label' }, [node?.label ?? id]),
+        el('span', { class: 'node-kind' }, [node === null ? 'inert' : node.kind]),
+        glyph === null
+          ? null
+          : el('span', { class: 'node-focus', title: focusRowTitle(state, derived, id) }, [glyph]),
+        inList && !visible
+          ? el('span', { class: 'node-hidden', title: 'Hidden inside a collapsed box' }, ['⊂'])
+          : null,
+      ],
+    );
+
+    if (node !== null) {
+      row.addEventListener('click', () => {
+        // Reveal a hit that is hidden inside collapsed ancestors, then select it.
+        controller.dispatch({ type: 'ExpandTo', id });
+        controller.dispatch({ type: 'Select', nodeIds: [id], edgeId: null });
+        controller.fit([id]);
+      });
+      row.addEventListener('dblclick', () => {
+        controller.dispatch({ type: 'ToggleExpand', id });
+      });
+    }
+    row.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      openRowMenu(id, e.clientX, e.clientY);
+    });
+    row.addEventListener('keydown', (e) => {
+      // The context-menu key, and Shift+F10 for keyboards without one. Reaching an
+      // arbitrary row without tabbing through its predecessors is #18.
+      if (e.key !== 'ContextMenu' && !(e.key === 'F10' && e.shiftKey)) return;
+      e.preventDefault();
+      const box = row.getBoundingClientRect();
+      openRowMenu(id, box.left + 8, box.bottom);
+    });
+
+    rowsById.set(id, row);
+    return row;
+  }
+
+  function refreshFocus(): void {
+    if (lastRendered !== null) renderFocusControls(lastRendered.state, lastRendered.derived);
+  }
+
+  function renderFocusControls(state: AppState, derived: Derived): void {
+    const marks = state.view.focus.marks;
+    const { clearable, inert } = markCounts(state);
+    const showing = everyRootOut(state);
+
+    // The label is the command's own fixpoint, not "is anything still in focus":
+    // the latter reads idempotent on a map that is already dimmed except for one
+    // deliberate exception, and pressing it would delete that exception.
+    focusToggle.textContent = showing ? 'Show everything' : 'Dim everything';
+    focusToggle.title = showing
+      ? 'Bring the whole map back into focus'
+      : 'Push the whole map out of focus';
+
+    const unlisted = [...marks.keys()].filter((id) => !listedIds.has(id));
+    const hasMarks = marks.size > 0;
+    const marksRow = focusSummary.parentElement;
+    if (marksRow !== null) marksRow.hidden = !hasMarks;
+    marksList.hidden = !hasMarks || !marksOpen;
+
+    focusSummary.textContent =
+      inert === 0
+        ? `${String(clearable)} marked`
+        : `${String(clearable)} marked · ${String(inert)} inert`;
+    // `N` counts only what `SetAllFocus` can delete. Counting inert marks too would
+    // make the button read `Clear all focus (5)`, delete 3, then read
+    // `Clear all focus (2)` and do nothing on every further press.
+    clearAll.textContent = `Clear all focus (${String(clearable)})`;
+    clearAll.hidden = clearable === 0;
+
+    marksDisclosure.hidden = unlisted.length === 0;
+    marksDisclosure.textContent = marksOpen
+      ? 'Hide the ones not listed'
+      : `Show ${String(unlisted.length)} not listed here`;
+    marksDisclosure.setAttribute('aria-expanded', marksOpen ? 'true' : 'false');
+
+    clear(marksList);
+    if (hasMarks && marksOpen) {
+      const shown = unlisted.slice(0, LIST_CAP);
+      for (const id of shown) {
+        const node = state.model.nodeById.get(id) ?? null;
+        marksList.appendChild(buildNodeRow(state, derived, id, node, false));
+      }
+      if (unlisted.length > shown.length) {
+        marksList.appendChild(
+          el('p', { class: 'muted pad' }, [
+            `… and ${String(unlisted.length - shown.length)} more. Clear all focus is the global escape.`,
+          ]),
+        );
+      }
+    }
+
+    // Do not fight a control the user is holding: a `range` fires while dragged, and
+    // rewriting its value mid-drag makes it stutter against its own dispatches.
+    const percent = String(state.view.focus.transparency);
+    if (document.activeElement !== transparencyRange) transparencyRange.value = percent;
+    if (document.activeElement !== transparencyNumber) transparencyNumber.value = percent;
+
+    clear(confirmHost);
+    if (pendingConfirm !== null) {
+      const { copy, run } = pendingConfirm;
+      confirmHost.appendChild(
+        el('div', { class: 'focus-confirm-box', role: 'alertdialog', 'aria-label': 'Confirm' }, [
+          el('p', {}, [copy]),
+          el('div', { class: 'focus-confirm-actions' }, [
+            button('Continue', () => {
+              pendingConfirm = null;
+              run();
+              refreshFocus();
+              focusToggle.focus({ preventScroll: true });
+            }, { class: 'focus-confirm-yes' }),
+            button('Cancel', () => {
+              pendingConfirm = null;
+              refreshFocus();
+              focusToggle.focus({ preventScroll: true });
+            }, { class: 'focus-confirm-no' }),
+          ]),
+        ]),
+      );
+    }
+  }
+
   const cb = {
     onSelectNode: (id: string): void => {
       controller.dispatch({ type: 'Select', nodeIds: [id], edgeId: null });
@@ -1160,9 +1786,14 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
   let lastRendered: { state: AppState; derived: Derived } | null = null;
   const unsubscribe = controller.subscribe((state, derived) => {
     lastRendered = { state, derived };
+    // The menu survives notifications by design — panning fires one per pointermove
+    // and a followed document fires one a second — but not the disappearance of the
+    // thing it acts on. O(1), so the guard cannot become the cost it avoids.
+    if (menuNodeId !== null && !state.model.nodeById.has(menuNodeId)) closeRowMenu();
     renderBanners(state, derived);
     renderCounts(state, derived);
     renderList(state, derived);
+    renderFocusControls(state, derived);
     renderLegend(state);
     renderDetail(detailHost, state, derived, cb);
     announce(state, derived);
@@ -1250,9 +1881,35 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
               ? `Refreshed at ${currentProjectState.lastReloadAt}. `
               : 'Refreshed. ',
           ]),
+          // All FOUR dropped kinds, not two. `droppedFitted` has been in `LossReport`
+          // since #13 and was printed by nothing; a focus mark would have been the
+          // second silent one. Losing a layout is recoverable — auto-layout re-derives
+          // it — but nothing in this system can re-derive what a person chose to push
+          // into the background, and under follow-file the refresh is unattended.
           el('span', {}, [
-            `${l.newNodes.length} new node(s); dropped ${l.droppedPositions.length} position(s) and ` +
-              `${l.droppedExpanded.length} expanded id(s) that no longer exist; ${l.reparented.length} reparented.`,
+            `${l.newNodes.length} new node(s); dropped ${l.droppedPositions.length} position(s), ` +
+              `${l.droppedExpanded.length} expanded id(s), ${l.droppedFitted.length} fitted id(s) and ` +
+              `${l.droppedFocus.length} focus mark(s) that no longer exist; ${l.reparented.length} reparented.`,
+          ]),
+        ]),
+      );
+    }
+
+    // The second mask, said the same way as the first. `applyLayout` starts the
+    // Explorer CLOSED at narrow, and closed at hybrid in a temporary session with no
+    // project — and every focus control lives inside it, so without this a person
+    // meets a visibly faded map with no on-screen explanation and no on-screen escape.
+    // Reachable by dimming, resizing, and coming back tomorrow, because focus
+    // survives a reload. `renderBanners` rebuilds from state, so it cannot be
+    // clobbered by the next notification the way the single `status` slot would be.
+    if (!sidebarOpen && state.view.focus.marks.size > 0) {
+      const marked = state.view.focus.marks.size;
+      bannerHost.appendChild(
+        el('div', { class: 'banner info focus-off-explorer' }, [
+          el('span', {}, [
+            `Focus is dimming ${marked} marked entit${marked === 1 ? 'y' : 'ies'} and what they contain. ` +
+              `Projection is unchanged — focus is a mask, not a re-projection. ` +
+              `Open the Explorer to change or clear it.`,
           ]),
         ]),
       );
@@ -1295,7 +1952,20 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
   }
 
   function renderList(state: AppState, derived: Derived): void {
+    // `renderList` runs on EVERY controller notification and rebuilds every row, so
+    // the focused row is destroyed under the user — today focus falls to `<body>`.
+    // Remember it by id and restore it after, and ONLY when focus was in the list:
+    // restoring unconditionally would steal it from whatever else had it, including
+    // the menu, once a second under `extract:watch`.
+    const active = document.activeElement;
+    const restoreId =
+      active instanceof HTMLElement && listHost.contains(active)
+        ? active.dataset['nodeId'] ?? null
+        : null;
+
     clear(listHost);
+    rowsById.clear();
+    listedIds = new Set<string>();
     const query = state.search.query.trim();
     const nodes =
       query === ''
@@ -1307,42 +1977,20 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
       return;
     }
 
-    const shown = nodes.slice(0, 400);
+    const shown = nodes.slice(0, LIST_CAP);
     for (const node of shown) {
-      const style = nodeStyle(node.kind);
-      const selected = state.selection.nodeIds.includes(node.id);
-      const visible = derived.graph.visibleNodes.includes(node.id);
-      const row = el(
-        'button',
-        {
-          type: 'button',
-          class: `node-row${selected ? ' selected' : ''}`,
-          role: 'option',
-          'aria-selected': selected ? 'true' : 'false',
-          title: node.path ?? node.id,
-        },
-        [
-          el('span', { class: `swatch shape-${style.shape}`, style: `--swatch:${style.stroke}` }, []),
-          el('span', { class: 'node-label' }, [node.label]),
-          el('span', { class: 'node-kind' }, [node.kind]),
-          visible ? null : el('span', { class: 'node-hidden', title: 'Hidden inside a collapsed box' }, ['⊂']),
-        ],
-      );
-      row.addEventListener('click', () => {
-        // Reveal a hit that is hidden inside collapsed ancestors, then select it.
-        controller.dispatch({ type: 'ExpandTo', id: node.id });
-        controller.dispatch({ type: 'Select', nodeIds: [node.id], edgeId: null });
-        controller.fit([node.id]);
-      });
-      row.addEventListener('dblclick', () => {
-        controller.dispatch({ type: 'ToggleExpand', id: node.id });
-      });
-      listHost.appendChild(row);
+      listedIds.add(node.id);
+      listHost.appendChild(buildNodeRow(state, derived, node.id, node, true));
     }
     if (nodes.length > shown.length) {
       listHost.appendChild(
         el('p', { class: 'muted pad' }, [`… and ${nodes.length - shown.length} more. Narrow the search.`]),
       );
+    }
+
+    if (restoreId !== null) {
+      const row = rowsById.get(restoreId);
+      if (row !== undefined) row.focus({ preventScroll: true });
     }
   }
 
@@ -1708,6 +2356,10 @@ export function mountUi(root: HTMLElement, controller: Controller, projectContro
       focusFrame = null;
       unsubscribe();
       unsubscribeProject();
+      if (offRenderer !== null) offRenderer();
+      closeRowMenu();
+      if (transparencyFrame !== null) cancelAnimationFrame(transparencyFrame);
+      transparencyFrame = null;
       document.removeEventListener('keydown', onKey);
       canvasHost.removeEventListener('pointerdown', markGestureStart);
       globalThis.removeEventListener('pointerup', markGestureEnd);

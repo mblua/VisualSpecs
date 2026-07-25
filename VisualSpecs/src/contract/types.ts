@@ -95,8 +95,60 @@ export interface VisualSpecsView {
    * doc formatVersion 1.1; absent → no container is fitted (current behavior).
    */
   fitted?: NodeId[];
+  /**
+   * Out-of-focus state (Issue #17). Added in doc formatVersion 1.2; absent → every node
+   * is in focus.
+   *
+   * I-F10, in TWO parts, because the two halves have different scopes and conflating
+   * them gives the invariant a visible counterexample:
+   *
+   *   (a) `view.*` CARRIES NO OBSERVATIONS — nothing under `view` is a claim about the
+   *       code, **even when a machine writes it**. The extractor emits
+   *       `view: { expanded: [<repo>] }` on every run (`tools/extractor/extract.ts`);
+   *       that is a suggested starting view, not a finding. An observation is precisely a
+   *       claim carrying `evidence[]` and `confidence`, and nothing under `view` has
+   *       either — which is *why* none of it is one.
+   *
+   *   (b) `view.focus` SPECIFICALLY IS A HUMAN DECISION — no machine writes it. A machine
+   *       suggestion about attention ("auto-dim tests", "auto-dim vendor") must travel
+   *       under a different, derived, recomputed-every-run key that the UI can name.
+   *
+   * Stating (b) as though it held for all of `view` is what would make (a) look false:
+   * "no machine writes under `view`" is refutable in a minute, and an invariant with a
+   * visible counterexample stops being quoted.
+   *
+   * `focus.marks` is a claim about where a person is LOOKING, which is why its values are
+   * spelled `"out-of-focus"` / `"in-focus"` rather than `"out"` / `"in"` — a bare `"out"`
+   * on a node is one reading from "out of scope", "excluded" or "dead".
+   *
+   * I-F9 — focus lives only here. Never in `nodes[].metadata`, `edges[].metadata`,
+   * `evidence[]` or `unresolved[]`: `metadata` is a free-form record the validator
+   * accepts without inspection AND the extractor regenerates on every run, so a mark
+   * parked there would be indistinguishable from an observation about the code and
+   * destroyed at the next extraction. A future machine suggestion about attention
+   * ("auto-dim tests", "auto-dim vendor") must travel under a different, derived,
+   * recomputed-every-run key that the UI can name, because `focus.marks` means
+   * *a person said so* and must keep meaning only that.
+   */
+  focus?: VisualSpecsFocus;
   viewport?: Viewport;
 }
+
+export interface VisualSpecsFocus {
+  /** Integer percent. Out of the `Limits` band is clamped on load, not rejected. */
+  transparency?: number;
+  /**
+   * EXPLICIT marks only. An id absent from this map INHERITS from its nearest marked
+   * ancestor, which is not the same as being in focus. An object map rather than two
+   * arrays so that "marked both in and out" is unrepresentable rather than merely
+   * rejected: a key holds one value.
+   */
+  marks?: Record<NodeId, FocusMarkToken>;
+}
+
+/** The two tokens this build understands. A higher minor may add a third; §5.4 keeps
+ *  such a value verbatim rather than failing to open the document. */
+export type FocusMarkToken = 'out-of-focus' | 'in-focus';
 
 export interface VisualSpecsGenerator {
   name: string;
@@ -174,6 +226,11 @@ export type Warning =
   | { code: 'stale-position'; message: string; ids: string[] }
   | { code: 'stale-expanded'; message: string; ids: string[] }
   | { code: 'stale-fitted'; message: string; ids: string[] }
+  /** A focus mark whose value a newer minor introduced. Ignored for resolution,
+   *  preserved verbatim on export — the additive-minor contract on the one axis
+   *  `marks: {id: token}` extends. There is deliberately NO `stale-focus` code: see
+   *  load.ts on why a warning no consumer reads is worse than none. */
+  | { code: 'unknown-focus-mark'; message: string; count: number }
   | { code: 'absolute-path-in-free-form-field'; message: string; where: string }
   | { code: 'read-only'; message: string; requires: string[] }
   | { code: 'snippet-present'; message: string; count: number };
@@ -183,6 +240,14 @@ export interface LossReport {
   droppedPositions: string[];
   droppedExpanded: string[];
   droppedFitted: string[];
+  /**
+   * Focus marks a re-extraction dropped (Issue #17). MUST reach the loss banner, not
+   * just this object: a dropped position costs a layout auto-layout re-derives, while
+   * nothing in this system can re-derive an attention decision. `droppedFitted` has
+   * been here since #13 and printed by nothing, which is the mistake this field is
+   * required not to repeat.
+   */
+  droppedFocus: string[];
   newNodes: string[];
   reparented: string[];
 }

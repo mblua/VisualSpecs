@@ -2,6 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { importDoc } from '../../src/contract/load.ts';
+import { DEFAULT_LIMITS } from '../../src/contract/limits.ts';
 import { deepFreeze } from '../../src/contract/json.ts';
 import { applyViewCommand, type ViewCommand } from '../../src/domain/commands.ts';
 import { computeGeometry } from '../../src/domain/layoutEngine.ts';
@@ -16,7 +17,7 @@ function setup() {
   deepFreeze(loaded.model.nodes as unknown as never);
   deepFreeze(loaded.model.edges as unknown as never);
   const geometry = computeGeometry(loaded.model, outline, loaded.view.expanded, loaded.view.positions);
-  return { loaded, outline, ctx: { model: loaded.model, outline, geometry } };
+  return { loaded, outline, ctx: { model: loaded.model, outline, geometry, limits: DEFAULT_LIMITS } };
 }
 
 describe('purity (I8)', () => {
@@ -121,7 +122,7 @@ describe('pinning (§7)', () => {
     );
     const outline = new OwnershipOutline(loaded.model);
     const geometry = computeGeometry(loaded.model, outline, loaded.view.expanded, loaded.view.positions);
-    const view = applyViewCommand({ model: loaded.model, outline, geometry }, loaded.view, {
+    const view = applyViewCommand({ model: loaded.model, outline, geometry, limits: DEFAULT_LIMITS }, loaded.view, {
       type: 'ResetLayout',
     });
 
