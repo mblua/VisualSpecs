@@ -604,6 +604,14 @@ input:disabled {
   border-color: var(--accent);
 }
 
+/* An explicit `display` beats the `hidden` attribute's UA rule, so every flex box
+   this code toggles has to say so — the precedent is `.panel[hidden]` above. Without
+   it a document that never used the feature showed a permanent "0 marked". */
+.focus-marks-row[hidden],
+.focus-marks[hidden] {
+  display: none;
+}
+
 .focus-marks {
   display: flex;
   flex-direction: column;

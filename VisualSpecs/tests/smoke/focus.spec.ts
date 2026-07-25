@@ -7,6 +7,7 @@
 // it is gone.
 
 import { expect, test, type Page } from '@playwright/test';
+import { docText, node, sampleDoc } from '../support/doc.ts';
 
 interface SceneNode {
   id: string;
@@ -403,4 +404,132 @@ test('interaction budget: p95 from a transparency input to the painted frame, at
   // no work — the wait for the next vsync is up to 16.7 ms on its own, before the
   // render. So the assertion is that driving the control does not stretch the frame.
   expect(driven95).toBeLessThanOrEqual(idle95 + 8);
+});
+
+// ── §8.5: the refresh banner, driven through a real re-extraction ────────────
+//
+// This is here because "verified by reading" is EXACTLY what failed for
+// `droppedFitted`: the field has been populated since #13, reading the code shows it
+// being populated, and it was printed by nothing for two releases. A banner that does
+// not render looks identical to a refresh that dropped nothing — which is the whole
+// shape of the defect, and it is not observable from the source.
+
+const FOLLOWED = 'followed.json';
+
+async function installFollowHarness(page: Page, initialText: string): Promise<string> {
+  const rootName = `visual-specs-focus-${String(Date.now())}-${Math.random().toString(36).slice(2)}`;
+  await page.addInitScript(
+    ({ rootName: injectedRoot, fileName, text }) => {
+      const globals = globalThis as unknown as Record<string, unknown>;
+      globals['showOpenFilePicker'] = async () => {
+        const opfs = await navigator.storage.getDirectory();
+        const root = await opfs.getDirectoryHandle(injectedRoot, { create: true });
+        const handle = await root.getFileHandle(fileName, { create: true });
+        const writable = await handle.createWritable();
+        await writable.write(text);
+        await writable.close();
+        return [handle];
+      };
+    },
+    { rootName, fileName: FOLLOWED, text: initialText },
+  );
+  return rootName;
+}
+
+async function rewriteFollowed(page: Page, rootName: string, text: string): Promise<void> {
+  await page.evaluate(
+    async ({ root, fileName, next }) => {
+      const opfs = await navigator.storage.getDirectory();
+      const dir = await opfs.getDirectoryHandle(root, { create: true });
+      const handle = await dir.getFileHandle(fileName, { create: true });
+      const writable = await handle.createWritable();
+      await writable.write(next);
+      await writable.close();
+    },
+    { root: rootName, fileName: FOLLOWED, next: text },
+  );
+}
+
+/** The same tree with `pkg-a` and everything under it gone. */
+function docWithoutPackageA(): string {
+  return docText(
+    [
+      node('repo', 'repository', null, { path: '' }),
+      node('pkg-b', 'package', 'repo', { path: 'b' }),
+      node('dir-b', 'directory', 'pkg-b', { path: 'b/src' }),
+      node('file-b1', 'file', 'dir-b', { path: 'b/src/one.ts' }),
+    ],
+    [],
+  );
+}
+
+test('the refresh banner names the fitted ids and the focus marks it dropped (§8.5)', async ({
+  page,
+}) => {
+  const rootName = await installFollowHarness(page, sampleDoc());
+  await page.goto('/');
+  await page.waitForSelector('.canvas-host canvas');
+  await page.waitForFunction(() => '__visualSpecs' in globalThis);
+  await page.getByRole('button', { name: 'Open JSON temporarily', exact: true }).click();
+  await expect(page.locator('.project-message')).toContainText('Following followed.json');
+
+  const packageRow = page.locator('.node-list .node-row[data-node-id="pkg-a"]');
+  await expect(packageRow).toBeVisible();
+
+  // Two pieces of view state that only a person can create, on a node the next
+  // extraction will not have.
+  await packageRow.dblclick(); // expand, so the container can be fit
+  await packageRow.click(); // select, so the detail panel offers the action
+  await page.locator('.detail-action', { hasText: 'Fit to content' }).click();
+  await packageRow.click({ button: 'right' });
+  await page.locator('.row-menu-item', { hasText: 'Send out of focus' }).click();
+  await expect(packageRow.locator('.node-focus')).toHaveText('◐');
+
+  await rewriteFollowed(page, rootName, docWithoutPackageA());
+
+  const banner = page.locator('.banner', { hasText: 'Refreshed' });
+  await expect(banner).toBeVisible({ timeout: 8000 });
+  // The two that were silent: `droppedFitted` since #13, and focus marks, which are
+  // the worse of the pair — a layout is re-derivable and an attention decision is not.
+  await expect(banner).toContainText('1 fitted id(s)');
+  await expect(banner).toContainText('1 focus mark(s)');
+  // And the two that were already named, so the sentence is still true end to end.
+  await expect(banner).toContainText('expanded id(s)');
+  await expect(banner).toContainText('reparented');
+
+  // The mark is gone from the STATE as well as from the report — dropped, not merely
+  // announced. The counter is built once and hidden when there is nothing to count,
+  // so this asks whether it is showing, not whether it exists.
+  // The mark is gone from the STATE as well as from the report — dropped, not merely
+  // announced. The counter is built once and hidden when there is nothing to count,
+  // so this asks whether it is showing, not whether it exists.
+  await expect(page.locator('.focus-marks-row')).toBeHidden();
+});
+
+test('a refresh that dropped nothing says nothing was dropped (§8.5)', async ({ page }) => {
+  // The other half: a banner that always claims a loss is as useless as one that never
+  // does, and only a run with nothing to report can tell them apart.
+  const rootName = await installFollowHarness(page, sampleDoc());
+  await page.goto('/');
+  await page.waitForSelector('.canvas-host canvas');
+  await page.waitForFunction(() => '__visualSpecs' in globalThis);
+  await page.getByRole('button', { name: 'Open JSON temporarily', exact: true }).click();
+  await expect(page.locator('.project-message')).toContainText('Following followed.json');
+
+  await page.locator('.node-list .node-row[data-node-id="pkg-a"]').click({ button: 'right' });
+  await page.locator('.row-menu-item', { hasText: 'Send out of focus' }).click();
+
+  // Same graph, one relation added: nothing the user marked has gone anywhere.
+  await rewriteFollowed(
+    page,
+    rootName,
+    sampleDoc().replace('"edges":[', '"edges":[{"id":"e9","kind":"imports","sourceId":"file-a1","targetId":"file-b1","confidence":"resolved"},'),
+  );
+
+  const banner = page.locator('.banner', { hasText: 'Refreshed' });
+  await expect(banner).toBeVisible({ timeout: 8000 });
+  await expect(banner).toContainText('0 fitted id(s)');
+  await expect(banner).toContainText('0 focus mark(s)');
+  // …and the mark survived, which is the point of reporting only what was dropped.
+  await expect(page.locator('.focus-summary')).toContainText('1 marked');
 });
