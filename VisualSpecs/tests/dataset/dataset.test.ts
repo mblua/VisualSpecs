@@ -54,7 +54,7 @@ describe('the committed dataset is a valid document', () => {
   it('declares the provenance that produced it', () => {
     expect(doc.source?.kind).toBe('git-repo');
     expect(doc.source?.root).toBe('AgentsCommander');
-    expect(doc.source?.commit).toBe('e6a0db5aeb8540fc3bb97b9eee10285f6c4faf11');
+    expect(doc.source?.commit).toBe('0a3dc5aadea1c192fb01bb82055d95131f722418');
     expect(doc.generator?.name).toBe('visual-specs-extract');
     expect(doc.generator?.version).toBe(GENERATOR_VERSION);
     expect(doc.generator?.configDigest).toMatch(/^sha256:[0-9a-f]{64}$/);
@@ -110,8 +110,8 @@ describe('the committed dataset is a valid document', () => {
 
 describe('what the map says about AgentsCommander — every number from a parser', () => {
   it('maps every git-tracked file', () => {
-    expect(stats['trackedFiles']).toBe(637);
-    expect(doc.nodes.filter((n) => n.kind === 'file')).toHaveLength(637);
+    expect(stats['trackedFiles']).toBe(679);
+    expect(doc.nodes.filter((n) => n.kind === 'file')).toHaveLength(679);
   });
 
   it('finds the four anchors: TWO npm packages and TWO Rust crates', () => {
@@ -131,8 +131,8 @@ describe('what the map says about AgentsCommander — every number from a parser
     expect(stats['nodesByKind']).toEqual({
       application: 5,
       crate: 2,
-      directory: 97,
-      file: 637,
+      directory: 98,
+      file: 679,
       package: 2,
       repository: 1,
     });
@@ -162,25 +162,25 @@ describe('what the map says about AgentsCommander — every number from a parser
   it('the whole frontend reaches the whole backend through EXACTLY ONE file', () => {
     // The most useful thing the map says about this codebase (§6.7).
     expect(stats['invokeCallSiteFiles']).toEqual(['src/shared/ipc.ts']);
-    expect(stats['invokeCallSites']).toBe(136);
+    expect(stats['invokeCallSites']).toBe(139);
 
     const commandEdges = doc.edges.filter((e) => e.kind.endsWith('-command'));
     const sources = new Set(commandEdges.map((e) => e.sourceId));
     expect([...sources]).toEqual(['file:src/shared/ipc.ts']);
   });
 
-  it('counts 134 ANCHORED #[tauri::command] attributes — not the 135 an unanchored grep finds', () => {
-    expect(stats['tauriCommandAttributes']).toBe(134);
+  it('counts 137 ANCHORED #[tauri::command] attributes — fewer than the 140 a bare grep finds across 22 files', () => {
+    expect(stats['tauriCommandAttributes']).toBe(137);
     expect(stats['tauriCommandAttributeFiles']).toBe(21);
-    expect(stats['registeredCommands']).toBe(134);
+    expect(stats['registeredCommands']).toBe(137);
   });
 
-  it('counts 516 grouped Rust use-trees — the figure the docs cite, produced by the parser', () => {
+  it('counts 753 grouped Rust use-trees — the figure the docs cite, produced by the parser', () => {
     // An earlier draft of the architecture said "26 times across 21 files". That came
     // from a grep, it was never reproduced by a parser, and it is not even what the
     // parser measures. This is the number the tool produces, and the docs now cite THIS
     // one — which means if the tool changes, this test changes with it (§10.5).
-    expect(stats['rustGroupedUseStatements']).toBe(516);
+    expect(stats['rustGroupedUseStatements']).toBe(753);
   });
 
   it('records the REGISTERED-BUT-UNCALLED command that an earlier draft denied existed', () => {
@@ -201,7 +201,7 @@ describe('what the map says about AgentsCommander — every number from a parser
     );
     expect(nonLiteral).toHaveLength(1);
     expect(nonLiteral[0]?.evidence[0]?.path).toBe('src/shared/ipc.ts');
-    expect(nonLiteral[0]?.evidence[0]?.line).toBe(105);
+    expect(nonLiteral[0]?.evidence[0]?.line).toBe(113);
   });
 
   it('reports rust-imports as DEGRADED, permanently and honestly', () => {
