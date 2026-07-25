@@ -291,6 +291,31 @@ The read side is quieter and the same shape: without a `parseFocus`, `view.focus
 `undefined`, so `toViewState`'s `?? fallback.focus` silently keeps **what is on screen** instead of
 what was saved — a restore that appears to work.
 
+### 5.1.1 The same gap, three times, one layer further in each time
+
+This is the pattern, written down because it has now cost three review rounds:
+
+| | The guard | What it does not reach |
+| --- | --- | --- |
+| v1 | a **required field** | the `VisualSpecsView` boundary, whose keys are all optional |
+| v2 | an **exhaustive projection** | the payload — it guarded only the dirty *trigger* |
+| v3 | the exhaustive projection | **canonicality** — it forces each field to be *mentioned*, never *canonicalised* |
+
+`Record<keyof ViewState, (view) => JsonValue>` accepts `focus: () => something` whether or not the
+something is sorted. And the property is already absent for a sibling: `toVisualSpecsView` sorts
+`expanded` and `fitted` and iterates `positions` in **Map insertion order**, so
+`MoveNode a; MoveNode b; ResetLayout; MoveNode b; MoveNode a` yields identical position values and a
+**different** `viewKey` — reachable through ordinary commands, not constructed by hand. Today's cost is
+over-reporting rather than a write out of nowhere, on a path that runs once per pan pointermove (#19).
+
+So the obligation is carried **by construction, not by a test**: each projector's return type is a
+branded canonical value that only the canonicalising helper can produce, so a projector that forgets to
+sort does not type-check. `positions` is sorted in the same pass — one line, in a function this issue
+rewrites anyway — which makes §11.9's `positions` clause a real check instead of a carve-out around a
+known gap.
+
+A test would have closed the third instance and left the fourth to be rediscovered.
+
 ### 5.2 Serialized shape, merged key-by-key
 
 ```json
@@ -770,9 +795,12 @@ Core:
    per-entry degradation keeps valid marks and reports the dropped count; positions, expanded, fitted
    and viewport survive a recoverable case.
 9. **The autosave key changes whenever any view field changes, focus included**, and is insensitive to
-   mark insertion order — `JSON.stringify` is order-sensitive where `canonicalStringify` is not, so
-   delete-then-re-add must not manufacture a spurious dirty write. Focus is a new *sufficient*
-   condition, not the only one; a conforming implementation must not regress `positions`.
+   insertion order for **every** keyed field — `marks` *and* `positions`. `JSON.stringify` is
+   order-sensitive where `canonicalStringify` is not, so `SetFocus(x); SetFocus(y);
+   SetFocusInherited(x); SetFocus(x)` must not manufacture a spurious dirty write, and neither must
+   `MoveNode a; MoveNode b; ResetLayout; MoveNode b; MoveNode a`. The `positions` half is a **new**
+   property, not a preserved one: it does not hold today (§5.1.1). Focus is a new *sufficient*
+   condition for dirtiness, not the only one.
 10. A mark survives autosave → restore and preview → return, **driven through `ProjectController`'s own
     path** (`flushAutosave` → `writeAutosaveView` → `prepareProjectCandidate` → `toViewState`), not the
     codec boundary — a test written at `autosaveViewText` / `parseAutosaveView` passes while
