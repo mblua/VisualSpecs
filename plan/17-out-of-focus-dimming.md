@@ -931,6 +931,18 @@ unconditionally and reads it never, nothing in provenance or evidence can see fo
   getting `unknown-minor` for a document carrying no focus information. `raiseFormatVersion` never
   lowers, and it must not: lowering would suppress `unknown-minor` for any other 1.2 extension the raw
   envelope carries.
+- **"Show everything" reaches only the vocabulary this build understands.** A mark whose id IS in the
+  model but whose token comes from a newer minor is an **active** mark this build cannot read — not an
+  inert one. `SetAllFocus` and `Clear all focus` operate on the typed state, so `Show everything` leaves
+  it in place, and a newer build reopening the document finds it still there *after a person asked for
+  everything to be shown*. That is the forward-compatibility rule working as designed, and it is a scope
+  limit on a control whose label says "everything".
+- **`exportDoc` byte-identity does not extend to `Controller.exportText`, for reasons older than this
+  feature.** `mergeView` has always written `positions` and `viewport` unconditionally, so a document
+  whose `view` omits them gains them; and `exportText` injects a position for every visible node. A test
+  of AC 10 written against an extractor-shaped fixture — no `view` at all — therefore fails for a reason
+  that has nothing to do with focus, and the tempting repair is to change focus code to compensate.
+  §11.4 is written against a fully-specified `view` for exactly that reason.
 - **`focus.transparency` is repaired on load at known minors**, unlike inert marks.
 - **The autosave has no version locus**, and two hostile shapes (`1e400`, `__proto__`) bypass §5.6's
   per-entry degradation because `scanJson` runs first and discards the whole cache.

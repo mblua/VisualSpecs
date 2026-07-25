@@ -197,3 +197,16 @@ export function aggregateFocusOpacity(
  * core would have guessed was measurably wrong.
  */
 export const MIXED_FRACTION_FLOOR = 0.1;
+
+// THE FLOOR IS ONE-SIDED, AND THAT IS THE DESIGN.
+//
+// It guarantees that "some relations lit" is perceptibly distinct from "none lit". There
+// is deliberately NO matching floor in the other direction: 135 of 136 relations bright
+// renders at 0.9948 against 1.0, so switching ONE relation off is invisible.
+//
+// An override is a deliberate, rare act — a person reached into a dimmed subtree and
+// named one exception — and it must be visible, or the tri-state model has no observable
+// value. Switching one relation of 136 off is part of a sweep and should read as small,
+// because it is.
+//
+// Written down because the next reader will otherwise see a one-sided floor and "fix" it.

@@ -19,7 +19,7 @@
 
 import type { DeepReadonly, JsonObject, JsonValue } from './types.ts';
 import { canonicalStringify, deepClone, isJsonObject } from './json.ts';
-import { isDefaultFocus, type ViewState } from './view.ts';
+import { FOCUS_TRANSPARENCY_DEFAULT, isDefaultFocus, type ViewState } from './view.ts';
 
 export interface ExportInput {
   readonly raw: DeepReadonly<JsonValue>;
@@ -134,11 +134,27 @@ function mergeView(out: JsonObject, view: ViewState): void {
   if (isDefaultFocus(view.focus) && !('focus' in rawView)) {
     // Never used, never declared: no key, so the export is byte-identical.
   } else {
+    const declaredFocus = 'focus' in rawView;
     const existingFocus = rawView['focus'];
     const focusOut: JsonObject = isJsonObject(existingFocus)
       ? ({ ...existingFocus } as JsonObject)
       : (Object.create(null) as JsonObject);
-    focusOut['transparency'] = view.focus.transparency;
+
+    // Write `transparency` only when someone actually decided it: it differs from the
+    // default, or the document already declared it. Writing it unconditionally turns an
+    // ABSENCE into a VALUE, which is the exact inversion of the lesson `viewProvided`
+    // exists to teach — `expanded: []` is a value and its absence is an absence, and
+    // conflating them silently re-opened a map the user had collapsed. It also
+    // contradicts I-F10(b): `view.focus` means *a person said so*, and nobody said 70.
+    //
+    // The consequence that makes this worth a condition rather than a note: change
+    // `FOCUS_TRANSPARENCY_DEFAULT` in a later release and every document this build has
+    // touched is pinned to an old default it never chose, indistinguishable from one
+    // where a person typed that number.
+    const declaredTransparency = 'transparency' in focusOut;
+    if (view.focus.transparency !== FOCUS_TRANSPARENCY_DEFAULT || declaredTransparency) {
+      focusOut['transparency'] = view.focus.transparency;
+    }
 
     // Inside `marks`, the TYPED STATE WINS for any id it contains; verbatim
     // preservation applies only to ids absent from it. Without that precedence an id
@@ -147,6 +163,7 @@ function mergeView(out: JsonObject, view: ViewState): void {
     // So: drop the entries this build recognises (the typed state is authoritative for
     // those, including by deleting them), keep the ones it does not.
     const existingMarks = focusOut['marks'];
+    const declaredMarks = 'marks' in focusOut;
     const marksOut: JsonObject = Object.create(null) as JsonObject;
     if (isJsonObject(existingMarks)) {
       for (const id of Object.keys(existingMarks).sort()) {
@@ -159,8 +176,16 @@ function mergeView(out: JsonObject, view: ViewState): void {
     for (const id of [...view.focus.marks.keys()].sort()) {
       marksOut[id] = view.focus.marks.get(id) as JsonValue;
     }
-    focusOut['marks'] = marksOut;
-    rawView['focus'] = focusOut;
+    // Same rule one level down: an empty `marks` is written only if the document already
+    // declared one. Otherwise a document that never marked anything would start claiming
+    // an empty decision.
+    if (Object.keys(marksOut).length > 0 || declaredMarks) focusOut['marks'] = marksOut;
+
+    // Emit the object when it says something, or when the document already declared one —
+    // including a declared but EMPTY `focus: {}`, which is a value like `"fitted": []` and
+    // must not vanish on a no-op round trip. Never deleted: reaching this branch already
+    // means the state is non-default or the key was declared.
+    if (Object.keys(focusOut).length > 0 || declaredFocus) rawView['focus'] = focusOut;
   }
 
   // --- viewport: merge onto the original object, so unknown keys survive. ---
