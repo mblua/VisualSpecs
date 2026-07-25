@@ -19,6 +19,23 @@
 // assertion that the focus sequence genuinely changed the resolved state, so a
 // no-op sequence fails the test instead of passing it trivially.
 //
+// WHAT EACH CASE IS SENSITIVE TO — so that "green" is not read as more than it says.
+// Only the cases named "…bit-identical…" assert projection invariance; the others
+// have a different subject (export bytes, re-extraction bytes, marks surviving a
+// refresh) and are correctly blind to a projection leak, because a byte comparison of
+// the export SHOULD NOT fail merely because the projection moved. `vs-semantic-red-team`
+// measured this and reported 4 of 6 passing under a leak; reproduced, and the reading
+// is that 2 of 6 make the claim and both catch it — not that 4 have a gap.
+//
+// The leak is only reachable one way. `project(model, outline, expanded)` cannot see
+// focus, so the single route in is for someone to derive the expansion set FROM focus.
+// A mark on a collapsed container is invisible to that route, and a mark on the root
+// is a catastrophic change any test would notice; the case that earns its place is a
+// mark on an expanded container MID-TREE, whose leak is small, local, and the kind a
+// coarse assertion sails past. That is why the partial-expansion case below exists,
+// and why it checks that the projection it is comparing actually contains aggregates
+// and internal buckets before it compares anything.
+//
 // This deliberately does not touch `buildScene` or the renderer port beyond
 // `hiddenByFilter`, which is the one scene-level number I-F2 names. Opacity, glyphs
 // and the port's shape belong to the graph/runtime owner; the projection, the counts
@@ -38,7 +55,6 @@ import { derive } from '../../src/app/controller.ts';
 import type { CommandContext, ViewCommand } from '../../src/domain/commands.ts';
 import { computeGeometry } from '../../src/domain/layoutEngine.ts';
 import { resolve } from '../../src/domain/focus.ts';
-import { project } from '../../src/projection/project.ts';
 import type { VisibleGraph } from '../../src/projection/types.ts';
 import { extract, type ExtractOptions } from '../../tools/extractor/extract.ts';
 import { makeFixtureRepo, type FixtureRepo } from '../support/fixtureRepo.ts';
@@ -101,8 +117,23 @@ function dispatchAll(state: AppState, commands: readonly ViewCommand[]): AppStat
   return current;
 }
 
-const projectionOf = (state: AppState): VisibleGraph =>
-  project(state.model, state.outline, state.view.expanded);
+/**
+ * The projection the APP derives — deliberately not one recomputed here.
+ *
+ * This used to be `project(state.model, state.outline, state.view.expanded)`, and that
+ * was a hole I put in my own harness. No focus command touches `expanded`, so the
+ * comparison was `project(E)` against `project(E)`: true by construction, and
+ * structurally blind to the one leak this file exists to catch — someone deriving the
+ * expansion set FROM focus inside `derive()`. Measured against exactly that mutation:
+ * the recomputed form passed every case, and the only assertions that failed were the
+ * counts, which go through `derive()`. An invariance check has to observe the value the
+ * system actually produces, not one the test rebuilds from inputs the mutation cannot
+ * reach — the same mistake as asserting on a validated `doc` instead of emitted bytes.
+ *
+ * `expanded` is compared separately in each case, which is what the recomputed form was
+ * really proving: that a focus command does not move the expansion set.
+ */
+const projectionOf = (state: AppState): VisibleGraph => derive(state).graph;
 
 /** The whole projection as bytes: every visible identity, every aggregate's members,
  *  and the NVA map the partition law is stated over. */
@@ -160,6 +191,31 @@ function focusEffect(state: AppState): { out: number; marks: number } {
   return { out, marks: state.view.focus.marks.size };
 }
 
+/**
+ * The deepest file in the model, and its container. Deterministic: `model.nodes` is
+ * id-sorted, so the first file at the maximum depth is always the same one.
+ *
+ * Used to build a PARTIALLY expanded map — `ExpandTo` opens exactly this file's
+ * ancestor chain and leaves every sibling subtree collapsed, which is the shape where
+ * internal buckets and aggregated edges exist and where a small projection leak has
+ * somewhere to hide.
+ */
+function pickDeepFile(model: GraphModel): { file: string; parent: string; depth: number } {
+  let best: { file: string; parent: string; depth: number } | null = null;
+  for (const node of model.nodes) {
+    if (node.kind !== 'file' || node.parentId === null) continue;
+    let depth = 0;
+    let cursor: string | null = node.parentId;
+    while (cursor !== null) {
+      depth += 1;
+      cursor = model.nodeById.get(cursor)?.parentId ?? null;
+    }
+    if (best === null || depth > best.depth) best = { file: node.id, parent: node.parentId, depth };
+  }
+  if (best === null) throw new Error('no nested file in this model');
+  return best;
+}
+
 /** A directory with at least one file of its own — the pair the override needs. */
 function pickOverridePair(model: GraphModel): { container: string; child: string } {
   for (const node of model.nodes) {
@@ -203,6 +259,7 @@ describe('extract → apply focus → export → re-extract (I-F1, I-F2)', () =>
     expect(focused.view.focus.transparency).toBe(55);
 
     // I-F1: the projection is untouched, in bytes.
+    expect([...focused.view.expanded].sort()).toEqual([...base.view.expanded].sort());
     expect(projectionBytes(projectionOf(focused))).toBe(projectionBytes(projectionOf(base)));
     // I-F2: all four counts and `hiddenByFilter`.
     expect(counts(focused)).toEqual(counts(base));
@@ -327,9 +384,42 @@ describe('the committed AgentsCommander corpus is indifferent to focus', () => {
     expect(after.out).toBeGreaterThan(1);
     expect(focused.view.focus.marks.get(pair.child)).toBe('in-focus');
 
+    expect([...focused.view.expanded].sort()).toEqual([...base.view.expanded].sort());
     expect(projectionBytes(projectionOf(focused))).toBe(projectionBytes(projectionOf(base)));
     expect(counts(focused)).toEqual(counts(base));
     expect(observationBytes(focused.model)).toBe(observationBytes(base.model));
     expect(focused.model).toBe(base.model);
+  });
+
+  it('partially expanded: a mark on a MID-TREE expanded container moves nothing', () => {
+    // The sensitive shape, and the one the other cases do not have. `SetAllFocus` marks
+    // the roots, where a leak collapses the entire map and any assertion notices; a mark
+    // on an already-collapsed container is invisible to the only route a leak can take.
+    // A mid-tree container that is expanded, with its siblings collapsed around it, is
+    // where a leak is small and local.
+    const corpusText = readFileSync(CORPUS, 'utf8');
+    const deep = pickDeepFile(stateOf(corpusText).model);
+    const base = dispatchAll(stateOf(corpusText), [{ type: 'ExpandTo', id: deep.file }]);
+
+    // Structural control: comparing a projection proves nothing unless the projection
+    // contains the things a leak would disturb. It must be genuinely partial, the
+    // marked container must genuinely be expanded, and there must be real aggregation.
+    const graph = projectionOf(base);
+    expect(base.view.expanded.has(deep.parent)).toBe(true);
+    expect(base.view.expanded.size).toBeLessThan(base.model.nodes.length);
+    expect(graph.internalBuckets.length).toBeGreaterThan(0);
+    expect(graph.visibleEdges.some((e) => e.count > 1)).toBe(true);
+
+    const focused = dispatchAll(base, [
+      { type: 'SetFocus', id: deep.parent, requested: 'out-of-focus' },
+      { type: 'SetFocus', id: deep.file, requested: 'in-focus' },
+    ]);
+    expect(focused.view.focus.marks.size).toBe(2);
+    expect(focusEffect(focused).out).toBeGreaterThan(0);
+
+    expect([...focused.view.expanded].sort()).toEqual([...base.view.expanded].sort());
+    expect(projectionBytes(projectionOf(focused))).toBe(projectionBytes(projectionOf(base)));
+    expect(counts(focused)).toEqual(counts(base));
+    expect(observationBytes(focused.model)).toBe(observationBytes(base.model));
   });
 });
