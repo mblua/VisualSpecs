@@ -225,10 +225,12 @@ describe('extract → apply focus → export → re-extract (I-F1, I-F2)', () =>
     const parsed = JSON.parse(exported) as JsonObject;
     const view = parsed['view'] as JsonObject;
 
-    // The human decision is in the document…
+    // The human decision is in the document — and ONLY the human decision. No
+    // `transparency` key: this session never touched it, and writing the default would
+    // turn an absence into a value indistinguishable from someone typing 70 (E1). An
+    // absent transparency loads as the default, so the state still round-trips.
     expect(view['focus']).toEqual({
       marks: { [pair.container]: 'out-of-focus', [pair.child]: 'in-focus' },
-      transparency: 70,
     });
     expect(parsed['formatVersion']).toBe('1.2');
     expect(JSON.parse(fixtureText)['formatVersion']).toBe('1.0');
@@ -237,6 +239,27 @@ describe('extract → apply focus → export → re-extract (I-F1, I-F2)', () =>
     // `formatVersion` is excluded and asserted above: it is the only key outside
     // `view` that focus is allowed to move.
     expect(withoutView(exported)).toBe(withoutView(fixtureText));
+  });
+
+  it('a transparency nobody typed is absent; one somebody chose is written, alone', () => {
+    // The other half of E1, through the extractor loop rather than at `exportDoc`:
+    // a session that moved ONLY the transparency has made a decision, so the key is
+    // written and the version is raised — with no `marks` key, because no mark was
+    // made. Both halves matter: "written when chosen" is what makes "absent when not"
+    // an absence rather than a bug.
+    const base = dispatchAll(stateOf(fixtureText), [{ type: 'ExpandAll' }]);
+    const dimmer = dispatchAll(base, [{ type: 'SetFocusTransparency', percent: 40 }]);
+    expect(dimmer.view.focus.marks.size).toBe(0);
+    expect(dimmer.view.focus.transparency).toBe(40);
+
+    const exported = exportDoc({ raw: dimmer.raw, view: dimmer.view, readOnly: false });
+    const parsed = JSON.parse(exported) as JsonObject;
+    expect((parsed['view'] as JsonObject)['focus']).toEqual({ transparency: 40 });
+    expect(parsed['formatVersion']).toBe('1.2');
+
+    // Still not one observation byte, and still nothing the extractor can see.
+    expect(withoutView(exported)).toBe(withoutView(fixtureText));
+    expect(extract(options()).text).toBe(fixtureText);
   });
 
   it('re-extracts to the identical bytes: the extractor never noticed', () => {
