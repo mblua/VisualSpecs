@@ -5,6 +5,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { importDoc, refresh } from '../../src/contract/load.ts';
+import { DEFAULT_LIMITS } from '../../src/contract/limits.ts';
 import { exportDoc } from '../../src/contract/export.ts';
 import { applyViewCommand, type CommandContext } from '../../src/domain/commands.ts';
 import { computeGeometry } from '../../src/domain/layoutEngine.ts';
@@ -48,7 +49,7 @@ function setupStack() {
   ];
   for (const [id, y] of column) {
     const geometry = geom(loaded.model, outline, view);
-    view = applyViewCommand({ model: loaded.model, outline, geometry }, view, {
+    view = applyViewCommand({ limits: DEFAULT_LIMITS, model: loaded.model, outline, geometry }, view, {
       type: 'MoveNode',
       id,
       position: { x: 0, y },
@@ -58,6 +59,7 @@ function setupStack() {
     model: loaded.model,
     outline,
     geometry: geom(loaded.model, outline, v),
+    limits: DEFAULT_LIMITS,
   });
   return { loaded, outline, view, ctx };
 }
@@ -129,12 +131,12 @@ describe('FitContainer — guard (F1) and idempotency', () => {
     const outline = new OwnershipOutline(loaded.model);
     // Collapse C: it is no longer childrenShown, so a fit must be a no-op.
     const collapsed = applyViewCommand(
-      { model: loaded.model, outline, geometry: geom(loaded.model, outline, loaded.view) },
+      { limits: DEFAULT_LIMITS, model: loaded.model, outline, geometry: geom(loaded.model, outline, loaded.view) },
       loaded.view,
       { type: 'Collapse', id: 'C' },
     );
     const fitted = applyViewCommand(
-      { model: loaded.model, outline, geometry: geom(loaded.model, outline, collapsed) },
+      { limits: DEFAULT_LIMITS, model: loaded.model, outline, geometry: geom(loaded.model, outline, collapsed) },
       collapsed,
       { type: 'FitContainer', id: 'C' },
     );

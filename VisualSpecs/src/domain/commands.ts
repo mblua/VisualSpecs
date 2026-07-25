@@ -4,9 +4,11 @@
 
 import type { NodeId, Position, Viewport } from '../contract/types.ts';
 import type { GraphModel } from '../contract/model.ts';
-import type { ViewState } from '../contract/view.ts';
-import { withExpanded, withFitted, withPositions, withViewport } from '../contract/view.ts';
+import type { Limits } from '../contract/limits.ts';
+import type { FocusMark, FocusState, ViewState } from '../contract/view.ts';
+import { withExpanded, withFitted, withFocus, withPositions, withViewport } from '../contract/view.ts';
 import type { Outline, OutlineNodeId } from './outline.ts';
+import { inheritedFocus, resolveFocus } from './focus.ts';
 import type { Geometry } from './layoutEngine.ts';
 import { CONTAINER_HEADER, type Point } from './geometry.ts';
 
@@ -20,13 +22,20 @@ export type ViewCommand =
   | { type: 'MoveNode'; id: OutlineNodeId; position: Point }
   | { type: 'FitContainer'; id: OutlineNodeId }
   | { type: 'ResetLayout' }
-  | { type: 'SetViewport'; viewport: Viewport };
+  | { type: 'SetViewport'; viewport: Viewport }
+  | { type: 'SetFocus'; id: OutlineNodeId; requested: FocusMark }
+  | { type: 'SetFocusInherited'; id: OutlineNodeId }
+  | { type: 'SetAllFocus'; mark: FocusMark }
+  | { type: 'SetFocusTransparency'; percent: number };
 
 export interface CommandContext {
   readonly model: GraphModel;
   readonly outline: Outline;
   /** The geometry the user is looking at. `MoveNode` needs it to compute the delta. */
   readonly geometry: Geometry;
+  /** `SetFocusTransparency` clamps into the injected band, so the domain and the
+   *  validator agree on the same numbers rather than each holding their own. */
+  readonly limits: Limits;
 }
 
 export function applyViewCommand(
@@ -78,12 +87,128 @@ export function applyViewCommand(
     }
     case 'SetViewport':
       return withViewport(view, cmd.viewport);
+    case 'SetFocus':
+      return setFocus(ctx, view, cmd.id, cmd.requested);
+    case 'SetFocusInherited':
+      return clearFocusMark(ctx, view, cmd.id);
+    case 'SetAllFocus':
+      return setAllFocus(ctx, view, cmd.mark);
+    case 'SetFocusTransparency':
+      return setFocusTransparency(ctx, view, cmd.percent);
     default: {
       const exhaustive: never = cmd;
       void exhaustive;
       return view;
     }
   }
+}
+
+/**
+ * THE WRITE RULE (§4.5): write the MINIMAL mark that achieves the requested effective
+ * state. If the node would already inherit what was asked for, its own mark is DELETED
+ * rather than a redundant one written.
+ *
+ * This is not an optimisation, it is the fix for a state a user cannot explain. The
+ * naive rule — "*Bring into focus* writes `in-focus`" — manufactures a permanent
+ * exemption out of a request that meant "undo my own dimming":
+ *
+ *     dim P      → {P:out}
+ *     light c1   → {P:out, c1:in}        the override, working
+ *     light P    → {P:in, c1:in}         naive: P now carries a mark
+ *     dim repo   → {repo:out, P:in, c1:in}
+ *                                        → P's WHOLE SUBTREE stays bright, and the
+ *                                          user asked to dim the repository
+ *
+ * Under the minimal rule step 3 deletes P's mark instead, so step 4 dims P and leaves
+ * only `c1` — a genuine exception the user made — lit.
+ *
+ * The general form is required rather than the symmetric one ("*Bring into focus*
+ * deletes an out-of-focus mark"): *Send out of focus* on a node carrying its own
+ * `in-focus` mark under an UNMARKED ancestor must WRITE `out-of-focus`, because
+ * deleting would leave the node in focus — the opposite of the request.
+ *
+ * §4.5 governs WRITES; §4.6 governs RETENTION. Do not create a mark equal to its
+ * inherited value; do not DELETE one that already exists. A "simplification" that
+ * canonicalises the map whenever anything changes passes every test that does not
+ * exercise the four steps above, and silently breaks the one requirement the user
+ * stated explicitly.
+ */
+function setFocus(
+  ctx: CommandContext,
+  view: ViewState,
+  id: OutlineNodeId,
+  requested: FocusMark,
+): ViewState {
+  const entity = ctx.outline.entityOf(id);
+  const effective = resolveFocus(ctx.outline, view.focus.marks);
+  const parentOf = buildOutlineParents(ctx.outline);
+  const inherited = inheritedFocus(effective, parentOf, id);
+  const target = requested === 'out-of-focus' ? 'out' : 'in';
+
+  if (inherited === target) return deleteMark(view, entity);
+
+  if (view.focus.marks.get(entity) === requested) return view;
+  const marks = new Map(view.focus.marks);
+  marks.set(entity, requested);
+  return withFocus(view, { marks, transparency: view.focus.transparency });
+}
+
+/** `Reset to inherited`. Under an out-of-focus ancestor this has NO visible canvas
+ *  effect — the row glyph disappearing is the only feedback. That is correct, and it is
+ *  written down so it is not later "fixed" as a no-op. */
+function clearFocusMark(ctx: CommandContext, view: ViewState, id: OutlineNodeId): ViewState {
+  return deleteMark(view, ctx.outline.entityOf(id));
+}
+
+function deleteMark(view: ViewState, entity: NodeId): ViewState {
+  if (!view.focus.marks.has(entity)) return view;
+  const marks = new Map(view.focus.marks);
+  marks.delete(entity);
+  return withFocus(view, { marks, transparency: view.focus.transparency });
+}
+
+/**
+ * The global toggle, and `Clear all focus`.
+ *
+ * Clears every mark whose id IS in the model, then — for out-of-focus — marks each
+ * root. In-focus therefore leaves no marks at all: the bottom of the lattice.
+ *
+ * INERT marks survive, exactly as inert positions and inert `fitted` ids survive
+ * `ResetLayout`: they are not this graph's state, and dropping them would lose data
+ * that `import` promised to preserve (§3.5). The visible consequence is owned in the
+ * UI: `Clear all focus (N)` counts only CLEARABLE marks and reports inert ones
+ * separately, because a button that counts what it cannot delete says `(5)`, deletes
+ * 3, then says `(2)` and does nothing on every further press.
+ */
+function setAllFocus(ctx: CommandContext, view: ViewState, mark: FocusMark): ViewState {
+  const marks = new Map<NodeId, FocusMark>();
+  for (const [id, m] of view.focus.marks) {
+    if (!ctx.model.nodeById.has(id)) marks.set(id, m);
+  }
+  if (mark === 'out-of-focus') {
+    for (const root of ctx.outline.roots()) marks.set(ctx.outline.entityOf(root), mark);
+  }
+  if (sameMarks(view.focus.marks, marks)) return view;
+  return withFocus(view, { marks, transparency: view.focus.transparency });
+}
+
+function setFocusTransparency(ctx: CommandContext, view: ViewState, percent: number): ViewState {
+  if (!Number.isFinite(percent)) return view;
+  const { minFocusTransparency: lo, maxFocusTransparency: hi } = ctx.limits;
+  const next = Math.min(hi, Math.max(lo, Math.round(percent)));
+  if (next === view.focus.transparency) return view;
+  return withFocus(view, { marks: view.focus.marks, transparency: next });
+}
+
+function sameMarks(
+  a: ReadonlyMap<NodeId, FocusMark>,
+  b: ReadonlyMap<NodeId, FocusMark>,
+): boolean {
+  if (a.size !== b.size) return false;
+  for (const [id, mark] of a) {
+    if (b.get(id) !== mark) return false;
+  }
+  return true;
 }
 
 function setExpanded(view: ViewState, id: OutlineNodeId, on: boolean): ViewState {

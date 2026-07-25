@@ -1,7 +1,16 @@
 import { SchemaError } from './errors.ts';
 import { DEFAULT_LIMITS, type Limits } from './limits.ts';
 import { canonicalStringify, isJsonObject, parseJson, scanJson } from './json.ts';
-import type { JsonObject, JsonValue, NodeId, Position, VisualSpecsView, Viewport } from './types.ts';
+import type {
+  FocusMarkToken,
+  JsonObject,
+  JsonValue,
+  NodeId,
+  Position,
+  VisualSpecsFocus,
+  VisualSpecsView,
+  Viewport,
+} from './types.ts';
 import { isDocRevision, type DocRevision } from './revision.ts';
 
 export const AUTOSAVE_VIEW_SCHEMA = 'visual-specs.autosave-view';
@@ -107,6 +116,22 @@ export function viewToJson(view: VisualSpecsView): JsonObject {
   }
   if (view.expanded !== undefined) out['expanded'] = [...view.expanded].sort();
   if (view.fitted !== undefined) out['fitted'] = [...view.fitted].sort();
+  if (view.focus !== undefined) {
+    const focus: JsonObject = Object.create(null) as JsonObject;
+    if (view.focus.transparency !== undefined) focus['transparency'] = view.focus.transparency;
+    const marks: JsonObject = Object.create(null) as JsonObject;
+    // Sorted here, at the depth this function owns, because `viewKey` keys off this
+    // output and `JSON.stringify` is order-sensitive. `marks` is the only view field
+    // that is an object inside an object, so it is the only one where "canonical" has a
+    // depth question — and the only one where a helper that sorted one level would have
+    // looked correct.
+    for (const id of Object.keys(view.focus.marks ?? {}).sort()) {
+      const mark = view.focus.marks?.[id];
+      if (mark !== undefined) marks[id] = mark;
+    }
+    focus['marks'] = marks;
+    out['focus'] = focus;
+  }
   if (view.viewport !== undefined) {
     out['viewport'] = {
       x: view.viewport.x,
@@ -131,11 +156,85 @@ function parseView(
   const expanded = parseExpanded(value['expanded'], problems);
   const fitted = parseFitted(value['fitted'], problems);
   const viewport = parseViewport(value['viewport'], limits, problems);
+  const focus = parseFocus(value['focus'], problems);
   if (positions !== undefined) view.positions = positions;
   if (expanded !== undefined) view.expanded = expanded;
   if (fitted !== undefined) view.fitted = fitted;
   if (viewport !== undefined) view.viewport = viewport;
+  if (focus !== undefined) view.focus = focus;
   return view;
+}
+
+/**
+ * DEGRADATION BY KIND, and this is the one field in the autosave that degrades at all.
+ *
+ * Everything else here pushes a problem and `parseAutosaveView` then throws, which
+ * discards the whole cache — 787 positions, the expansion and the viewport — behind
+ * "autosave-view.json is corrupt and was ignored". For `focus` that trade is wrong in
+ * both extremes, and both were argued for:
+ *
+ *   - Wholesale reset discards the one thing nothing in this system can re-derive. A
+ *     map with no marks is indistinguishable from a map whose marks were just deleted.
+ *   - Per-ENTRY dropping looks right and is worse in a way a count cannot show, because
+ *     `marks` entries are COUPLED THROUGH INHERITANCE. Measured on the corpus: dropping
+ *     one child entry flipped 76 nodes in→out (10% of the graph), dropping one parent
+ *     entry flipped 390 out→in (50%). One dropped `positions` entry costs one node a
+ *     position that auto-layout re-derives. And dropping a child mark leaves the map
+ *     DARKER than the user left it, which does not look broken — it looks like a
+ *     decision.
+ *
+ * So: an unrecognised mark VALUE is preserved verbatim and ignored (the document's own
+ * warn-and-preserve rule for a newer minor, mirrored here because the autosave has no
+ * version locus of its own — that is the only reachable path). Anything STRUCTURALLY
+ * invalid resets `marks` as a unit, because the unrecoverable thing must never be
+ * partially applied. `transparency` is clamped on load either way.
+ *
+ * `scanJson` runs before any of this and throws on `1e400`, `__proto__` and oversized
+ * strings, so those shapes still discard the whole cache. A document-wide safety scan
+ * with a per-field exception is a worse trade than this sentence.
+ */
+function parseFocus(value: JsonValue | undefined, problems: string[]): VisualSpecsFocus | undefined {
+  if (value === undefined) return undefined;
+  if (!isJsonObject(value)) {
+    problems.push('view.focus is not an object');
+    return undefined;
+  }
+  const out: VisualSpecsFocus = {};
+
+  const transparency = value['transparency'];
+  if (transparency !== undefined) {
+    if (typeof transparency !== 'number' || !Number.isInteger(transparency)) {
+      problems.push('view.focus.transparency is not an integer');
+    } else {
+      out.transparency = transparency;
+    }
+  }
+
+  const marks = value['marks'];
+  if (marks !== undefined) {
+    if (!isJsonObject(marks)) {
+      problems.push('view.focus.marks is not an object');
+      return out;
+    }
+    const accepted: Record<NodeId, FocusMarkToken> = Object.create(null) as Record<
+      NodeId,
+      FocusMarkToken
+    >;
+    for (const id of Object.keys(marks)) {
+      const mark = marks[id];
+      if (mark === 'out-of-focus' || mark === 'in-focus') {
+        accepted[id] = mark;
+        continue;
+      }
+      if (typeof mark === 'string') continue; // a token from a newer minor: ignored, not fatal
+      // Structurally invalid: reset as a unit rather than re-resolve a subtree silently.
+      problems.push('view.focus.marks contains a non-string value; focus marks were reset');
+      return out;
+    }
+    out.marks = accepted;
+  }
+
+  return out;
 }
 
 function parsePositions(

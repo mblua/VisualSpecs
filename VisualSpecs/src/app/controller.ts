@@ -13,6 +13,7 @@
 
 import type { NodeId, Position } from '../contract/types.ts';
 import { importDoc, refresh, type LoadedDoc } from '../contract/load.ts';
+import { DEFAULT_LIMITS, type Limits } from '../contract/limits.ts';
 import { exportDoc } from '../contract/export.ts';
 import type { ViewState } from '../contract/view.ts';
 import { computeGeometry, type Geometry } from '../domain/layoutEngine.ts';
@@ -37,10 +38,19 @@ export class Controller {
   private currentDerived: Derived;
   private listeners = new Set<Listener>();
   private offRenderer: (() => void) | null = null;
+  /**
+   * The same band `validate` and `load` are given, so the domain's clamp on
+   * `SetFocusTransparency` and the contract's clamp on load cannot disagree. Injectable
+   * and defaulted, matching `importDoc(text, limits = DEFAULT_LIMITS)`; a second
+   * hard-coded `DEFAULT_LIMITS` here would have been a split brain the moment a test
+   * injected a narrow band at the contract boundary.
+   */
+  private readonly limits: Limits;
 
-  constructor(renderer: GraphRenderer, initial: AppState) {
+  constructor(renderer: GraphRenderer, initial: AppState, limits: Limits = DEFAULT_LIMITS) {
     this.renderer = renderer;
     this.currentState = initial;
+    this.limits = limits;
     this.currentDerived = derive(initial);
   }
 
@@ -192,10 +202,16 @@ export class Controller {
       const p = this.currentDerived.geometry.position.get(n);
       if (p !== undefined) positions.set(entity, { x: round(p.x), y: round(p.y) });
     }
+    // Threading `focus` here is NOT bookkeeping. This literal is the export path, and
+    // the obvious way to silence the compile error a required field creates is
+    // `focus: emptyFocus()` — which type-checks and drops every mark from every export
+    // while the app still shows them on screen. A required field makes the omission
+    // loud; only reading it from state makes the export correct.
     const view: ViewState = {
       expanded: this.currentState.view.expanded,
       positions,
       fitted: this.currentState.view.fitted,
+      focus: this.currentState.view.focus,
       viewport: this.currentState.view.viewport,
     };
     return exportDoc({ raw: this.currentState.raw, view, readOnly: this.currentState.readOnly });
@@ -256,6 +272,7 @@ export class Controller {
       model: this.currentState.model,
       outline: this.currentState.outline,
       geometry: this.currentDerived.geometry,
+      limits: this.limits,
     };
   }
 

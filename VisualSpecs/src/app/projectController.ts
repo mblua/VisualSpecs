@@ -1,4 +1,9 @@
-import { autosaveMatches, autosaveViewText, parseAutosaveView } from '../contract/autosaveView.ts';
+import {
+  autosaveMatches,
+  autosaveViewText,
+  parseAutosaveView,
+  viewToJson,
+} from '../contract/autosaveView.ts';
 import { exportDoc } from '../contract/export.ts';
 import { timestampedJsonName } from '../contract/filename.ts';
 import { DEFAULT_LIMITS, type Limits } from '../contract/limits.ts';
@@ -13,8 +18,8 @@ import {
   type VisualSpecsProjectManifestV1,
 } from '../contract/projectManifest.ts';
 import { computeDocRevision, type DocRevision } from '../contract/revision.ts';
-import type { VisualSpecsView } from '../contract/types.ts';
-import type { ViewState } from '../contract/view.ts';
+import type { FocusMarkToken, NodeId, VisualSpecsView } from '../contract/types.ts';
+import type { FocusMark, ViewState } from '../contract/view.ts';
 import type {
   PickedTextSource,
   ProjectHead,
@@ -1411,17 +1416,52 @@ export class ProjectController {
   }
 }
 
+/**
+ * Every `ViewState` field, so that adding one is a COMPILE ERROR here.
+ *
+ * It forces the next field to be *considered*; it cannot force it to be handled
+ * correctly, and it is worth being precise about that because this is the fourth
+ * instance of one pattern (§5.1.1 of the plan):
+ *
+ *   v1  a required field guards the `with*` copiers ......... not this boundary
+ *   v2  an exhaustive projection guards the dirty trigger ... not the payload
+ *   v3  the exhaustive projection guards presence ........... not canonicality
+ *
+ * No type can express "this projector reads its argument". A branded canonical return
+ * type was tried and rejected: `focus: () => SOME_CONSTANT` satisfies it, which is
+ * precisely the v2 failure wearing a certificate. The load-bearing guard is the
+ * property test — mutate one field, assert the key changes; reorder one field, assert it
+ * does not — and the structural guard is that the key and the payload are now derived
+ * from ONE path (see `viewKey`), so they cannot disagree.
+ */
+const VIEW_FIELDS: Record<keyof ViewState, true> = {
+  expanded: true,
+  positions: true,
+  fitted: true,
+  focus: true,
+  viewport: true,
+};
+
 function toVisualSpecsView(view: ViewState): VisualSpecsView {
+  void VIEW_FIELDS;
   const positions: VisualSpecsView['positions'] = Object.create(null) as NonNullable<
     VisualSpecsView['positions']
   >;
   for (const [id, p] of view.positions) {
     positions[id] = p.pinned === true ? { x: p.x, y: p.y, pinned: true } : { x: p.x, y: p.y };
   }
+  const marks: Record<NodeId, FocusMarkToken> = Object.create(null) as Record<
+    NodeId,
+    FocusMarkToken
+  >;
+  for (const id of [...view.focus.marks.keys()].sort()) {
+    marks[id] = view.focus.marks.get(id) as FocusMarkToken;
+  }
   return {
     positions,
     expanded: [...view.expanded].sort(),
     fitted: [...view.fitted].sort(),
+    focus: { transparency: view.focus.transparency, marks },
     viewport: view.viewport,
   };
 }
@@ -1432,10 +1472,20 @@ function toViewState(view: VisualSpecsView, fallback: ViewState): ViewState {
     positions.clear();
     for (const [id, p] of Object.entries(view.positions)) positions.set(id, p);
   }
+  let focus = fallback.focus;
+  if (view.focus !== undefined) {
+    const marks = new Map<NodeId, FocusMark>();
+    for (const [id, mark] of Object.entries(view.focus.marks ?? {})) marks.set(id, mark);
+    focus = { marks, transparency: view.focus.transparency ?? fallback.focus.transparency };
+  }
   return {
     positions,
     expanded: view.expanded === undefined ? fallback.expanded : new Set(view.expanded),
     fitted: view.fitted === undefined ? fallback.fitted : new Set(view.fitted),
+    // `?? fallback` on the READ side is the quiet half of the same defect: without a
+    // `focus` branch this keeps whatever is on screen instead of what was saved, so a
+    // restore appears to work and silently discards the file's marks.
+    focus,
     viewport: view.viewport ?? fallback.viewport,
   };
 }
@@ -1445,12 +1495,28 @@ function cloneView(view: ViewState): ViewState {
     positions: new Map(view.positions),
     expanded: new Set(view.expanded),
     fitted: new Set(view.fitted),
+    focus: { marks: new Map(view.focus.marks), transparency: view.focus.transparency },
     viewport: { ...view.viewport },
   };
 }
 
+/**
+ * The dirty/autosave trigger. Derived from the SAME projection the autosave payload
+ * uses, which is the point: it used to be `JSON.stringify(toVisualSpecsView(view))`,
+ * a second function that sorted two of its three keyed fields and iterated `positions`
+ * in Map insertion order — so `MoveNode a; MoveNode b; ResetLayout; MoveNode b;
+ * MoveNode a` produced identical position values and a DIFFERENT key, reachable through
+ * ordinary commands. The cost was over-reporting on a path that runs once per pan
+ * pointermove.
+ *
+ * `viewToJson` is the one function that sorts every keyed field at every depth it owns,
+ * and `autosaveViewText` already routes through it, so keying off it makes the trigger
+ * and the payload the same function of the same state. `JSON.stringify` is safe here
+ * *because* the value is already canonical — using `canonicalStringify` instead would
+ * buy depth a second time for a measured p50 1.40 ms against 0.33 ms, on the pan path.
+ */
 function viewKey(view: ViewState): string {
-  return JSON.stringify(toVisualSpecsView(view));
+  return JSON.stringify(viewToJson(toVisualSpecsView(view)));
 }
 
 function newId(): string {
