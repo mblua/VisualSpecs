@@ -355,9 +355,38 @@ against a hand-written 1.2 document: `unknown-minor` taken, `raw.view.focus` ver
 
 ### 5.6 Autosave — per-entry degradation, with a surface and an owner
 
-**An invalid `focus` degrades per entry: malformed marks are dropped individually, valid marks are
-kept, `transparency` is clamped, and the count of dropped entries is reported.** Wholesale
-`emptyFocus()` is reserved for `focus` not being an object at all.
+**Degradation is by kind, not by entry, because `marks` entries are coupled through inheritance.**
+
+- An **unrecognised mark value** — a string this build does not know — is **preserved verbatim and
+  ignored for resolution**, mirroring §5.4 into the autosave path. This is the only reachable path (a
+  higher minor adding a third token) and the autosave has no version locus of its own, so without this
+  clause the cache would treat a future token as corruption where the document treats it as forward
+  compatibility.
+- Any **structurally invalid entry** — a key or value that is not a string — degrades `marks` **as a
+  unit**, because the unrecoverable thing must never be *partially* applied. `transparency` is still
+  clamped and kept.
+- **The report names the effective-state delta, not an entry count**: "focus changed for N entities".
+- Wholesale `emptyFocus()` is reserved for `focus` not being an object at all.
+
+v3's first attempt degraded **per entry**, and that is right for `positions`, `expanded` and `fitted`,
+whose entries are independent — one dropped entry affects one node. `focus.marks` entries are coupled
+through inheritance, so **one dropped entry re-resolves an arbitrarily large subtree.** Measured on the
+committed corpus from this RFC's own worked example (dim a package, bring one subtree back, 390 of 787
+nodes effectively out of focus): dropping the **child** entry flips **76 nodes in → out** (10% of the
+graph); dropping the **parent** entry flips **390 nodes out → in** (50%). One dropped `positions` entry
+costs one node a position that auto-layout re-derives.
+
+The direction is what makes it more than a curiosity: dropping the child mark makes the map *darker*
+than the user left it, so the entity they explicitly re-lit is now dark and the map does not look
+broken — it looks like a decision. §2.1 is the section that says nothing in the system can re-derive an
+attention decision. And "N entries dropped" does not name the subtree that moved, which is why the
+report is stated as a delta.
+
+Note for anyone revising this: **§11.8 would have passed.** It asserts that per-entry degradation keeps
+valid marks and reports a count, which is exactly the defective behaviour — the test cannot see the
+re-resolution, because the re-resolution is *correct* given the marks that survived. Two red teams
+pushed this rule from wholesale to per-entry from opposite directions and neither extreme is right for
+an inherited structure.
 
 v2 degraded wholesale, and that was an own-goal: §2.1's argument for treating focus differently from a
 layout is that **nothing can re-derive a mark**, while §5.6 justified degrading it as a *cosmetic
@@ -580,8 +609,22 @@ starts the Explorer **closed** at narrow (`activeOverlay` begins `null`) and clo
 temporary session with no project (`projectOpen` is `true` when `!hasProject`). Since §13 resigns any
 canvas affordance and every focus control lives in the Explorer, a person otherwise meets a visibly
 faded map with no on-screen explanation and no on-screen escape — reachable by dimming, resizing, and
-returning tomorrow, because focus survives reload. The always-mounted `status` region and the banner
-host are both outside the Explorer; one of them announces that focus is active and where the escape is.
+returning tomorrow, because focus survives reload.
+
+**The announcement goes in `bannerHost`, not the `status` region.** `statusHost` is
+`role="status" aria-live="polite"` with a single slot that `announce()` (`ui/app.ts:1425`) rewrites on
+**every controller notification**, so there are only two outcomes there and both are failures: write
+the focus state once and the next single click clobbers it — P2-d returning on a longer fuse — or
+re-assert it after every notification and a `polite` region re-announces an unchanged state to a screen
+reader at `viewport:change` frequency, which is once per pan pointermove.
+
+`bannerHost` already carries exactly this shape of persistent state, rebuilt from state rather than from
+events: "Read-only", and three lines from where a focus banner goes, *"A filter is hiding N node(s) and
+M relation(s). Projection is unchanged — a filter is a mask, not a re-projection."* **A focus banner is
+that same sentence for the other mask**, and the parallel is worth preserving in its wording.
+
+§11's presence assertion would have passed either way — it checks presence at a moment, and neither
+failure above is a failure of presence at that moment.
 
 ### 8.4 Row state, and the counter that makes an unlisted mark reachable
 
