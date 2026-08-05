@@ -14,7 +14,13 @@ import type { Manifest } from '../manifests.ts';
 import { dirOf } from '../manifests.ts';
 import { fileNodeId } from '../ownership.ts';
 import { readTextFile } from '../repo.ts';
-import { inlineModuleSpans, neutralise, parseModDeclarations, parseUseStatements } from './usetree.ts';
+import {
+  conditionOf,
+  inlineModuleSpans,
+  neutralise,
+  parseModDeclarations,
+  parseUseStatements,
+} from './usetree.ts';
 
 /**
  * Whether the box the map draws for a directory IS the Rust module a reader will read it
@@ -135,12 +141,14 @@ export function extractRustImports(
           const target = resolveChildModuleFile(file, decl.name, tracked, rootFile);
           if (target === null) continue; // inline module or a file that is not tracked
           if (target === file) continue;
+          const condition = conditionOf(decl.cfg);
           edges.push({
             id: `rust-imports:${fileNodeId(file)}->${fileNodeId(target)}`,
             kind: 'rust-imports',
             sourceId: fileNodeId(file),
             targetId: fileNodeId(target),
             confidence: 'resolved',
+            ...(condition === null ? {} : { conditions: [condition] }),
             evidence: [{ path: file, line: decl.line, note: `mod ${decl.name};` }],
             metadata: { via: 'mod' },
           });
@@ -176,6 +184,7 @@ export function extractRustImports(
             const target = longestPrefixModuleFile(absolute, index);
             if (target === null || target === file) continue;
 
+            const condition = conditionOf(statement.cfg);
             edges.push({
               id: `rust-imports:${fileNodeId(file)}->${fileNodeId(target)}`,
               kind: 'rust-imports',
@@ -184,6 +193,9 @@ export function extractRustImports(
               // Heuristic, permanently: no macro expansion, no cfg evaluation, no
               // symbol resolution. The evidence line is how a reader checks it.
               confidence: 'heuristic',
+              // RECORDED, not evaluated: which configuration this reference was written
+              // under. `dedupe` decides what the RELATION is conditional on.
+              ...(condition === null ? {} : { conditions: [condition] }),
               evidence: [{ path: file, line: statement.line, note: `use ${leaf.path.join('::')};` }],
               metadata: { via: 'use' },
             });
@@ -360,10 +372,30 @@ function longestPrefixModuleFile(path: readonly string[], index: CrateIndex): st
  *   * `confidence` keeps the STRONGEST backing, because a `mod` declaration whose
  *     file was checked really does resolve the relation — the `use` adds evidence
  *     to it, not doubt.
+ *   * `conditions` is the UNION over references, and vanishes the moment ONE reference
+ *     is unconditional. Each incoming edge carries the condition of exactly one
+ *     reference; the relation exists wherever ANY of them does, so the entries read as
+ *     alternatives. One unconditional reference means the relation is there in every
+ *     build, and keeping the others would understate it — which under "absent means
+ *     unconditional" is the direction that produces a false claim.
  */
 function dedupe(edges: VisualSpecsEdge[]): void {
   const byId = new Map<string, VisualSpecsEdge>();
   const viasById = new Map<string, Set<string>>();
+  /** null once any reference was unconditional. */
+  const conditionsById = new Map<string, Set<string> | null>();
+
+  const noteConditions = (edge: VisualSpecsEdge): void => {
+    const seen = conditionsById.get(edge.id);
+    if (seen === null) return; // already known unconditional
+    if (edge.conditions === undefined) {
+      conditionsById.set(edge.id, null);
+      return;
+    }
+    const set = seen ?? new Set<string>();
+    for (const c of edge.conditions) set.add(c);
+    conditionsById.set(edge.id, set);
+  };
 
   for (const edge of edges) {
     const via = String(edge.metadata?.['via'] ?? '');
@@ -372,10 +404,12 @@ function dedupe(edges: VisualSpecsEdge[]): void {
     if (seen === undefined) {
       byId.set(edge.id, edge);
       viasById.set(edge.id, new Set(via === '' ? [] : [via]));
+      conditionsById.set(edge.id, edge.conditions === undefined ? null : new Set(edge.conditions));
       continue;
     }
 
     viasById.get(edge.id)?.add(via);
+    noteConditions(edge);
     for (const ev of edge.evidence ?? []) {
       if (!(seen.evidence ?? []).some((e) => e.path === ev.path && e.line === ev.line)) {
         (seen.evidence ??= []).push(ev);
@@ -388,6 +422,12 @@ function dedupe(edges: VisualSpecsEdge[]): void {
   for (const edge of byId.values()) {
     const vias = [...(viasById.get(edge.id) ?? [])].filter((v) => v !== '').sort();
     if (vias.length > 0) edge.metadata = { ...edge.metadata, via: vias };
+    const conditions = conditionsById.get(edge.id);
+    if (conditions === null || conditions === undefined || conditions.size === 0) {
+      delete edge.conditions;
+    } else {
+      edge.conditions = [...conditions].sort();
+    }
     edge.evidence?.sort((a, b) => (a.line ?? 0) - (b.line ?? 0));
     edges.push(edge);
   }
