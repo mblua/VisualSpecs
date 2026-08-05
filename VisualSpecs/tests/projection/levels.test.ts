@@ -211,6 +211,12 @@ describe('the member-tuple order, which no corpus can exercise', () => {
     expect(compareMemberTuples(['a', 'b', 'x'], ['a', 'b', 'y'])).toBeLessThan(0);
     // Kills the "only look at field 0" implementation: identical there, ordered here.
     expect(compareMemberTuples(['a', 'b'], ['a', 'c'])).not.toBe(0);
+
+    // Fields BEFORE length. Shortlex — length first, then field by field — is also a
+    // total order and would serve the invariance this protects just as well, so this
+    // line is what makes the contract's wording ("field by field") the thing that is
+    // actually pinned, rather than a comment a later refactor could quietly contradict.
+    expect(compareMemberTuples(['b'], ['a', 'a'])).toBeGreaterThan(0);
   });
 
   it('sorts the SHORTER tuple first when one runs out — the prefix case', () => {
@@ -219,7 +225,12 @@ describe('the member-tuple order, which no corpus can exercise', () => {
     expect(compareMemberTuples([], ['a'])).toBeLessThan(0);
   });
 
-  it('is a TOTAL order: irreflexive, antisymmetric and transitive on a hand-built set', () => {
+  it('is a TOTAL order: reflexive, antisymmetric, transitive AND trichotomous', () => {
+    // Trichotomy is the one that makes the other three add up to "total". Without it a
+    // comparator that ties two DISTINCT tuples passes all of the rest — which is not
+    // hypothetical: dropping the length tie-break makes `['a']` and `['a','b']`
+    // compare equal, and that mutant passes everything here except the prefix case.
+    // The name of this test promised four properties while checking three.
     const tuples: readonly (readonly string[])[] = [
       [],
       ['a'],
@@ -245,6 +256,13 @@ describe('the member-tuple order, which no corpus can exercise', () => {
             expect(compareMemberTuples(x, z)).toBeLessThan(0);
           }
         }
+      }
+    }
+
+    // Trichotomy: only equal tuples compare equal.
+    for (const x of tuples) {
+      for (const y of tuples) {
+        if (compareMemberTuples(x, y) === 0) expect(x).toEqual(y);
       }
     }
   });
