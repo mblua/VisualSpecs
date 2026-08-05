@@ -278,6 +278,31 @@ export function containerLevelSummary(result: RankResult, outline: Outline): str
   return parts.join(' · ');
 }
 
+/**
+ * Sibling instability, as text — the last stretch of the `null`-not-`NaN` rule.
+ *
+ * `rank()` emits `null` where `Ca = Ce = 0` and never a non-finite, and the port rejects
+ * a scene carrying one. Neither of those stops a panel from formatting that `null` into
+ * the STRING "NaN" and putting it on screen, which is the same defect arriving through
+ * the last door left open. It says "no data", and it carries its denominator, because
+ * `0.5` from (1,1) and `0.5` from (50,50) are not the same claim.
+ *
+ * It is deliberately not called Martin's instability anywhere the reader can see: this is
+ * computed only among siblings of one parent, so a module with 0 internal and 40 external
+ * dependencies comes out undefined and looking isolated. Borrowing the name would ask for
+ * an intuition the number does not honour.
+ */
+export function formatSiblingInstability(
+  value: number | null | undefined,
+  ce: number,
+  ca: number,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return 'no data — no relations among siblings';
+  }
+  return `${value.toFixed(2)} sibling instability (Ce ${String(ce)} / Ca ${String(ca)})`;
+}
+
 /** What the detail panel says about one group. States what survives, and states that the
  *  test marks absence of verification rather than falsehood. */
 export function groupSummary(result: RankResult, child: OutlineNodeId): string | null {

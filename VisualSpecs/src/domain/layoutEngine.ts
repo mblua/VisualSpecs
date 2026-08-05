@@ -73,6 +73,17 @@ const NO_FITTED: ReadonlySet<OutlineNodeId> = new Set<OutlineNodeId>();
 
 const NO_CONSTRAINTS: LayoutConstraints = new Map<OutlineNodeId, PackConstraints>();
 
+/**
+ * How much of a lane has to survive the clip for the container to keep drawing bands.
+ *
+ * 0.6 — below that the stripe is more hole than band and says less than nothing. See
+ * `resolveBands` for the measurements this comes off: ordinary dragging costs a lane
+ * 3–12 % of its area, so this fires only on a state somebody built deliberately, and it
+ * degrades the way we agreed — the container emits nothing AND the scene declares it,
+ * because a stripe that vanishes without explanation is silence.
+ */
+const MIN_BAND_AREA_FRACTION = 0.6;
+
 export function computeGeometry(
   model: GraphModel,
   outline: Outline,
@@ -173,7 +184,25 @@ function resolveBands(
         break;
       }
       const blockers = boxes.filter((b) => b.rank !== lane.rank).map((b) => b.box);
-      resolved.push({ rank: lane.rank, rects: subtractBoxes(laneBox, blockers) });
+      const rects = subtractBoxes(laneBox, blockers);
+
+      // The second trigger of the same declared degradation: a lane so eaten away that it
+      // is more hole than band. Defined OVER THE RESULT — the area that survives — rather
+      // than as a threshold picked on the input; a number you read off the outcome beats
+      // one you argue for beforehand.
+      //
+      // Measured on `dir:src-tauri/src` (23 children, corpus `fe3ae85`), dragging boxes of
+      // one rank into another's lane: 1 box loses 3.1 % of the lane, 2 lose 6.2 %, 4 lose
+      // 9.1 %, 6 lose 12.5 % — and at 12.5 % the zebra still reads as a band. The
+      // threshold is set where a lane stops being a lane, which takes a state the user
+      // built on purpose, not an ordinary drag.
+      const survivingArea = rects.reduce((a, r) => a + r.w * r.h, 0);
+      const laneArea = laneBox.w * laneBox.h;
+      if (laneArea > 0 && survivingArea / laneArea < MIN_BAND_AREA_FRACTION) {
+        desynchronized = true;
+        break;
+      }
+      resolved.push({ rank: lane.rank, rects });
     }
 
     if (desynchronized) continue;

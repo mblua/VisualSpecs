@@ -5,13 +5,17 @@
 // say, over the REAL `rank()` rather than a hand-built result, so the survival predicate
 // is exercised and not just mirrored.
 
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { importDoc } from '../../src/contract/load.ts';
 import { OwnershipOutline, type OutlineNodeId } from '../../src/domain/outline.ts';
+import { allOutlineNodes } from '../../src/domain/commands.ts';
 import { rank } from '../../src/projection/levels.ts';
 import type { EdgeKind } from '../../src/contract/types.ts';
 import {
   containerLevelSummary,
+  formatSiblingInstability,
   groupSummary,
   levelMarker,
   rankBadge,
@@ -142,6 +146,54 @@ describe('the panel states what survives, not what is false', () => {
   it('says nothing about a child that is in no group', () => {
     const { result } = ranked('resolved');
     expect(groupSummary(result, a)).toBeNull();
+  });
+});
+
+describe('nothing this layer produces ever reads "NaN" on screen', () => {
+  // Criterion 5's named gap: `rank()` emits `null` and the port rejects non-finites, and
+  // neither stops a panel from formatting that `null` into the STRING "NaN". This is the
+  // text assertion that closes it — over the REAL corpus, so it covers the 52 of 499
+  // boxes that legitimately have no data.
+  it('formats a null instability as words, not as a non-number', () => {
+    expect(formatSiblingInstability(null, 0, 0)).toBe('no data — no relations among siblings');
+    expect(formatSiblingInstability(undefined, 0, 0)).not.toContain('NaN');
+    expect(formatSiblingInstability(Number.NaN, 0, 0)).not.toContain('NaN');
+    expect(formatSiblingInstability(0.5, 1, 1)).toContain('Ce 1 / Ca 1');
+  });
+
+  it('produces no "NaN" and no "null" anywhere over the real corpus', () => {
+    const text = readFileSync(
+      fileURLToPath(new URL('../../data/agentscommander.json', import.meta.url)),
+      'utf8',
+    );
+    const real = importDoc(text);
+    const realOutline = new OwnershipOutline(real.model);
+    const containers = allOutlineNodes(realOutline).filter(
+      (n) => realOutline.childrenOf(n).length > 0,
+    );
+    expect(containers.length).toBeGreaterThan(60);
+
+    const strings: string[] = [];
+    let checked = 0;
+    for (const container of containers) {
+      const result = rank(real.model, realOutline, container, KINDS, 'observed');
+      strings.push(containerLevelSummary(result, realOutline));
+      for (const child of realOutline.childrenOf(container)) {
+        strings.push(rankBadge(result, child) ?? '');
+        strings.push(groupSummary(result, child) ?? '');
+        strings.push(
+          formatSiblingInstability(
+            result.siblingInstability.get(child),
+            result.edges.filter((e) => e.sourceId === child).length,
+            result.edges.filter((e) => e.targetId === child).length,
+          ),
+        );
+        checked += 1;
+      }
+    }
+    expect(checked).toBeGreaterThan(400);
+    const bad = strings.filter((s) => /NaN|undefined|\bnull\b|Infinity/.test(s));
+    expect(bad).toEqual([]);
   });
 });
 

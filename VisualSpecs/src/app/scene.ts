@@ -42,6 +42,16 @@ export const SEARCH_EDGE_OPACITY = 0.14;
  */
 export const MIXED_SUBTREE_MARKER = '▣';
 
+/**
+ * A container in Levels mode that was ranked and drew no lanes (Issue #44).
+ *
+ * The glyph is not the explanation — a glyph on a canvas cannot explain itself, which is
+ * why the detail panel carries the sentence. What it does is stop the degradation from
+ * being silent, and silence is the one thing it must not be: the container looks exactly
+ * like one with nothing to stratify unless it says otherwise.
+ */
+export const LANES_HIDDEN_MARKER = '⊘';
+
 export interface SceneResult {
   scene: RenderScene;
   hiddenByFilter: { nodes: number; edges: number };
@@ -152,6 +162,14 @@ export function buildScene(
         const hides = levelMarker(ranking, n);
         if (hides !== undefined) markers.push(hides);
       }
+    }
+    // DECLARED DEGRADATION. A container that WAS ranked and still drew no lanes — either
+    // its bands stopped describing their own boxes (a fit under one basis, then a toggle
+    // to the other) or the clip ate one of them past the point of being a lane. Not
+    // drawing them is right; doing it in silence is not, because a stripe that vanishes
+    // without explanation is an assertion of its own.
+    if (isExpanded && rankings.has(n) && !geometry.bands.has(n)) {
+      markers.push(LANES_HIDDEN_MARKER);
     }
     // `marker` is a free string the port draws without interpreting, so it COMPOSES:
     // focus's mixed-subtree glyph and the hidden-entanglement glyph stop competing for
