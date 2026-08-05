@@ -302,7 +302,7 @@ export interface VisualSpecsDoc {
     { "id": "file:src/shared/ipc.ts", "kind": "file", "label": "ipc.ts",
       "parentId": "dir:src/shared", "path": "src/shared/ipc.ts",
       "metadata": { "language": "typescript", "isTest": false } }
-    // … one node per git-tracked file (637 tracked files, verified)
+    // … one node per git-tracked file (705 tracked files, verified)
   ],
 
   "edges": [
@@ -377,7 +377,7 @@ export interface VisualSpecsDoc {
     "viewport": { "x": 0, "y": 0, "zoom": 1 }
   },
 
-  "stats": { "trackedFiles": 637 }
+  "stats": { "trackedFiles": 705 }
 }
 ```
 
@@ -829,7 +829,7 @@ Three pure steps, one impure call. Everything above `render` is testable without
 * **Click an aggregated edge** → detail panel lists its `sourceEdgeIds`: every logical relation, both endpoints, `confidence`, and evidence (`path:line`, plus the snippet if the document has one). **This is where the product delivers its promise.**
 * **Search** → matches highlight, others dim; `ExpandTo` reveals a hit hidden inside collapsed ancestors.
 * **Coverage banner** → if any relation family is `degraded` or `unavailable`, the UI says so, with the reason. A quiet map is not a trustworthy map.
-* **Initial view** → `expanded = { repository }`: the repository, **5 applications, 2 npm packages and 2 Rust crates** — ten boxes. Not 637 overlapping files. Asserted by test (§12) and measured by the browser smoke.
+* **Initial view** → `expanded = { repository }`: the repository, **5 applications, 2 npm packages and 2 Rust crates** — ten boxes. Not 705 overlapping files. Asserted by test (§12) and measured by the browser smoke.
 
 ### 9.4 Accessibility (minimum, in v1)
 
@@ -892,7 +892,7 @@ What is actually there, all verified:
 * `createDefaultTransport()` returns **`isTauri ? new TauriTransport() : new WsTransport()`**. `TauriTransport` dynamically imports `@tauri-apps/api/core` and calls its `invoke`. `WsTransport.invoke(cmd, args)` sends `{id, cmd, args}` **over a WebSocket**.
 * **So a call site is not unconditionally Tauri IPC.** It is a *command contract* with **two backends**, selected at runtime by platform.
 * Backend 1 — **Tauri**: `#[tauri::command]` attributes (**138**, across 20 files, using an *anchored* pattern — `stats.tauriCommandAttributes` and `stats.tauriCommandAttributeFiles`) **plus** registration in `tauri::generate_handler![…]` at `src-tauri/src/lib.rs:2550`. Tauri requires that registration; an unregistered attribute is not callable.
-* Backend 2 — **the web router**: `src-tauri/src/web/commands.rs`, a `match` with **37 arms** keyed by command name, reached over the WebSocket transport.
+* Backend 2 — **the web router**: `src-tauri/src/web/commands.rs`, a `match` with **46 arms** keyed by command name (`stats.webRouterArms`), reached over the WebSocket transport. Counting these requires stripping comments first: a brace inside a comment truncates the `match` block and a naive count reports 39.
 
 The extraction rules that follow:
 
@@ -908,8 +908,8 @@ A command bound to **both** backends produces **two** logical edges with differe
 
 Verified consequences that the earlier draft got wrong:
 
-* `subscribe_session` (`src-tauri/src/web/commands.rs:532`) and `get_pty_size` (`:556`) are **web-router only** — they are *not* `#[tauri::command]`. They resolve as `web-command` and are **unresolved as Tauri**.
-* `get_instance_label` is defined (`src-tauri/src/commands/config.rs:1604`) and registered (`src-tauri/src/lib.rs:2136`) but has **no call site in `ipc.ts`** — a **registered-but-uncalled command**. An earlier draft of this document asserted `"unusedCommands": []`. That was false.
+* `subscribe_session` (`src-tauri/src/web/commands.rs:570`) and `get_pty_size` (`:594`) are **web-router only** — they are *not* `#[tauri::command]`. They resolve as `web-command` and are **unresolved as Tauri**.
+* `get_instance_label` is defined (`src-tauri/src/commands/config.rs:2004`) and registered (`src-tauri/src/lib.rs:2644`) but has **no call site in `ipc.ts`** — a **registered-but-uncalled command**. An earlier draft of this document asserted `"unusedCommands": []`. That was false. It is also why the drawn `tauri-command` aggregate is **137** and not the 138 that are registered.
 
 ### 10.5 Counts come from parsers, not from greps
 
@@ -1291,7 +1291,7 @@ Three small things that each made the product quietly less than it claimed:
 
 * **Internal buckets were not selectable.** The detail panel held an `aria-live` announcement
   for them that **no UI could reach**: the branch existed, and clicking the disclosure only
-  opened it. A screen reader never learned that 530 relations had been folded into that box.
+  opened it. A screen reader never learned that 665 relations had been folded into that box.
   The `<summary>` now selects the bucket through the ordinary command loop.
 * **Two floating drawers left 80px of map.** Measuring the canvas said 800×560 and told us
   nothing, because the drawers were lying *on top of it*. Below the breakpoint they are

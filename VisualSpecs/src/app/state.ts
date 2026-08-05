@@ -88,7 +88,7 @@ export function stateFromLoaded(loaded: LoadedDoc, loss: LossReport | null = nul
 
   // An extractor document has no `view`; the app then computes a deterministic
   // initial one — the repository, its applications, its packages and its crates: ten
-  // boxes, not 637 files (§9.3).
+  // boxes, not 705 files (§9.3).
   //
   // The condition is "the document PROVIDED no expansion", NOT "the expansion is
   // empty". `expanded: []` is a map the user deliberately collapsed and saved, and

@@ -150,9 +150,10 @@ export function focusOpacity(transparency: number): number {
  * One bit is wrong in BOTH directions, and both were measured. Asking the aggregate's
  * visible endpoints HID a relation the user had explicitly re-lit. Asking "every
  * relation out" did the opposite: on the committed corpus the largest drawn aggregate
- * carries 136 logical relations across 21 target entities, so bringing ONE entity back
- * into focus returned the whole ×136 line to full strength while 122 of its relations
- * were still switched off — behind a width that encodes 136.
+ * carries 137 logical relations across 20 target entities, so bringing ONE entity back
+ * into focus returned the whole ×137 line to full strength while most of its relations
+ * were still switched off — even the biggest of those targets accounts for only 31 of
+ * the 137, leaving 106 dark behind a width that encodes 137.
  *
  * Exact at ×1: `bright/total ∈ {0, 1}` yields `dim` or `1`, so the boolean rule is a
  * special case and the ×1 evidence for "either endpoint" over "both" is untouched.
@@ -178,7 +179,7 @@ export function aggregateFocusOpacity(
   // A NON-ZERO bright fraction must be PERCEPTIBLY distinct from a zero one, not merely
   // numerically distinct. The plain continuous form satisfies monotonicity, exactness at
   // ×1 and composition under `min`, and still loses the override at the fine end:
-  // measured at the default transparency on the corpus's ×136 aggregate, 1/136 bright
+  // measured at the default transparency on the ×136 aggregate of the day, 1/136 bright
   // moves the line by Δcontrast 0.007 — one 8-bit step in one channel, while 14/136
   // moves it by 0.246 and is visible. The same argument that rejects transparency 95 as
   // "perceptually gone", applied to a difference rather than a value.

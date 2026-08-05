@@ -5,8 +5,8 @@ repositories, applications, packages and crates, directories and files as boxes;
 evidence-carrying relations between them; a hierarchy you expand and collapse by
 double-click.
 
-It ships with a committed map of **AgentsCommander** — 637 git-tracked files, 744 nodes,
-1609 relations — produced by the extractor in this directory, not typed in by hand.
+It ships with a committed map of **AgentsCommander** — 705 git-tracked files, 817 nodes,
+1947 relations — produced by the extractor in this directory, not typed in by hand.
 
 ![The AgentsCommander map](docs/screenshots/agentscommander-map.png)
 
@@ -290,7 +290,7 @@ through exactly one file, over a transport that has two different backends behin
 
 Collapsed, `src/shared/ipc.ts` folds into its npm package and the Rust command modules fold
 into their crate, and every command relation projects onto the same visible pair — so you
-see **one line carrying ×133 `tauri-command`** and **one carrying ×43 `web-command`**. Click
+see **one line carrying ×137 `tauri-command`** and **one carrying ×45 `web-command`**. Click
 either and it resolves into its individual commands, each pointing at the call site, the
 `#[tauri::command]` attribute and the `generate_handler!` registration. Expand the crate and
 the same relations resolve back to their specific files.
@@ -544,7 +544,7 @@ What it promises (plan/9-extract-watch.md is the full spec):
   are resolved against the git-tracked tree — the file provably exists, so it is proof, not a
   guess.
 * **Rust** — a real **use-tree parser** (paths, `{}` groups, `as`, `self`, `super`, globs),
-  because grouped use-trees are real: **516** of them in this repository, and a per-line regex
+  because grouped use-trees are real: **813** of them in this repository, and a per-line regex
   mis-parses every one. `mod foo;` resolves to a file whose existence is **checked**;
   `#[cfg(test)] mod tests { … }` has no backing file and does not invent one. Globs go to
   `unresolved`. Coverage: **`degraded`, permanently and honestly** — no macro expansion, no
@@ -562,22 +562,26 @@ Every number below is produced by an anchored pattern or a parser and pinned by 
 test. A raw grep is not evidence — that is not a slogan, it is why the architecture's own
 first draft published three wrong numbers.
 
+Current as of AgentsCommander `1b0e934`. Every figure here is pinned by the dataset test
+and, since #24, corroborated by a method that is not the extractor's own output — the
+table and the test move together or the gate goes red.
+
 | Fact | Value |
 |---|---|
-| git-tracked files | **637** |
-| nodes / relations | **744** / **1609** |
-| nodes by kind | repository **1** · application **5** · package **2** · crate **2** · directory **97** · file **637** |
+| git-tracked files | **705** |
+| nodes / relations | **817** / **1947** |
+| nodes by kind | repository **1** · application **5** · package **2** · crate **2** · directory **102** · file **705** |
 | anchors | **4** = **2 npm packages** (the root `package.json`, `npm/package.json`) + **2 Rust crates** (`src-tauri`, `crates/session-bridge`). A crate is its own kind, not a package with an ecosystem tag. |
 | applications | **5** — Tauri desktop, web, two `session-bridge` binaries, the npm CLI |
-| `#[tauri::command]` attributes, **anchored** | **134** (an unanchored grep finds 135 — one is inside a comment at `commands/task.rs:424`) |
-| commands registered in `generate_handler!` | **134** |
-| `transport.invoke` call sites | **136**, **all of them in `src/shared/ipc.ts`** |
-| `tauri-command` / `web-command` relations | **133** / **43** |
-| commands bound to **both** backends | **41** |
+| `#[tauri::command]` attributes, **anchored** | **138**, across **20** files (an unanchored grep finds **141** across 21 — three are prose inside comments, at `commands/task.rs:426` and `session/session.rs:58` and `:606`) |
+| commands registered in `generate_handler!` | **138** — the union of the two lists, at `lib.rs:2550` and `commands/resource_monitor.rs:466`, not their sum |
+| `transport.invoke` call sites | **140**, **all of them in `src/shared/ipc.ts`** |
+| `tauri-command` / `web-command` relations | **137** / **45** — 137 and not 138 because `get_instance_label` is registered but never called, so there is no relation to draw |
+| commands bound to **both** backends | **43** |
 | registered but **never called** | **`get_instance_label`** — an earlier draft asserted `"unusedCommands": []`. That was never measured, and it is false. |
 | web-router-only (unresolved as Tauri) | **`subscribe_session`**, **`get_pty_size`** |
-| the facade's own non-literal dispatch | **1**, at `src/shared/ipc.ts:105` — `unresolved`, never a phantom edge |
-| grouped Rust use-trees | **516** |
+| the facade's own non-literal dispatch | **1**, at `src/shared/ipc.ts:117` — `unresolved`, never a phantom edge |
+| grouped Rust use-trees | **813** — of which **one is a known false positive** (#25): `stripComments` copies string literals through, so the English word `use` in a `format!` template at `entity_creation.rs:388` parses as a six-leaf group. The corroborated count is **812**. |
 | `paths` alias usages in `src/` | **0** — recorded, not mistaken for "unsupported" |
 
 ### Path confinement

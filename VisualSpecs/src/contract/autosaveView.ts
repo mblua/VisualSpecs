@@ -34,7 +34,7 @@ export interface VisualSpecsAutosaveViewV1 {
  *
  * **This is the fatal/recoverable split**, and it has to live in the return type rather
  * than in `problems[]`: everything pushed into `problems` makes `parseAutosaveView`
- * throw, and its only caller answers a throw by discarding the whole cache — 787
+ * throw, and its only caller answers a throw by discarding the whole cache — 817
  * positions, the expansion and the viewport — behind "autosave-view.json is corrupt and
  * was ignored".
  *
@@ -197,7 +197,7 @@ function parseView(
  * DEGRADATION BY KIND, and this is the one field in the autosave that degrades at all.
  *
  * Everything else here pushes a problem and `parseAutosaveView` then throws, which
- * discards the whole cache — 787 positions, the expansion and the viewport — behind
+ * discards the whole cache — 817 positions, the expansion and the viewport — behind
  * "autosave-view.json is corrupt and was ignored". For `focus` that trade is wrong in
  * both extremes, and both were argued for:
  *
@@ -291,7 +291,9 @@ function parseFocus(
       }
       // Structurally invalid. `marks` resets AS A UNIT, because its entries are coupled
       // through inheritance: dropping one entry re-resolves an arbitrarily large
-      // subtree — measured at 76 nodes for a child mark and 390 of 787 for a parent —
+      // subtree — measured at 76 nodes for a child mark and 390 of 787 for a parent, on
+      // the 787-node corpus of the day; not re-measured, because the argument is the
+      // magnitude and not the figure —
       // and dropping a child leaves the map DARKER than the user left it, which does
       // not look broken, it looks like a decision.
       recovered.push('Some saved out-of-focus marks were invalid, so all of them were reset.');
