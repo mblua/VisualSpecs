@@ -10,6 +10,7 @@ import {
   SchemaError,
 } from '../../src/contract/errors.ts';
 import { importDoc } from '../../src/contract/load.ts';
+import { SUPPORTED_MAJOR, SUPPORTED_MINOR } from '../../src/contract/validate.ts';
 import { DEFAULT_LIMITS } from '../../src/contract/limits.ts';
 import { utf8ByteLength } from '../../src/contract/json.ts';
 import { docText, edge, node } from '../support/doc.ts';
@@ -22,8 +23,15 @@ describe('version matrix (§3.4)', () => {
   });
 
   it('accepts an unknown MINOR, warns once, and preserves the extensions', () => {
+    // DERIVED, never typed (#41). The property under test is "one minor above whatever
+    // this build supports" — a literal encodes today's SUPPORTED_MINOR into a string
+    // nothing updates. It does not rot silently: the day the project reaches that minor
+    // the `unknown-minor` warning stops firing and this goes red. The trap is that the
+    // failure points at the assertion rather than at the stale literal, so the obvious
+    // repair is to bump the number, which restores green and defers the problem forever
+    // — while the case name stops describing what the case does.
     const text = JSON.stringify({
-      formatVersion: '1.7',
+      formatVersion: `${SUPPORTED_MAJOR}.${SUPPORTED_MINOR + 1}`,
       nodes: [node('r', 'repository', null)],
       edges: [],
       somethingFromTheFuture: { kept: true },
