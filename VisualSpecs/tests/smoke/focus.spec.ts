@@ -181,7 +181,7 @@ test('a mark on a file is still reported after the search that found it is clear
   await page.locator('.row-menu-item', { hasText: 'Send out of focus' }).click();
 
   // Clearing the search removes the ROW: `renderList` drops `file` and `directory` on
-  // an empty query, which is 777 of 787 entities. The mark must not vanish with it.
+  // an empty query, which is 807 of 817 entities. The mark must not vanish with it.
   await search.fill('');
   await page.waitForTimeout(250);
   await expect(page.locator('.focus-summary')).toContainText('1 marked');
@@ -274,7 +274,7 @@ test('something outside the Explorer says so when focus is on and the Explorer i
 test('right-clicking a node on the CANVAS opens the same menu — the route a file has', async ({ page }) => {
   await boot(page);
   // The reason this exists: a `file` has no sidebar row while the search box is
-  // empty, so for 777 of 787 entities the canvas is the only surface to act on.
+  // empty, so for 807 of 817 entities the canvas is the only surface to act on.
   const target = await page.evaluate(() => {
     const hooks = (globalThis as unknown as {
       __visualSpecs: {
@@ -331,7 +331,7 @@ test('interaction budget: p95 from a transparency input to the painted frame, at
   await openMenuOnRow(page, PACKAGE);
   await page.locator('.row-menu-item', { hasText: 'Send out of focus' }).click();
 
-  // The worst case the corpus offers: every container open, 787 nodes and 1713 lines.
+  // The worst case the corpus offers: every container open, 817 nodes and 1786 lines.
   await page.locator('.canvas-host').click({ position: { x: 5, y: 5 } });
   await page.keyboard.press('e');
   await page.waitForTimeout(1200);

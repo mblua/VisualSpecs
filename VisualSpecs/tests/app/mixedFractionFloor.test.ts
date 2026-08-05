@@ -1,8 +1,12 @@
 // Calibration of `MIXED_FRACTION_FLOOR` (Issue #17, §4.3's fourth constraint).
 //
 // The fraction satisfies monotonicity, exactness at ×1 and composition under `min`,
-// and the PLAIN continuous form still loses the override at the fine end: on the
-// corpus's ×136 aggregate, one bright relation moves the line by a single 8-bit step.
+// and the PLAIN continuous form still loses the override at the fine end: on the ×136
+// aggregate this review measured, one bright relation moves the line by a single 8-bit
+// step. (The corpus's largest aggregate is ×137 since the #24 refresh. The calibration
+// is NOT re-run for that: every threshold below was measured at ×136, and re-deriving
+// them against a moving corpus would replace a measurement with an estimate. The
+// property is what matters, and it does not depend on the exact total.)
 // The same argument that rejects transparency 95 as "perceptually gone", applied to a
 // difference rather than to a value.
 //
@@ -54,7 +58,13 @@ const COLOURS: readonly (readonly [string, string])[] = [
   ['unknown', UNKNOWN_EDGE_STYLE.color] as const,
 ];
 
-/** The corpus's largest drawn aggregate, and the case every one of these is about. */
+/**
+ * The largest drawn aggregate at the time of the calibration, and the case every one of
+ * these is about. Deliberately a FIXED constant and not read from the corpus: the step
+ * counts and percentages pinned below were measured against this total, so a value that
+ * drifts with each re-extraction would silently invalidate them. The corpus line reads
+ * ×137 today; this stays ×136 because that is what was measured.
+ */
 const TOTAL = 136;
 const DEFAULT_TRANSPARENCY = 70;
 

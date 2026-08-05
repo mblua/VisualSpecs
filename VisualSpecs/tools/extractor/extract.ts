@@ -153,7 +153,7 @@ export function extract(options: ExtractOptions): ExtractResult {
     edges: kept.sort((a, b) => (a.id < b.id ? -1 : 1)),
     coverage,
     unresolved,
-    // The initial view: the repository, its applications and its packages. Not 637
+    // The initial view: the repository, its applications and its packages. Not 705
     // overlapping files (§9.3). Positions are left to the deterministic auto-layout.
     view: { expanded: [ownership.repoId] },
     stats: {

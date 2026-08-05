@@ -24,7 +24,7 @@ import {
 
 /**
  * The transparency band is a `Limits` value and an out-of-band number is REPAIRED,
- * not rejected. Refusing to open a 787-node map over a cosmetic alpha is
+ * not rejected. Refusing to open an 817-node map over a cosmetic alpha is
  * disproportionate, and module constants plus a hard error would have made every
  * document written by a build with a different band unopenable, on a field that
  * controls nothing but an alpha, with no minor bump available to signal it.

@@ -368,7 +368,7 @@ export function buildOutlineParents(outline: Outline): Map<OutlineNodeId, Outlin
 
 /**
  * The initial view (§9.3): the repository, its applications, its packages and its
- * crates — not 637 overlapping files. A document that carries its own `view` keeps it,
+ * crates — not 705 overlapping files. A document that carries its own `view` keeps it,
  * including one whose expansion is deliberately EMPTY (§16.9).
  */
 export function initialExpanded(outline: Outline): Set<OutlineNodeId> {

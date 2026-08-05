@@ -54,7 +54,7 @@ describe('the committed dataset is a valid document', () => {
   it('declares the provenance that produced it', () => {
     expect(doc.source?.kind).toBe('git-repo');
     expect(doc.source?.root).toBe('AgentsCommander');
-    expect(doc.source?.commit).toBe('0a3dc5aadea1c192fb01bb82055d95131f722418');
+    expect(doc.source?.commit).toBe('1b0e934824709cb701715aa07d3a95d9dfe33daa');
     expect(doc.generator?.name).toBe('visual-specs-extract');
     expect(doc.generator?.version).toBe(GENERATOR_VERSION);
     expect(doc.generator?.configDigest).toMatch(/^sha256:[0-9a-f]{64}$/);
@@ -110,8 +110,10 @@ describe('the committed dataset is a valid document', () => {
 
 describe('what the map says about AgentsCommander — every number from a parser', () => {
   it('maps every git-tracked file', () => {
-    expect(stats['trackedFiles']).toBe(679);
-    expect(doc.nodes.filter((n) => n.kind === 'file')).toHaveLength(679);
+    // Corroborated OUTSIDE the extractor: `git ls-files | wc -l` in the mapped
+    // repository at 1b0e934 returns 705, and at 0a3dc5a it returned 679.
+    expect(stats['trackedFiles']).toBe(705);
+    expect(doc.nodes.filter((n) => n.kind === 'file')).toHaveLength(705);
   });
 
   it('finds the four anchors: TWO npm packages and TWO Rust crates', () => {
@@ -128,14 +130,63 @@ describe('what the map says about AgentsCommander — every number from a parser
     expect(stats['anchors']).toBe(4);
     expect(stats['npmPackages']).toBe(2);
     expect(stats['rustCrates']).toBe(2);
+    // `directory` is not a free parameter: a directory becomes a box exactly when it
+    // lies between an anchor and a file that anchor owns (§5.2), so it is derivable
+    // from `git ls-files` plus the four anchor directories alone. Recomputed that way,
+    // outside the extractor: 102 at 1b0e934, and 98 at 0a3dc5a — which is the number
+    // this test used to pin.
     expect(stats['nodesByKind']).toEqual({
       application: 5,
       crate: 2,
-      directory: 98,
-      file: 679,
+      directory: 102,
+      file: 705,
       package: 2,
       repository: 1,
     });
+  });
+
+  it('carries 817 nodes and 1947 relations — and every one of the six kinds reconstructs', () => {
+    // The README publishes these totals, so they are pinned here rather than left as
+    // prose with nothing watching them (#27). The whole edge count was rebuilt by a
+    // program that shares no code with the extractor and never opens this document.
+    // §10.2 concedes the TypeScript library is unavoidable for module resolution; the
+    // discovery loop, the tracked-tree fallback for asset imports, the Rust crate walk,
+    // the use-tree parser and every dedupe in that program were written from scratch.
+    //
+    //   bundles         6  by hand: session-bridge ships 2 bins, npm/package.json declares
+    //                      1 bin, index.html is the web app — and the Tauri app bundles
+    //                      TWO units, its crate AND the root npm package
+    //   entrypoint      5  one per application, and there are exactly 5 applications
+    //   imports      1089  ts.preProcessFile + ts.resolveModuleName against the mapped
+    //                      repository's own tsconfig, plus the tracked-tree fallback that
+    //                      resolves asset imports, deduped per (source, target)
+    //   rust-imports  665  independent crate walk: `mod` resolution plus longest-prefix
+    //                      `use` resolution, deduped per (source, target)
+    //   tauri-command 137  registered ∩ called — see the command tests below
+    //   web-command    45  called ∩ web-router arms
+    //                 ----
+    //                 1947
+    //
+    // 817 decomposes the same way: 705 tracked files + 102 directory boxes + 4 anchors
+    // + 5 applications + 1 repository.
+    expect(doc.nodes).toHaveLength(817);
+    expect(doc.edges).toHaveLength(1947);
+    expect(stats['nodeCount']).toBe(817);
+    expect(stats['edgeCount']).toBe(1947);
+    expect(stats['edgesByKind']).toEqual({
+      bundles: 6,
+      entrypoint: 5,
+      imports: 1089,
+      'rust-imports': 665,
+      'tauri-command': 137,
+      'web-command': 45,
+    });
+
+    // §10.2 says the `@shared/*`, `@sidebar/*` and `@terminal/*` aliases have ZERO
+    // usages and that this is recorded rather than mistaken for "unsupported". The
+    // independent resolver counted the same 0, and the same 22 external specifiers.
+    expect(stats['tsPathAliasUsages']).toBe(0);
+    expect(stats['externalSpecifiers']).toBe(22);
   });
 
   it('finds the five applications — including the crate that ships TWO binaries', () => {
@@ -161,26 +212,95 @@ describe('what the map says about AgentsCommander — every number from a parser
 
   it('the whole frontend reaches the whole backend through EXACTLY ONE file', () => {
     // The most useful thing the map says about this codebase (§6.7).
+    //
+    // Corroborated without the AST: `transport.invoke` occurs in exactly ONE tracked
+    // TypeScript file, and a textual sweep for `transport.invoke<…>(` over that file
+    // finds 140 at 1b0e934 and 139 at 0a3dc5a. The generic argument matters — a naive
+    // search for `transport.invoke(` finds ZERO, because every call is written
+    // `transport.invoke<T>("name", args)`.
     expect(stats['invokeCallSiteFiles']).toEqual(['src/shared/ipc.ts']);
-    expect(stats['invokeCallSites']).toBe(139);
+    expect(stats['invokeCallSites']).toBe(140);
 
     const commandEdges = doc.edges.filter((e) => e.kind.endsWith('-command'));
     const sources = new Set(commandEdges.map((e) => e.sourceId));
     expect([...sources]).toEqual(['file:src/shared/ipc.ts']);
   });
 
-  it('counts 137 ANCHORED #[tauri::command] attributes — fewer than the 140 a bare grep finds across 22 files', () => {
-    expect(stats['tauriCommandAttributes']).toBe(137);
-    expect(stats['tauriCommandAttributeFiles']).toBe(21);
-    expect(stats['registeredCommands']).toBe(137);
+  it('counts 138 ANCHORED #[tauri::command] attributes — fewer than the 141 a bare grep finds across 21 files', () => {
+    // The gap is the whole point of the anchored pattern, and it is checkable by hand.
+    // A bare `grep -F '#[tauri::command'` over the tracked `.rs` files finds 141 in 21
+    // files; three of those are PROSE INSIDE COMMENTS —
+    //   src-tauri/src/commands/task.rs:426
+    //   src-tauri/src/session/session.rs:58
+    //   src-tauri/src/session/session.rs:606
+    // — and none of them starts a line. 141 − 3 = 138.
+    expect(stats['tauriCommandAttributes']).toBe(138);
+
+    // The ATTRIBUTE FILE count went DOWN, 21 → 20, while the attributes went UP. That
+    // is not a contradiction and it is not noise: `session/session.rs` is the one file
+    // whose only mentions are the two comments above, so it leaves the anchored set
+    // while staying in the bare-grep set. 21 bare-grep files − 1 comment-only = 20.
+    expect(stats['tauriCommandAttributeFiles']).toBe(20);
+
+    // An attribute alone is not a callable command; Tauri requires registration. The
+    // mapped repository has TWO `generate_handler![…]` lists, and the stat is the union
+    // of their names, not the sum: src-tauri/src/lib.rs:2550 lists 138 distinct names,
+    // and src-tauri/src/commands/resource_monitor.rs:466 lists one that already appears
+    // in it. 138 ∪ 1 = 138.
+    expect(stats['registeredCommands']).toBe(138);
   });
 
-  it('counts 753 grouped Rust use-trees — the figure the docs cite, produced by the parser', () => {
+  it('draws 137 tauri-command and 45 web-command relations, 43 of them bound to BOTH', () => {
+    // One off-extractor measurement settles all four, and it never opens this document:
+    // parse the command names out of the two `generate_handler![…]` lists, parse the
+    // literal command names out of `ipc.ts`, parse the `match cmd` arms out of the web
+    // router, and intersect.
+    //
+    //   registered                                  138
+    //   distinct literals called in ipc.ts           139   (over 140 call sites)
+    //   web-router arm names                          46
+    //   registered ∩ called                          137   ← tauri-command
+    //   called ∩ web arms                             45   ← web-command
+    //   registered ∩ called ∩ web arms                43   ← bound to both
+    //   registered, never called       [get_instance_label]
+    //   called, never registered [get_pty_size, subscribe_session]
+    //
+    // Counting the router arms requires stripping comments FIRST: a brace inside a
+    // comment truncates the `match` block and a naive sweep reports 39 instead of 46.
+    //
+    // A command bound to both backends is TWO relations with different targets, and
+    // that is not double-counting — they are two different facts (§10.4).
+    expect(doc.edges.filter((e) => e.kind === 'tauri-command')).toHaveLength(137);
+    expect(doc.edges.filter((e) => e.kind === 'web-command')).toHaveLength(45);
+    expect(stats['commandsBoundToBothBackends']).toBe(43);
+    expect(stats['webRouterArms']).toBe(46);
+  });
+
+  it('counts 813 grouped Rust use-trees — the figure the docs cite, produced by the parser', () => {
     // An earlier draft of the architecture said "26 times across 21 files". That came
     // from a grep, it was never reproduced by a parser, and it is not even what the
     // parser measures. This is the number the tool produces, and the docs now cite THIS
     // one — which means if the tool changes, this test changes with it (§10.5).
-    expect(stats['rustGroupedUseStatements']).toBe(753);
+    //
+    // THE REFRESH 753 → 813 IS REAL GROWTH, not a change in how the tool counts. An
+    // independent re-implementation of the count — its own comment stripper, its own
+    // leaf counter, its own crate walk — run over BOTH commits gives 752 at 0a3dc5a and
+    // 812 at 1b0e934. Same +60, measured by a program that shares no code with the
+    // extractor. The mapped repository gained 8 tracked `.rs` files over 151 commits.
+    //
+    // THE CONSTANT OFFSET OF ONE IS A KNOWN EXTRACTOR DEFECT, pinned here with its eyes
+    // open rather than quietly absorbed. `stripComments` does what its name says — it
+    // removes comments and COPIES string literals through — so `parseUseStatements`
+    // scans string contents as if they were code. In the `format!` template at
+    // src-tauri/src/commands/entity_creation.rs:388 the English sentence
+    //   "… NEVER use external memory systems from the coding agent …"
+    // supplies the word `use`; the scan then runs to the next `;`, and the braces and
+    // commas of the surrounding `format!` arguments parse as a six-leaf group. One
+    // phantom grouped use-tree, present identically at both commits (752+1, 812+1).
+    // The honest count of grouped use-trees in the repository is 812. 813 is what the
+    // committed document says, and this test characterises the committed document — so
+    // it pins 813 and NAMES the one figure inside it that is not backed by real code.
+    expect(stats['rustGroupedUseStatements']).toBe(813);
   });
 
   it('records the REGISTERED-BUT-UNCALLED command that an earlier draft denied existed', () => {
@@ -199,9 +319,13 @@ describe('what the map says about AgentsCommander — every number from a parser
     const nonLiteral = (doc.unresolved ?? []).filter((u) =>
       u.reason.includes('not a string literal'),
     );
+    // The line is the facade's own internal dispatch,
+    // `currentTransport().invoke<T>(cmd, args)`, where `cmd` is a variable (§10.4).
+    // Read straight out of the file: it sits at line 117 at 1b0e934, and at 113 at
+    // 0a3dc5a — four lines of drift, not a different call.
     expect(nonLiteral).toHaveLength(1);
     expect(nonLiteral[0]?.evidence[0]?.path).toBe('src/shared/ipc.ts');
-    expect(nonLiteral[0]?.evidence[0]?.line).toBe(113);
+    expect(nonLiteral[0]?.evidence[0]?.line).toBe(117);
   });
 
   it('reports rust-imports as DEGRADED, permanently and honestly', () => {
@@ -227,7 +351,7 @@ describe('what the map says about AgentsCommander — every number from a parser
 describe('the initial view is legible (§9.3)', () => {
   const state = stateFromLoaded(loaded);
 
-  it('opens on the repository, its applications and its packages — not 637 overlapping files', () => {
+  it('opens on the repository, its applications and its packages — not 705 overlapping files', () => {
     const graph = project(state.model, state.outline, state.view.expanded);
     expect(graph.visibleNodes).toHaveLength(1 + 5 + 4);
     expect(graph.visibleNodes[0]).toBe('repo:AgentsCommander');

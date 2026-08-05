@@ -103,7 +103,7 @@ function nodeDetail(
 
   // Focus (Issue #17). This is the affordance that works for an entity with NO
   // sidebar row: the list drops `file` and `directory` on an empty query, which is
-  // 777 of 787 entities on the committed corpus, and caps at 400 on a broad search.
+  // 807 of 817 entities on the committed corpus, and caps at 400 on a broad search.
   // It is also the only place a canvas glyph can be explained, since there are no
   // tooltips out there.
   const focusRow = focusSection(state, derived, outlineId, entity, buckets);

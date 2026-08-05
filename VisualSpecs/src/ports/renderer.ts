@@ -97,7 +97,7 @@ export type RendererEvent =
   | { type: 'node:dragend'; id: string; position: { x: number; y: number } }
   | { type: 'edge:click'; id: string }
   // A right-click that landed on a node (Issue #17 §8.3.1). It exists because a
-  // `file` has no sidebar row while the search box is empty — 777 of 787 entities on
+  // `file` has no sidebar row while the search box is empty — 807 of 817 entities on
   // the real corpus — so for most of the graph the canvas is the ONLY surface a
   // person can act on. It is its own event rather than a flag on `node:click` for the
   // same reason `container:fit` is: a right-click is not a selection gesture, and
