@@ -3,6 +3,8 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  inlineModuleSpans,
+  neutralise,
   parseModDeclarations,
   parseTree,
   parseUseStatements,
@@ -89,6 +91,66 @@ describe('comment stripping preserves line numbers', () => {
     const stripped = stripComments(source);
     expect(stripped.split('\n')).toHaveLength(source.split('\n').length);
     expect(parseUseStatements(source)[0]?.line).toBe(3);
+  });
+});
+
+// A scanner that loses phase does not fail loudly: it keeps returning text of the right
+// length, and the totals still look right. The previous one lost phase on the first
+// character literal holding a double quote and stayed wrong for the rest of the file —
+// found by diffing the corpus, not by a failing test, which is why these exist.
+//
+// Sensitivity, per case: the first two FAIL against the previous scanner and are the
+// regression guards. The third and fourth do not — the third pins an invariant the old
+// scanner also held, and the fourth covers `neutralise`, which did not exist before.
+describe('the scanner does not lose phase on a literal', () => {
+  it('a character literal holding a double quote does not open a string', () => {
+    // AgentsCommander `commands/session.rs:206`, reduced. The old scanner read this `"`
+    // as the start of a string, so every comment after it survived.
+    const source = [
+      "fn f(t: &str) -> bool { token_has_unclosed_quote(t, '\"') }",
+      '// a comment AFTER the character literal',
+      'use crate::real;',
+    ].join('\n');
+    expect(stripComments(source)).not.toContain('a comment AFTER');
+    expect(paths(source)).toEqual([['crate', 'real']]);
+  });
+
+  it('once out of phase, a `//` inside a string gets read as a comment and erases code', () => {
+    // AgentsCommander `agentscommander-api-helper.rs:1247`, reduced. The phase flip has
+    // to come FIRST: in isolation the old scanner handles the URL correctly, so a
+    // snippet with only line 2 would pass against the defect and prove nothing.
+    const source = [
+      "fn quote(t: &str) -> bool { token_has_unclosed_quote(t, '\"') }",
+      'fn url(address: &str) -> String { format!("http://{address}") }',
+      'use crate::real;',
+    ].join('\n');
+    // The old scanner produced `format!("http:` here and blanked the rest of the line.
+    expect(stripComments(source)).toContain('{address}") }');
+    expect(paths(source)).toEqual([['crate', 'real']]);
+  });
+
+  it('never alters the length or the line count, whichever view is asked for', () => {
+    const source = [
+      "let q = '\"';",
+      'let s = "a // b /* c */ \\" d";',
+      'let r = r#"raw " with // and /* */"#;',
+      "let lifetime: &'a str = x;",
+      '/* nested /* block */ comment */',
+      'use crate::real;',
+    ].join('\n');
+    for (const view of [stripComments(source), neutralise(source)]) {
+      expect(view).toHaveLength(source.length);
+      expect(view.split('\n')).toHaveLength(source.split('\n').length);
+    }
+    // A lifetime is not a literal, so nothing after it may be swallowed.
+    expect(paths(source)).toEqual([['crate', 'real']]);
+  });
+
+  it('`neutralise` blanks literal text so a brace inside one cannot be counted', () => {
+    const source = 'fn f() { println!("{"); }\nmod tests { use super::x; }';
+    expect(neutralise(source)).not.toContain('println!("{")');
+    // The `{` in the format string must not open a block, or `mod tests` never closes.
+    expect(inlineModuleSpans(neutralise(source))).toHaveLength(1);
   });
 });
 

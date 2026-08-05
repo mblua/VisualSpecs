@@ -100,7 +100,15 @@ export function extractRustImports(
               continue;
             }
 
-            const absolute = absolutise(leaf.path, index.fileModule.get(file) ?? 'crate');
+            // The module the statement is WRITTEN IN, not the module of the file. A
+            // `use super::X` inside `mod tests { … }` means the file itself — a
+            // self-relation, dropped below — and counting the inline nesting is what
+            // makes that come out right. See `UseStatement.enclosingModules`.
+            const writtenIn = [
+              index.fileModule.get(file) ?? 'crate',
+              ...statement.enclosingModules,
+            ].join('::');
+            const absolute = absolutise(leaf.path, writtenIn);
             const target = longestPrefixModuleFile(absolute, index);
             if (target === null || target === file) continue;
 
