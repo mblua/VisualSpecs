@@ -145,6 +145,50 @@ describe('what the map says about AgentsCommander — every number from a parser
     });
   });
 
+  it('carries 817 nodes and 1947 relations — and every one of the six kinds reconstructs', () => {
+    // The README publishes these totals, so they are pinned here rather than left as
+    // prose with nothing watching them (#27). The whole edge count was rebuilt by a
+    // program that shares no code with the extractor and never opens this document.
+    // §10.2 concedes the TypeScript library is unavoidable for module resolution; the
+    // discovery loop, the tracked-tree fallback for asset imports, the Rust crate walk,
+    // the use-tree parser and every dedupe in that program were written from scratch.
+    //
+    //   bundles         6  by hand: session-bridge ships 2 bins, npm/package.json declares
+    //                      1 bin, index.html is the web app — and the Tauri app bundles
+    //                      TWO units, its crate AND the root npm package
+    //   entrypoint      5  one per application, and there are exactly 5 applications
+    //   imports      1089  ts.preProcessFile + ts.resolveModuleName against the mapped
+    //                      repository's own tsconfig, plus the tracked-tree fallback that
+    //                      resolves asset imports, deduped per (source, target)
+    //   rust-imports  665  independent crate walk: `mod` resolution plus longest-prefix
+    //                      `use` resolution, deduped per (source, target)
+    //   tauri-command 137  registered ∩ called — see the command tests below
+    //   web-command    45  called ∩ web-router arms
+    //                 ----
+    //                 1947
+    //
+    // 817 decomposes the same way: 705 tracked files + 102 directory boxes + 4 anchors
+    // + 5 applications + 1 repository.
+    expect(doc.nodes).toHaveLength(817);
+    expect(doc.edges).toHaveLength(1947);
+    expect(stats['nodeCount']).toBe(817);
+    expect(stats['edgeCount']).toBe(1947);
+    expect(stats['edgesByKind']).toEqual({
+      bundles: 6,
+      entrypoint: 5,
+      imports: 1089,
+      'rust-imports': 665,
+      'tauri-command': 137,
+      'web-command': 45,
+    });
+
+    // §10.2 says the `@shared/*`, `@sidebar/*` and `@terminal/*` aliases have ZERO
+    // usages and that this is recorded rather than mistaken for "unsupported". The
+    // independent resolver counted the same 0, and the same 22 external specifiers.
+    expect(stats['tsPathAliasUsages']).toBe(0);
+    expect(stats['externalSpecifiers']).toBe(22);
+  });
+
   it('finds the five applications — including the crate that ships TWO binaries', () => {
     const apps = doc.nodes.filter((n) => n.kind === 'application').map((n) => n.id).sort();
     expect(apps).toEqual([
@@ -204,6 +248,32 @@ describe('what the map says about AgentsCommander — every number from a parser
     // and src-tauri/src/commands/resource_monitor.rs:466 lists one that already appears
     // in it. 138 ∪ 1 = 138.
     expect(stats['registeredCommands']).toBe(138);
+  });
+
+  it('draws 137 tauri-command and 45 web-command relations, 43 of them bound to BOTH', () => {
+    // One off-extractor measurement settles all four, and it never opens this document:
+    // parse the command names out of the two `generate_handler![…]` lists, parse the
+    // literal command names out of `ipc.ts`, parse the `match cmd` arms out of the web
+    // router, and intersect.
+    //
+    //   registered                                  138
+    //   distinct literals called in ipc.ts           139   (over 140 call sites)
+    //   web-router arm names                          46
+    //   registered ∩ called                          137   ← tauri-command
+    //   called ∩ web arms                             45   ← web-command
+    //   registered ∩ called ∩ web arms                43   ← bound to both
+    //   registered, never called       [get_instance_label]
+    //   called, never registered [get_pty_size, subscribe_session]
+    //
+    // Counting the router arms requires stripping comments FIRST: a brace inside a
+    // comment truncates the `match` block and a naive sweep reports 39 instead of 46.
+    //
+    // A command bound to both backends is TWO relations with different targets, and
+    // that is not double-counting — they are two different facts (§10.4).
+    expect(doc.edges.filter((e) => e.kind === 'tauri-command')).toHaveLength(137);
+    expect(doc.edges.filter((e) => e.kind === 'web-command')).toHaveLength(45);
+    expect(stats['commandsBoundToBothBackends']).toBe(43);
+    expect(stats['webRouterArms']).toBe(46);
   });
 
   it('counts 813 grouped Rust use-trees — the figure the docs cite, produced by the parser', () => {

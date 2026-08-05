@@ -562,9 +562,27 @@ Every number below is produced by an anchored pattern or a parser and pinned by 
 test. A raw grep is not evidence — that is not a slogan, it is why the architecture's own
 first draft published three wrong numbers.
 
-Current as of AgentsCommander `1b0e934`. Every figure here is pinned by the dataset test
-and, since #24, corroborated by a method that is not the extractor's own output — the
-table and the test move together or the gate goes red.
+Current as of AgentsCommander `1b0e934`. Every figure below that is read out of the
+committed document is asserted by `tests/dataset/dataset.test.ts` and, since #24,
+corroborated by a method that is not the extractor's own output — so **the dataset**
+cannot move without a red test.
+
+**This table is a transcription of those assertions, and nothing checks the
+transcription.** No test reads this file. If the dataset moves and this table is not
+updated with it, the gate stays green and the table is simply wrong — which is exactly
+what happened across the two refreshes before #24. `tests/dataset/dataset.test.ts` is the
+authority; this is a copy of it. #27 tracks closing that gap.
+
+Four figures here are asserted by nothing, and **cannot** be: they are measured against
+the **mapped repository** rather than read out of the document, and §10.7 requires this
+suite to pass on a clean checkout where AgentsCommander is simply absent, so no test can
+reach them. They are the bare-grep contrast (141 across 21 files, and the three comment
+locations), the two `generate_handler!` locations, the false-positive location at
+`entity_creation.rs:388`, and the corroborated count of 812. All four were verified by
+hand at `1b0e934`.
+
+`src/shared/ipc.ts:117` is **not** in that group: it is an evidence record inside the
+document, and both its path and its line are asserted.
 
 | Fact | Value |
 |---|---|
