@@ -239,6 +239,19 @@ describe('the member-tuple order, which no corpus can exercise', () => {
       ['a', 'b', 'c'],
       ['b'],
       ['b', 'a'],
+      // These two are NOT decoration and must not be "tidied up" into short letters.
+      // With only 'a'/'b'/'c' — one character, lowercase, contiguous ASCII — the
+      // properties below are fixed for the order over TUPLES while saying nothing
+      // about the comparator over FIELDS: looking at just the first character, or
+      // comparing case-insensitively, or using localeCompare, are all indistinguishable
+      // from `<` on that alphabet. Real ids are not: `repo:AgentsCommander`,
+      // `file:src-tauri/src/api/handlers/list_peers.rs`.
+      //
+      // The first two of those mutants TIE this pair, and a tie between members of two
+      // different SCCs puts the numbering back at the mercy of input order — which is
+      // LVL-11, the finding this comparator exists to close.
+      ['repo:AgentsCommander'],
+      ['repo:agentscommander'],
     ];
     // Not Math.sign: it returns -0 for 0, and `toBe` is Object.is.
     const sign = (n: number): number => (n < 0 ? -1 : n > 0 ? 1 : 0);
@@ -265,6 +278,17 @@ describe('the member-tuple order, which no corpus can exercise', () => {
         if (compareMemberTuples(x, y) === 0) expect(x).toEqual(y);
       }
     }
+  });
+
+  it('orders fields by code unit, not by locale — §6.6 is per document, not per machine', () => {
+    // `localeCompare` neither ties nor errors here: it returns the OPPOSITE order, and
+    // it depends on the environment's locale and ICU build. The same document numbered
+    // on two machines could then get two numberings, which §6.6 forbids — and no
+    // property of the ordering catches it, because locale order is a perfectly good
+    // total order. Only pinning the direction does.
+    expect(
+      compareMemberTuples(['repo:AgentsCommander'], ['repo:agentscommander']),
+    ).toBeLessThan(0);
   });
 
   it('never joins the fields into one string — a delimiter would collide (§6.3)', () => {
