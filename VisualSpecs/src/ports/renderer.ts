@@ -86,9 +86,45 @@ export interface RenderEdge {
   style: { color: string; width: number; dash: readonly number[] | null; arrow: ArrowShape };
 }
 
+/**
+ * One rank's lane behind the boxes of an expanded container (Issue #44).
+ *
+ * Identity is the STRUCTURED PAIR `(containerId, rank)`, never `container + '#L' + rank`:
+ * an outline id is an opaque string from an untrusted document and can contain any
+ * delimiter, which is the §6.3 defect this repository already paid for once.
+ *
+ * `rects` is one or more rectangles because a band bites out exactly its intersection
+ * with any box of another rank — so it never contains a part of a box it does not speak
+ * for. Ordered by `(y, x)` and non-overlapping, which `assertSceneWellFormed` checks on
+ * every render: that is what turns the clip's determinism into something verified
+ * continuously rather than only in a test.
+ *
+ * A band is PICTORIAL. It is not hit-tested: a click on a band is a click on the
+ * container, exactly as it is today.
+ */
+export interface RenderBand {
+  containerId: string;
+  rank: number;
+  rects: readonly Rect[];
+  /** Behind the container's children, in front of the container itself. */
+  z: number;
+  /** e.g. "L3" — the port draws it without knowing what it means. */
+  label: string;
+  style: { fill: string; text: string };
+  opacity: number;
+  hidden: boolean;
+}
+
 export interface RenderScene {
   nodes: readonly RenderNode[];
   edges: readonly RenderEdge[];
+  /**
+   * OPTIONAL, so an adapter that predates level bands keeps compiling and keeps
+   * working. One that ignores them loses the perceptual aid and loses NO information:
+   * the rank travels in the node's badge, which is the authority. Same honest
+   * degradation as "an adapter that does not know a shape falls back to `rect`".
+   */
+  bands?: readonly RenderBand[];
 }
 
 export type RendererEvent =
@@ -375,6 +411,91 @@ export function assertSceneWellFormed(scene: RenderScene): void {
       throw new MalformedSceneError(`edge ${e.id} names a target node that is not in the scene`);
     }
     assertOpacity(e.opacity, `edge ${e.id}`);
+  }
+  assertBandsWellFormed(scene, byId(scene.nodes));
+}
+
+function byId(nodes: readonly RenderNode[]): Map<string, RenderNode> {
+  const out = new Map<string, RenderNode>();
+  for (const n of nodes) out.set(n.id, n);
+  return out;
+}
+
+/**
+ * Bands get the same rigour as nodes and edges, plus the two properties that are
+ * specific to them (Issue #44):
+ *
+ *  - **Canonical order**: `rects` sorted by `(y, x)` and non-overlapping. The clip is a
+ *    Y sweep with merged X intervals; a botched merge leaves rects out of order or
+ *    overlapping, and this catches it AT THE RENDER instead of waiting for someone to
+ *    compare two runs.
+ *  - **Containment**: every rect inside its container's box. A band outside asserts a
+ *    level over space that belongs to — and is laid out by — somebody else. Measured
+ *    violation before this existed: after a fit under one basis and a toggle to the
+ *    other, `src-tauri/src` drew 566 px of zebra below its own bottom edge.
+ *
+ * Containment is the belt: the correspondence condition in the domain is what stops the
+ * scene from getting here at all. Both, for different reasons.
+ */
+function assertBandsWellFormed(scene: RenderScene, nodes: Map<string, RenderNode>): void {
+  if (scene.bands === undefined) return;
+  for (const band of scene.bands) {
+    const where = `band ${band.containerId} L${String(band.rank)}`;
+    if (!Number.isInteger(band.rank) || band.rank < 0) {
+      throw new MalformedSceneError(`${where} has a non-integral rank`);
+    }
+    if (!Array.isArray(band.rects) || band.rects.length === 0) {
+      throw new MalformedSceneError(`${where} carries no rects — a band with none is not emitted`);
+    }
+    assertOpacity(band.opacity, where);
+
+    const owner = nodes.get(band.containerId);
+    if (owner === undefined) {
+      throw new MalformedSceneError(`${where} names a container that is not in the scene`);
+    }
+    const left = owner.position.x - owner.size.w / 2;
+    const top = owner.position.y - owner.size.h / 2;
+
+    band.rects.forEach((rect, i) => {
+      if (
+        !Number.isFinite(rect.x) ||
+        !Number.isFinite(rect.y) ||
+        !Number.isFinite(rect.w) ||
+        !Number.isFinite(rect.h) ||
+        rect.w < 0 ||
+        rect.h < 0
+      ) {
+        throw new MalformedSceneError(`${where} has an invalid rect`);
+      }
+      // A half-pixel of tolerance: the domain rounds container sizes to integers and the
+      // band takes its padding from a gap that can be odd.
+      if (
+        rect.x < left - 0.5 ||
+        rect.y < top - 0.5 ||
+        rect.x + rect.w > left + owner.size.w + 0.5 ||
+        rect.y + rect.h > top + owner.size.h + 0.5
+      ) {
+        throw new MalformedSceneError(`${where} draws outside its container box`);
+      }
+      const previous = band.rects[i - 1];
+      if (previous !== undefined) {
+        const ordered = previous.y < rect.y || (previous.y === rect.y && previous.x <= rect.x);
+        if (!ordered) throw new MalformedSceneError(`${where} has rects out of (y, x) order`);
+      }
+      // Against EVERY earlier rect, not only the previous one: with a correct Y sweep
+      // the strips are disjoint so the neighbour check would do, but a botched sweep is
+      // exactly what this exists to catch, and then the overlap need not be adjacent.
+      // `rects` per band is single digits, so the quadratic pass is free.
+      for (let j = 0; j < i; j += 1) {
+        const other = band.rects[j] as Rect;
+        const overlaps =
+          other.x < rect.x + rect.w &&
+          rect.x < other.x + other.w &&
+          other.y < rect.y + rect.h &&
+          rect.y < other.y + other.h;
+        if (overlaps) throw new MalformedSceneError(`${where} has overlapping rects`);
+      }
+    });
   }
 }
 
