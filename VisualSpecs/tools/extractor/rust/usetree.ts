@@ -29,78 +29,196 @@ export interface UseStatement {
   leaves: UseLeaf[];
   /** 1-based line of the `use` keyword. */
   line: number;
+  /**
+   * The inline modules enclosing this statement, outermost first — `['tests']` for a
+   * `use` written inside `#[cfg(test)] mod tests { … }`, `[]` at file level.
+   *
+   * `super` is relative to the ENCLOSING MODULE, and an inline `mod X { … }` is one.
+   * Without this, `use super::X` inside `mod tests` resolves one level too high: it
+   * lands on the parent instead of on the file itself, and the caller publishes a
+   * relation no build has. In AgentsCommander that produced 16 such edges, 14 of them
+   * pointing at a `mod.rs` that already declares every sibling — so each one closed a
+   * two-cycle that does not exist.
+   */
+  enclosingModules: string[];
 }
 
-/** Strip line comments and block comments, preserving offsets so lines stay right. */
-export function stripComments(source: string): string {
-  let out = '';
+/**
+ * ONE pass over the source that knows every lexical form that can hide a `"` or a brace:
+ * line and (nested) block comments, strings, raw strings, and character literals.
+ * Offsets and newline positions are preserved exactly, so a reported line still points at
+ * its own source line — asserted at the end, because a silent drift here mis-attributes
+ * every line number downstream and the totals still look right.
+ *
+ * There is deliberately no second scanner composed on top of this one. An earlier cut of
+ * this file had `stripComments` (which did not know character literals) feeding a separate
+ * literal-blanker, and the two disagreed on the first `'"'` in the corpus —
+ * `commands/session.rs:206`, `token_has_unclosed_quote(token, '"')`. The comment scanner
+ * took that `"` as the start of a string and stayed out of phase for the rest of the file,
+ * so the blanker erased real code and preserved string contents. Two scanners over the
+ * same text will eventually disagree; one cannot.
+ *
+ * `blankLiteralContents` is the only difference between the two exported views.
+ */
+function scan(source: string, blankLiteralContents: boolean): string {
+  const out: string[] = [];
   let i = 0;
-  let inLine = false;
-  let inBlock = 0;
-  let inString: '"' | null = null;
+  const n = source.length;
 
-  while (i < source.length) {
+  /** Replace a span with spaces, keeping newlines where they were. */
+  const blank = (from: number, to: number): number => {
+    const stop = Math.min(to, n);
+    for (let k = from; k < stop; k += 1) out.push(source[k] === '\n' ? '\n' : ' ');
+    return stop;
+  };
+  /** Copy a span verbatim. */
+  const keep = (from: number, to: number): number => {
+    const stop = Math.min(to, n);
+    for (let k = from; k < stop; k += 1) out.push(source[k] as string);
+    return stop;
+  };
+  const literal = (from: number, to: number): number =>
+    blankLiteralContents ? blank(from, to) : keep(from, to);
+
+  while (i < n) {
     const ch = source[i] as string;
     const next = source[i + 1];
 
-    if (inLine) {
-      if (ch === '\n') {
-        inLine = false;
-        out += ch;
-      } else {
-        out += ' ';
+    // Raw strings: r"…", r#"…"#, br"…". No escapes; the hash count closes them.
+    if ((ch === 'r' || ch === 'b') && !/[A-Za-z0-9_]/.test(source[i - 1] ?? ' ')) {
+      let j = i;
+      if (source[j] === 'b' && source[j + 1] === 'r') j += 1;
+      if (source[j] === 'r') {
+        let k = j + 1;
+        let hashes = 0;
+        while (source[k] === '#') {
+          hashes += 1;
+          k += 1;
+        }
+        if (source[k] === '"') {
+          const close = `"${'#'.repeat(hashes)}`;
+          const end = source.indexOf(close, k + 1);
+          i = literal(i, end === -1 ? n : end + close.length);
+          continue;
+        }
       }
-      i += 1;
-      continue;
     }
-    if (inBlock > 0) {
-      if (ch === '/' && next === '*') {
-        inBlock += 1;
-        out += '  ';
-        i += 2;
-        continue;
-      }
-      if (ch === '*' && next === '/') {
-        inBlock -= 1;
-        out += '  ';
-        i += 2;
-        continue;
-      }
-      out += ch === '\n' ? '\n' : ' ';
-      i += 1;
-      continue;
-    }
-    if (inString !== null) {
-      out += ch;
-      if (ch === '\\') {
-        out += source[i + 1] ?? '';
-        i += 2;
-        continue;
-      }
-      if (ch === inString) inString = null;
-      i += 1;
-      continue;
-    }
+
     if (ch === '/' && next === '/') {
-      inLine = true;
-      out += '  ';
-      i += 2;
+      let j = i;
+      while (j < n && source[j] !== '\n') j += 1;
+      i = blank(i, j);
       continue;
     }
+
     if (ch === '/' && next === '*') {
-      inBlock = 1;
-      out += '  ';
-      i += 2;
+      let depth = 1;
+      let j = i + 2;
+      while (j < n && depth > 0) {
+        if (source[j] === '/' && source[j + 1] === '*') {
+          depth += 1;
+          j += 2;
+          continue;
+        }
+        if (source[j] === '*' && source[j + 1] === '/') {
+          depth -= 1;
+          j += 2;
+          continue;
+        }
+        j += 1;
+      }
+      i = blank(i, j);
       continue;
     }
+
     if (ch === '"') {
-      inString = '"';
-      out += ch;
-      i += 1;
+      let j = i + 1;
+      while (j < n) {
+        if (source[j] === '\\') {
+          j += 2;
+          continue;
+        }
+        if (source[j] === '"') {
+          j += 1;
+          break;
+        }
+        j += 1;
+      }
+      i = literal(i, j);
       continue;
     }
-    out += ch;
+
+    // A `'` opens a character literal only in the two closed, bounded forms — `'x'` and
+    // an escape like `'\n'` or `'\''` that closes on the same line. Anything else is a
+    // lifetime (`&'a str`); treating one as an unterminated literal swallows the file.
+    if (ch === "'") {
+      if (next === '\\') {
+        let j = i + 2;
+        while (j < n && j < i + 12 && source[j] !== "'" && source[j] !== '\n') j += 1;
+        if (source[j] === "'") {
+          i = literal(i, j + 1);
+          continue;
+        }
+      } else if (source[i + 2] === "'" && next !== '\n') {
+        i = literal(i, i + 3);
+        continue;
+      }
+    }
+
+    out.push(ch);
     i += 1;
+  }
+
+  const text = out.join('');
+  /* c8 ignore start — a guard, not a branch anyone is meant to reach */
+  if (text.length !== source.length) {
+    throw new Error('rust scan: output length drifted from the source');
+  }
+  /* c8 ignore stop */
+  return text;
+}
+
+/**
+ * Comments blanked, literals left verbatim. Line and column of everything else are
+ * unchanged.
+ */
+export function stripComments(source: string): string {
+  return scan(source, false);
+}
+
+/**
+ * Comments blanked AND the text of every literal blanked, so the braces that remain are
+ * code. `format!("{}", x)` is everywhere in this corpus, and a brace matcher that counts
+ * the `{` inside it walks off the end of the module it was measuring.
+ */
+export function neutralise(source: string): string {
+  return scan(source, true);
+}
+
+
+export interface InlineModuleSpan {
+  name: string;
+  /** Offset of the opening brace. */
+  open: number;
+  /** Offset of the matching closing brace. */
+  close: number;
+}
+
+/**
+ * Every inline `mod X { … }` in the source, nested ones included. Expects text whose
+ * comments and literals have already been neutralised, so the braces it counts are code.
+ */
+export function inlineModuleSpans(text: string): InlineModuleSpan[] {
+  const out: InlineModuleSpan[] = [];
+  const re = /(^|[;{}\s])(?:pub(?:\s*\([^)]*\))?\s+)?mod\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(text)) !== null) {
+    const open = match.index + match[0].length - 1;
+    const close = matchBrace(text, open);
+    if (close === -1) continue;
+    out.push({ name: match[2] as string, open, close });
+    // `lastIndex` is left just past the opening brace on purpose: a module nested inside
+    // this one has to be found too.
   }
   return out;
 }
@@ -109,7 +227,8 @@ const USE_RE = /(^|[;{}\s])(?:pub(?:\s*\([^)]*\))?\s+)?use\s+/g;
 
 /** Every `use` statement in a Rust source, with its nested tree fully expanded. */
 export function parseUseStatements(source: string): UseStatement[] {
-  const text = stripComments(source);
+  const text = neutralise(source);
+  const spans = inlineModuleSpans(text);
   const out: UseStatement[] = [];
 
   USE_RE.lastIndex = 0;
@@ -121,8 +240,14 @@ export function parseUseStatements(source: string): UseStatement[] {
     const body = text.slice(bodyStart, end);
     const line = text.slice(0, match.index + match[0].length).split('\n').length;
 
+    // Outermost first: the spans are emitted in source order, and one that contains this
+    // statement and starts earlier is further out.
+    const enclosingModules = spans
+      .filter((s) => match !== null && s.open < match.index && match.index < s.close)
+      .map((s) => s.name);
+
     const leaves = parseTree(body);
-    if (leaves.length > 0) out.push({ leaves, line });
+    if (leaves.length > 0) out.push({ leaves, line, enclosingModules });
     USE_RE.lastIndex = end;
   }
 
@@ -243,7 +368,9 @@ export interface ModDeclaration {
  * would invent a file that does not exist.
  */
 export function parseModDeclarations(source: string): ModDeclaration[] {
-  const text = stripComments(source);
+  // `neutralise`, not `stripComments`: a `"mod foo;"` inside a string literal would
+  // otherwise declare a module, and declaring one invents a file.
+  const text = neutralise(source);
   const out: ModDeclaration[] = [];
   const re = /(^|[;{}\s])(?:pub(?:\s*\([^)]*\))?\s+)?mod\s+([A-Za-z_][A-Za-z0-9_]*)\s*;/g;
   let match: RegExpExecArray | null;
