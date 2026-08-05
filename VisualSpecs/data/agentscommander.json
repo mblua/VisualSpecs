@@ -19,7 +19,7 @@
       "unresolved": 0
     },
     {
-      "emitted": 665,
+      "emitted": 648,
       "kind": "rust-imports",
       "reason": "no macro expansion, no #[path], no cfg evaluation; glob imports are unresolved and item-level symbols are not resolved",
       "status": "degraded",
@@ -20306,30 +20306,6 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 685,
-          "note": "use super::stage_d_lock_order_child::context_from;",
-          "path": "src-tauri/src/cli/team.rs"
-        },
-        {
-          "line": 715,
-          "note": "use super::stage_d_lock_order_child::driver_enabled;",
-          "path": "src-tauri/src/cli/team.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/cli/team.rs->file:src-tauri/src/cli/mod.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/cli/team.rs",
-      "targetId": "file:src-tauri/src/cli/mod.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
           "line": 4,
           "note": "use crate::cli::workgroup::build_new_team_config;",
           "path": "src-tauri/src/cli/team.rs"
@@ -20754,30 +20730,6 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 2224,
-          "note": "use super::api_server_probe_addr;",
-          "path": "src-tauri/src/commands/config.rs"
-        },
-        {
-          "line": 2234,
-          "note": "use super::build_profile_assignment_target;",
-          "path": "src-tauri/src/commands/config.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/commands/config.rs->file:src-tauri/src/commands/mod.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/commands/config.rs",
-      "targetId": "file:src-tauri/src/commands/mod.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
           "line": 14,
           "note": "use crate::config::projects::display_canonical;",
           "path": "src-tauri/src/commands/config.rs"
@@ -20857,11 +20809,6 @@
         {
           "line": 2242,
           "note": "use crate::ApiServerHandle;",
-          "path": "src-tauri/src/commands/config.rs"
-        },
-        {
-          "line": 2254,
-          "note": "use super::super::settings_snapshot_from;",
           "path": "src-tauri/src/commands/config.rs"
         }
       ],
@@ -22007,25 +21954,6 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 257,
-          "note": "use super::execute_resource_kill_transaction;",
-          "path": "src-tauri/src/commands/resource_monitor.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/commands/resource_monitor.rs->file:src-tauri/src/commands/mod.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/commands/resource_monitor.rs",
-      "targetId": "file:src-tauri/src/commands/mod.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
           "line": 7,
           "note": "use crate::config::settings::SettingsState;",
           "path": "src-tauri/src/commands/resource_monitor.rs"
@@ -22307,25 +22235,6 @@
       },
       "sourceId": "file:src-tauri/src/commands/screenshot.rs",
       "targetId": "file:src-tauri/src/screenshot/mod.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
-          "line": 4777,
-          "note": "use super::classify_existing_root;",
-          "path": "src-tauri/src/commands/session.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/commands/session.rs->file:src-tauri/src/commands/mod.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/commands/session.rs",
-      "targetId": "file:src-tauri/src/commands/mod.rs"
     },
     {
       "confidence": "heuristic",
@@ -22813,25 +22722,6 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 333,
-          "note": "use super::validate_wg_root;",
-          "path": "src-tauri/src/commands/task.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/commands/task.rs->file:src-tauri/src/commands/mod.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/commands/task.rs",
-      "targetId": "file:src-tauri/src/commands/mod.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
           "line": 17,
           "note": "use crate::config::settings::SettingsState;",
           "path": "src-tauri/src/commands/task.rs"
@@ -23252,25 +23142,6 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 968,
-          "note": "use super::get_watchers_scope;",
-          "path": "src-tauri/src/commands/window.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/commands/window.rs->file:src-tauri/src/commands/mod.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/commands/window.rs",
-      "targetId": "file:src-tauri/src/commands/mod.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
           "line": 5,
           "note": "use crate::config::settings::WindowGeometry;",
           "path": "src-tauri/src/commands/window.rs"
@@ -23448,25 +23319,6 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 523,
-          "note": "use super::ActivityRecord;",
-          "path": "src-tauri/src/config/activity_log.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/config/activity_log.rs->file:src-tauri/src/config/mod.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/config/activity_log.rs",
-      "targetId": "file:src-tauri/src/config/mod.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
           "line": 891,
           "note": "use crate::pty::backend::SessionBackendKind;",
           "path": "src-tauri/src/config/activity_log.rs"
@@ -23567,30 +23419,6 @@
       },
       "sourceId": "file:src-tauri/src/config/agent_command.rs",
       "targetId": "file:src-tauri/src/config/config_seed.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
-          "line": 987,
-          "note": "use super::normalize_launch_path_for_spawn;",
-          "path": "src-tauri/src/config/agent_command.rs"
-        },
-        {
-          "line": 988,
-          "note": "use super::build_agent_spawn_command;",
-          "path": "src-tauri/src/config/agent_command.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/config/agent_command.rs->file:src-tauri/src/config/mod.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/config/agent_command.rs",
-      "targetId": "file:src-tauri/src/config/mod.rs"
     },
     {
       "confidence": "heuristic",
@@ -23983,7 +23811,7 @@
           "path": "src-tauri/src/config/instance_gitignore.rs"
         }
       ],
-      "id": "rust-imports:file:src-tauri/src/config/instance_gitignore.rs->file:src-tauri/src/lib.rs",
+      "id": "rust-imports:file:src-tauri/src/config/instance_gitignore.rs->file:src-tauri/src/config/injected_messages.rs",
       "kind": "rust-imports",
       "metadata": {
         "via": [
@@ -23991,26 +23819,7 @@
         ]
       },
       "sourceId": "file:src-tauri/src/config/instance_gitignore.rs",
-      "targetId": "file:src-tauri/src/lib.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
-          "line": 334,
-          "note": "use super::format_publish_error;",
-          "path": "src-tauri/src/config/local_config_io.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/config/local_config_io.rs->file:src-tauri/src/config/mod.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/config/local_config_io.rs",
-      "targetId": "file:src-tauri/src/config/mod.rs"
+      "targetId": "file:src-tauri/src/config/injected_messages.rs"
     },
     {
       "confidence": "heuristic",
@@ -24629,30 +24438,6 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 3024,
-          "note": "use super::super::decode_instance_relative;",
-          "path": "src-tauri/src/config/projects.rs"
-        },
-        {
-          "line": 3205,
-          "note": "use super::super::decode_instance_relative;",
-          "path": "src-tauri/src/config/projects.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/config/projects.rs->file:src-tauri/src/lib.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/config/projects.rs",
-      "targetId": "file:src-tauri/src/lib.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
           "line": 5,
           "note": "use crate::config::workspace::ensure_authoritative_workspace_dir;",
           "path": "src-tauri/src/config/replica_identity.rs"
@@ -24763,30 +24548,6 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 1632,
-          "note": "use super::clear_user_input_transitions_and_persist_to_dir_result;",
-          "path": "src-tauri/src/config/sessions_persistence.rs"
-        },
-        {
-          "line": 1646,
-          "note": "use super::deduplicate;",
-          "path": "src-tauri/src/config/sessions_persistence.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/config/sessions_persistence.rs->file:src-tauri/src/config/mod.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/config/sessions_persistence.rs",
-      "targetId": "file:src-tauri/src/config/mod.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
           "line": 9,
           "note": "use crate::config::settings::WindowGeometry;",
           "path": "src-tauri/src/config/sessions_persistence.rs"
@@ -24873,45 +24634,6 @@
       },
       "sourceId": "file:src-tauri/src/config/sessions_persistence.rs",
       "targetId": "file:src-tauri/src/session/session.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
-          "line": 3290,
-          "note": "use super::merge_protected_coding_agent_settings;",
-          "path": "src-tauri/src/config/settings.rs"
-        },
-        {
-          "line": 3362,
-          "note": "use super::ConfigSeedConfig;",
-          "path": "src-tauri/src/config/settings.rs"
-        },
-        {
-          "line": 3382,
-          "note": "use super::AgentConfig;",
-          "path": "src-tauri/src/config/settings.rs"
-        },
-        {
-          "line": 3420,
-          "note": "use super::AgentConfig;",
-          "path": "src-tauri/src/config/settings.rs"
-        },
-        {
-          "line": 3441,
-          "note": "use super::AgentConfig;",
-          "path": "src-tauri/src/config/settings.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/config/settings.rs->file:src-tauri/src/config/mod.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/config/settings.rs",
-      "targetId": "file:src-tauri/src/config/mod.rs"
     },
     {
       "confidence": "heuristic",
@@ -26506,25 +26228,6 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 211,
-          "note": "use super::PtyViewport;",
-          "path": "src-tauri/src/pty/backend.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/pty/backend.rs->file:src-tauri/src/pty/mod.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/pty/backend.rs",
-      "targetId": "file:src-tauri/src/pty/mod.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
           "line": 10,
           "note": "use crate::pty::output::PtyOutputTarget;",
           "path": "src-tauri/src/pty/backend.rs"
@@ -27282,30 +26985,6 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 160,
-          "note": "use super::JobObject;",
-          "path": "src-tauri/src/pty/job.rs"
-        },
-        {
-          "line": 177,
-          "note": "use super::JobObject;",
-          "path": "src-tauri/src/pty/job.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/pty/job.rs->file:src-tauri/src/pty/mod.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/pty/job.rs",
-      "targetId": "file:src-tauri/src/pty/mod.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
           "line": 17,
           "note": "use crate::errors::AppError;",
           "path": "src-tauri/src/pty/local_backend.rs"
@@ -27406,40 +27085,6 @@
       },
       "sourceId": "file:src-tauri/src/pty/local_backend.rs",
       "targetId": "file:src-tauri/src/pty/idle_detector.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
-          "line": 1064,
-          "note": "use super::context_liveness_from_child_liveness;",
-          "path": "src-tauri/src/pty/local_backend.rs"
-        },
-        {
-          "line": 1689,
-          "note": "use super::PtyInstance;",
-          "path": "src-tauri/src/pty/local_backend.rs"
-        },
-        {
-          "line": 1747,
-          "note": "use super::hand_over_held_size;",
-          "path": "src-tauri/src/pty/local_backend.rs"
-        },
-        {
-          "line": 2001,
-          "note": "use super::probe_child_in;",
-          "path": "src-tauri/src/pty/local_backend.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/pty/local_backend.rs->file:src-tauri/src/pty/mod.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/pty/local_backend.rs",
-      "targetId": "file:src-tauri/src/pty/mod.rs"
     },
     {
       "confidence": "heuristic",
@@ -29861,25 +29506,6 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 82,
-          "note": "use super::run_time_boxed;",
-          "path": "src-tauri/src/shutdown.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/shutdown.rs->file:src-tauri/src/lib.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/shutdown.rs",
-      "targetId": "file:src-tauri/src/lib.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
           "line": 1,
           "note": "use crate::errors::AppError;",
           "path": "src-tauri/src/telegram/api.rs"
@@ -30787,25 +30413,6 @@
       },
       "sourceId": "file:src-tauri/src/testability/ui_automation.rs",
       "targetId": "file:src-tauri/src/web/broadcast.rs"
-    },
-    {
-      "confidence": "heuristic",
-      "evidence": [
-        {
-          "line": 79,
-          "note": "use super::WindowInfoOutput;",
-          "path": "src-tauri/src/testability/window_info.rs"
-        }
-      ],
-      "id": "rust-imports:file:src-tauri/src/testability/window_info.rs->file:src-tauri/src/testability/mod.rs",
-      "kind": "rust-imports",
-      "metadata": {
-        "via": [
-          "use"
-        ]
-      },
-      "sourceId": "file:src-tauri/src/testability/window_info.rs",
-      "targetId": "file:src-tauri/src/testability/mod.rs"
     },
     {
       "confidence": "resolved",
@@ -44815,12 +44422,12 @@
     "applications": 5,
     "attributedButUnregisteredCommands": [],
     "commandsBoundToBothBackends": 43,
-    "edgeCount": 1947,
+    "edgeCount": 1930,
     "edgesByKind": {
       "bundles": 6,
       "entrypoint": 5,
       "imports": 1089,
-      "rust-imports": 665,
+      "rust-imports": 648,
       "tauri-command": 137,
       "web-command": 45
     },
@@ -44879,7 +44486,19 @@
       "src-tauri/src/main.rs"
     ],
     "rustCrates": 2,
-    "rustGroupedUseStatements": 813,
+    "rustGroupedUseStatements": 812,
+    "rustModuleShape": {
+      "conditionalModules": [
+        "src-tauri/src/screenshot/mod.rs:26 mod windows;",
+        "src-tauri/src/screenshot/mod.rs:31 mod unsupported;"
+      ],
+      "directoryModules": 18,
+      "inlineModules": 5,
+      "inlineTestModules": 175,
+      "moduleFiles": 181,
+      "pathAttributes": [],
+      "rootOutsideDirectory": []
+    },
     "suppressedTauriOwnedBins": [
       "src-tauri/src/main.rs"
     ],

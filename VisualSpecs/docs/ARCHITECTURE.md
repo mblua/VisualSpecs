@@ -870,9 +870,9 @@ Discovery and resolution are **two different problems**, and an earlier draft co
 
 ### 10.3 Rust imports
 
-A naive line scanner is not adequate, and the repository proves it: **grouped use-trees are real** — `use crate::{…}`, `use crate::a::{…}`, `use super::{…}`. The extractor's own parser counts **813** of them (`stats.rustGroupedUseStatements`, pinned by the dataset test). A per-line regex mis-parses every one.
+A naive line scanner is not adequate, and the repository proves it: **grouped use-trees are real** — `use crate::{…}`, `use crate::a::{…}`, `use super::{…}`. The extractor's own parser counts **812** of them (`stats.rustGroupedUseStatements`, pinned by the dataset test). A per-line regex mis-parses every one.
 
-> **813 includes one known false positive**, and the dataset test names it rather than absorbing it. `stripComments` removes comments but copies **string literals** through, so `parseUseStatements` scans string contents as code: the English word `use` in a `format!` template at `src-tauri/src/commands/entity_creation.rs:388` opens a statement that runs to the next `;` and parses the surrounding arguments as a six-leaf group. An independent re-implementation counts **812** real grouped use-trees. The defect is stable across commits — 752+1 at `0a3dc5a`, 812+1 at `1b0e934` — so it distorts the level, never the trend.
+> The count was **813** until #25 was closed, and the extra one was not a Rust import: the old `stripComments` removed comments but copied **string literals** through, so the scanner read string contents as code and the English word `use` in a `format!` template at `src-tauri/src/commands/entity_creation.rs:388` opened a statement that ran to the next `;`, parsing the surrounding arguments as a six-leaf group. #29 replaced the two scanners with a single pass that also blanks literal contents. Re-parsed at `1b0e934`, that file yields 19 grouped statements rather than 20 and none anywhere near line 388 — which is the whole 813 → 812 delta.
 
 > An earlier draft of this document said "26 times across 21 files". That number came from a grep, it was never reproduced by a parser, and it is not what the parser measures — which is the whole point of §10.5. The figure above is the one the tool produces, and if the tool changes, the test changes with it.
 
@@ -1291,7 +1291,7 @@ Three small things that each made the product quietly less than it claimed:
 
 * **Internal buckets were not selectable.** The detail panel held an `aria-live` announcement
   for them that **no UI could reach**: the branch existed, and clicking the disclosure only
-  opened it. A screen reader never learned that 665 relations had been folded into that box.
+  opened it. A screen reader never learned that 648 relations had been folded into that box.
   The `<summary>` now selects the bucket through the ordinary command loop.
 * **Two floating drawers left 80px of map.** Measuring the canvas said 800×560 and told us
   nothing, because the drawers were lying *on top of it*. Below the breakpoint they are

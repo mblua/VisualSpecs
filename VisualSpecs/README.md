@@ -6,7 +6,7 @@ evidence-carrying relations between them; a hierarchy you expand and collapse by
 double-click.
 
 It ships with a committed map of **AgentsCommander** — 705 git-tracked files, 817 nodes,
-1947 relations — produced by the extractor in this directory, not typed in by hand.
+1930 relations — produced by the extractor in this directory, not typed in by hand.
 
 ![The AgentsCommander map](docs/screenshots/agentscommander-map.png)
 
@@ -544,7 +544,7 @@ What it promises (plan/9-extract-watch.md is the full spec):
   are resolved against the git-tracked tree — the file provably exists, so it is proof, not a
   guess.
 * **Rust** — a real **use-tree parser** (paths, `{}` groups, `as`, `self`, `super`, globs),
-  because grouped use-trees are real: **813** of them in this repository, and a per-line regex
+  because grouped use-trees are real: **812** of them in this repository, and a per-line regex
   mis-parses every one. `mod foo;` resolves to a file whose existence is **checked**;
   `#[cfg(test)] mod tests { … }` has no backing file and does not invent one. Globs go to
   `unresolved`. Coverage: **`degraded`, permanently and honestly** — no macro expansion, no
@@ -567,31 +567,18 @@ committed document is asserted by `tests/dataset/dataset.test.ts` and, since #24
 corroborated by a method that is not the extractor's own output — so **the dataset**
 cannot move without a red test.
 
-> **The committed map is 17 edges ahead of the extractor that would produce it (#34).**
-> It was extracted before #29 fixed `super` resolution. Re-running the current extractor
-> over the same AgentsCommander commit gives **1930** relations and **648** `rust-imports`,
-> not the 1947 and 665 below, and **812** grouped use-trees rather than 813. Precisely:
-> 18 relations removed and 1 added — the old rule invented and dropped in the same defect.
-> So this map carries 18 Rust import relations that exist in no build configuration.
->
-> The regeneration is deferred on purpose until the queued additive extractor changes land,
-> so the re-pin happens once rather than three times. **No test can catch this drift** —
-> §10.7 keeps the suite from re-running the extractor — so it is written here, where a
-> reader of the numbers will meet it, rather than only in an issue nobody opens.
-
 **This table is a transcription of those assertions, and nothing checks the
 transcription.** No test reads this file. If the dataset moves and this table is not
 updated with it, the gate stays green and the table is simply wrong — which is exactly
 what happened across the two refreshes before #24. `tests/dataset/dataset.test.ts` is the
 authority; this is a copy of it. #27 tracks closing that gap.
 
-Four figures here are asserted by nothing, and **cannot** be: they are measured against
-the **mapped repository** rather than read out of the document, and §10.7 requires this
-suite to pass on a clean checkout where AgentsCommander is simply absent, so no test can
-reach them. They are the bare-grep contrast (141 across 21 files, and the three comment
-locations), the two `generate_handler!` locations, the false-positive location at
-`entity_creation.rs:388`, and the corroborated count of 812. All four were verified by
-hand at `1b0e934`.
+Two figures here are asserted by nothing, and **cannot** be: they are measured against the
+**mapped repository** rather than read out of the document, and §10.7 requires this suite
+to pass on a clean checkout where AgentsCommander is simply absent, so no test can reach
+them. They are the bare-grep contrast (141 across 21 files, and the three comment
+locations) and the two `generate_handler!` locations. Both were verified by hand at
+`1b0e934`.
 
 `src/shared/ipc.ts:117` is **not** in that group: it is an evidence record inside the
 document, and both its path and its line are asserted.
@@ -599,7 +586,8 @@ document, and both its path and its line are asserted.
 | Fact | Value |
 |---|---|
 | git-tracked files | **705** |
-| nodes / relations | **817** / **1947** |
+| nodes / relations | **817** / **1930** |
+| relations by kind | `imports` **1089** · `rust-imports` **648** · `tauri-command` **137** · `web-command` **45** · `bundles` **6** · `entrypoint` **5** |
 | nodes by kind | repository **1** · application **5** · package **2** · crate **2** · directory **102** · file **705** |
 | anchors | **4** = **2 npm packages** (the root `package.json`, `npm/package.json`) + **2 Rust crates** (`src-tauri`, `crates/session-bridge`). A crate is its own kind, not a package with an ecosystem tag. |
 | applications | **5** — Tauri desktop, web, two `session-bridge` binaries, the npm CLI |
@@ -611,7 +599,8 @@ document, and both its path and its line are asserted.
 | registered but **never called** | **`get_instance_label`** — an earlier draft asserted `"unusedCommands": []`. That was never measured, and it is false. |
 | web-router-only (unresolved as Tauri) | **`subscribe_session`**, **`get_pty_size`** |
 | the facade's own non-literal dispatch | **1**, at `src/shared/ipc.ts:117` — `unresolved`, never a phantom edge |
-| grouped Rust use-trees | **813** — of which **one is a known false positive** (#25): `stripComments` copies string literals through, so the English word `use` in a `format!` template at `entity_creation.rs:388` parses as a six-leaf group. The corroborated count is **812**. |
+| grouped Rust use-trees | **812** — #25 is closed: the scanner now blanks string-literal contents, so the English word `use` in a `format!` template at `entity_creation.rs:388` is no longer read as a six-leaf group |
+| Rust module shape | **181** module files · **18** directory modules (`mod.rs`) · **5** inline modules, every one a platform shim, against **175** inside `#[cfg(test)]` · **2** conditional `mod` declarations, both in `screenshot/mod.rs` · **0** `#[path]` attributes · **0** directories whose module root sits outside them |
 | `paths` alias usages in `src/` | **0** — recorded, not mistaken for "unsupported" |
 
 ### Path confinement
