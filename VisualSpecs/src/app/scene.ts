@@ -52,6 +52,25 @@ export const MIXED_SUBTREE_MARKER = '▣';
  */
 export const LANES_HIDDEN_MARKER = '⊘';
 
+/**
+ * The parent walk, memoized per outline.
+ *
+ * A scene is built on every command, and the badge needs to know which container states a
+ * box's rank. Walking the whole outline each time is O(V) of pure repetition: an `Outline`
+ * is immutable for the life of a document, so a `WeakMap` keyed by it is exact and lets
+ * the entry go when the document does.
+ */
+const PARENTS_BY_OUTLINE = new WeakMap<object, ReadonlyMap<string, string | null>>();
+
+function parentsOf(outline: AppState['outline']): ReadonlyMap<string, string | null> {
+  const key = outline as unknown as object;
+  const hit = PARENTS_BY_OUTLINE.get(key);
+  if (hit !== undefined) return hit;
+  const built = buildOutlineParents(outline);
+  PARENTS_BY_OUTLINE.set(key, built);
+  return built;
+}
+
 export interface SceneResult {
   scene: RenderScene;
   hiddenByFilter: { nodes: number; edges: number };
@@ -76,7 +95,7 @@ export function buildScene(
   // Which container each visible node hangs from — the rank of a box is stated by ITS
   // OWN container's ranking, and a rank from one container is not comparable with a rank
   // from another.
-  const parentOf = state.levels.active ? buildOutlineParents(outline) : null;
+  const parentOf = state.levels.active ? parentsOf(outline) : null;
   const selectedNodes = new Set<string>(selection.nodeIds);
   const searching = search.query.trim() !== '';
 

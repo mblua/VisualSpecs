@@ -1781,6 +1781,11 @@ export function mountUi(
     onFitContainer: (id: string): void => {
       fitContainers([id]);
     },
+    onResetLayoutScope: (id: string): void => {
+      // Scoped, so the rest of the document keeps the layout the user made. The panel
+      // already stated how many pins this discards before offering the button.
+      controller.dispatch({ type: 'ResetLayout', scope: id });
+    },
   };
 
   let lastRendered: { state: AppState; derived: Derived } | null = null;

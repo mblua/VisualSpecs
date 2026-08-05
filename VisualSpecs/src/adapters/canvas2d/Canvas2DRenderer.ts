@@ -625,12 +625,18 @@ export class Canvas2DRenderer implements GraphRenderer {
       if (!b.hidden) backdrop.push({ z: b.z, node: null, band: b });
     }
     backdrop.sort((a, b) => a.z - b.z);
-    // One division per frame rather than one per band: the zoom is global.
+    // One division and one font assignment per frame rather than one per band: the zoom
+    // is global, and `ctx.font` re-parses on every assignment. One save/restore pair
+    // brackets the whole pass — see `paintBand` for why it is not one pair per band.
     const labelSize = BAND_LABEL_PX / this.viewport.zoom;
+    ctx.save();
+    ctx.font = `${labelSize}px ui-sans-serif, system-ui, sans-serif`;
+    ctx.textBaseline = 'top';
     for (const item of backdrop) {
       if (item.node !== null) this.paintNode(ctx, item.node);
       else if (item.band !== null) this.paintBand(ctx, item.band, labelSize);
     }
+    ctx.restore();
     for (const e of drawn.edges) {
       if (e.hidden) continue;
       const route = routes.get(e.id);
@@ -662,23 +668,28 @@ export class Canvas2DRenderer implements GraphRenderer {
    * to the container, exactly as it did before bands existed.
    */
   private paintBand(ctx: CanvasRenderingContext2D, band: RenderBand, labelSize: number): void {
-    ctx.save();
+    // NO save/restore here, and that is measured rather than stylistic. One per band is
+    // 194 pairs a frame on this corpus at expand-all, and Canvas2D's save/restore copies
+    // the whole state including the transform and the clip: with them, Levels mode
+    // stretched the p95 frame from 33.4 ms to 50.0 ms — a whole frame, halving the rate.
+    // The caller brackets the backdrop pass with a single pair, and the state written
+    // below is written on every call, so nothing leaks between bands.
     ctx.globalAlpha = band.opacity;
     ctx.fillStyle = band.style.fill;
     for (const rect of band.rects) ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
 
     const first = band.rects[0];
+    if (first === undefined) return;
     // `0.6` is the width of a digit relative to its size in this font, close enough for a
     // two-or-three character label; the point is to skip, not to measure precisely.
-    const fitsHeight = first !== undefined && labelSize <= first.h * 0.9;
-    const fitsWidth = first !== undefined && labelSize * band.label.length * 0.6 <= first.w;
-    if (first !== undefined && fitsHeight && fitsWidth) {
-      ctx.font = `${labelSize}px ui-sans-serif, system-ui, sans-serif`;
-      ctx.textBaseline = 'top';
-      ctx.fillStyle = band.style.text;
-      ctx.fillText(band.label, first.x + labelSize * 0.4, first.y + labelSize * 0.3);
-    }
-    ctx.restore();
+    const fitsHeight = labelSize <= first.h * 0.9;
+    const fitsWidth = labelSize * band.label.length * 0.6 <= first.w;
+    if (!fitsHeight || !fitsWidth) return;
+
+    // The font string is the same for every band in a frame — the zoom is global — and
+    // assigning `ctx.font` re-parses it, so it is set once by the caller.
+    ctx.fillStyle = band.style.text;
+    ctx.fillText(band.label, first.x + labelSize * 0.4, first.y + labelSize * 0.3);
   }
 
   private paintGrid(ctx: CanvasRenderingContext2D, cw: number, ch: number): void {
