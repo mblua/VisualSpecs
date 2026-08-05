@@ -567,6 +567,18 @@ committed document is asserted by `tests/dataset/dataset.test.ts` and, since #24
 corroborated by a method that is not the extractor's own output — so **the dataset**
 cannot move without a red test.
 
+> **The committed map is 17 edges ahead of the extractor that would produce it (#34).**
+> It was extracted before #29 fixed `super` resolution. Re-running the current extractor
+> over the same AgentsCommander commit gives **1930** relations and **648** `rust-imports`,
+> not the 1947 and 665 below, and **812** grouped use-trees rather than 813. Precisely:
+> 18 relations removed and 1 added — the old rule invented and dropped in the same defect.
+> So this map carries 18 Rust import relations that exist in no build configuration.
+>
+> The regeneration is deferred on purpose until the queued additive extractor changes land,
+> so the re-pin happens once rather than three times. **No test can catch this drift** —
+> §10.7 keeps the suite from re-running the extractor — so it is written here, where a
+> reader of the numbers will meet it, rather than only in an issue nobody opens.
+
 **This table is a transcription of those assertions, and nothing checks the
 transcription.** No test reads this file. If the dataset moves and this table is not
 updated with it, the gate stays green and the table is simply wrong — which is exactly

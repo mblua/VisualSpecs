@@ -177,16 +177,33 @@ describe('what the map says about AgentsCommander — every number from a parser
     // because the rule was ever checked against Rust's module semantics. For the `super::`
     // subset this is one opinion typed twice, not a second opinion.
     //
-    // That matters now: #28 reports the rule resolves one level too high inside an inline
-    // module, publishing 18 relations no build has, and #29 is the fix. If it is right,
-    // this document contains 18 phantom edges and the two totals below encode them. The
-    // assertions are still exactly what they claim to be — a characterisation of the
-    // COMMITTED DOCUMENT, which says 665 — but nobody should read 665 as corroborated.
-    // Re-running both implementations after #29 would move them together and confirm
-    // nothing. #31 carries the real check: re-derive `super`/`self` from the Rust
-    // reference rather than from `imports.ts`.
+    // #28 reported that rule resolves one level too high inside an inline module, and #29
+    // — now MERGED — fixed it. So the caveat above is no longer a suspicion, it is settled:
+    // re-running both implementations would have moved them together and confirmed nothing.
+    // #31 carries the real check: re-derive `super`/`self` from the Rust reference rather
+    // than from `imports.ts`.
     //
     // The other five kinds are derived by unrelated routes and stand as reported.
+    //
+    // ── THIS DOCUMENT IS 17 EDGES AHEAD OF THE EXTRACTOR THAT WOULD PRODUCE IT (#34) ──
+    //
+    // `data/agentscommander.json` was extracted BEFORE #29. Running the current extractor
+    // over the same AgentsCommander commit `1b0e934` yields 1930 edges, not 1947, and 648
+    // `rust-imports`, not 665 — measured in an isolated worktree, not inferred.
+    //
+    // Not 17 removals: **18 removed, 1 added**. The `super` defect invented and dropped in
+    // the same bug — it also lost `config/instance_gitignore.rs → config/injected_messages.rs`,
+    // from a `super::super::` at `instance_gitignore.rs:1004` misattributed to `lib.rs`.
+    // So this map carries 18 `rust-imports` that exist in no build configuration and is
+    // missing one that does. `rustGroupedUseStatements` is likewise 813 here and 812 from
+    // the current extractor (#25, closed by the same fix).
+    //
+    // The regeneration is deliberately deferred until the queued additive extractor changes
+    // land, so the sixteen-file re-pin happens once instead of three times. **Nothing can
+    // make this test go red on that drift**: it reads the committed document and cannot
+    // re-run the extractor, because §10.7 requires this suite to pass on a clean checkout
+    // where AgentsCommander is absent. #34 and this notice are the only mechanisms there
+    // are — which is why the map says so itself rather than only an issue saying it.
     //
     // 817 decomposes the same way: 705 tracked files + 102 directory boxes + 4 anchors
     // + 5 applications + 1 repository.
