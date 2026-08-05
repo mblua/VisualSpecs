@@ -21,7 +21,8 @@ export type ViewCommand =
   | { type: 'ExpandTo'; id: OutlineNodeId }
   | { type: 'MoveNode'; id: OutlineNodeId; position: Point }
   | { type: 'FitContainer'; id: OutlineNodeId }
-  | { type: 'ResetLayout' }
+  /** `scope` absent → the whole document, as before. See `resetLayoutPreview`. */
+  | { type: 'ResetLayout'; scope?: OutlineNodeId }
   | { type: 'SetViewport'; viewport: Viewport }
   | { type: 'SetFocus'; id: OutlineNodeId; requested: FocusMark }
   | { type: 'SetFocusInherited'; id: OutlineNodeId }
@@ -68,23 +69,8 @@ export function applyViewCommand(
       return moveNode(ctx, view, cmd.id, cmd.position);
     case 'FitContainer':
       return fitContainer(ctx, view, cmd.id);
-    case 'ResetLayout': {
-      // Clears the layout the user made. INERT positions — those naming ids that
-      // are not in this graph — are kept, because they are not this graph's layout
-      // and dropping them would make an export lose data that `import` promised
-      // to preserve (§3.5).
-      const next = new Map<NodeId, Position>();
-      for (const [id, p] of view.positions) {
-        if (!ctx.model.nodeById.has(id)) next.set(id, p);
-      }
-      // R is the fit escape hatch: it un-fits every container it re-packs. Inert
-      // fitted ids (not in this graph) are kept for the same §3.5 reason as positions.
-      const nextFitted = new Set<NodeId>();
-      for (const id of view.fitted) {
-        if (!ctx.model.nodeById.has(id)) nextFitted.add(id);
-      }
-      return withFitted(withPositions(view, next), nextFitted);
-    }
+    case 'ResetLayout':
+      return resetLayout(ctx, view, cmd.scope);
     case 'SetViewport':
       return withViewport(view, cmd.viewport);
     case 'SetFocus':
@@ -101,6 +87,97 @@ export function applyViewCommand(
       return view;
     }
   }
+}
+
+/**
+ * What a `ResetLayout` would discard, computed BEFORE it discards it (#44).
+ *
+ * The command exists so that a container whose children are all pinned can be
+ * realigned — after a fit, changing the level basis moves nothing, so the badges say
+ * one thing and the geometry says another. The way out is to drop those pins, and
+ * dropping pins destroys work the user did by hand.
+ *
+ * So the count is part of the command's contract rather than a courtesy of whatever
+ * UI happens to call it: "discard 23 pinned positions in src-tauri/src?" is a question
+ * a person can answer, and "reset layout?" is not.
+ */
+export interface ResetLayoutPreview {
+  /** Positions that will be dropped and were placed by hand. */
+  readonly pinned: number;
+  /** Every position that will be dropped, pinned or not. */
+  readonly positions: number;
+  /** Containers that will stop being fitted. */
+  readonly unfitted: number;
+}
+
+export function resetLayoutPreview(
+  ctx: CommandContext,
+  view: ViewState,
+  scope?: OutlineNodeId,
+): ResetLayoutPreview {
+  const affected = resetLayoutTargets(ctx, scope);
+  let pinned = 0;
+  let positions = 0;
+  for (const [id, p] of view.positions) {
+    if (!affected.positions(id)) continue;
+    positions += 1;
+    if (p.pinned === true) pinned += 1;
+  }
+  let unfitted = 0;
+  for (const id of view.fitted) if (affected.fitted(id)) unfitted += 1;
+  return { pinned, positions, unfitted };
+}
+
+/**
+ * Who a reset touches.
+ *
+ * Document-wide, this is "everything in this graph": INERT entries — those naming ids
+ * that are not in this graph — are kept, because they are not this graph's layout and
+ * dropping them would make an export lose data that `import` promised to preserve
+ * (§3.5).
+ *
+ * Scoped, it is the container's STRICT descendants. The container itself keeps its own
+ * position and pin: realigning what is inside a box must not move the box, or
+ * "realign this container" would quietly rearrange the document around it.
+ */
+function resetLayoutTargets(
+  ctx: CommandContext,
+  scope?: OutlineNodeId,
+): { positions: (id: NodeId) => boolean; fitted: (id: NodeId) => boolean } {
+  if (scope === undefined) {
+    return {
+      positions: (id) => ctx.model.nodeById.has(id),
+      fitted: (id) => ctx.model.nodeById.has(id),
+    };
+  }
+  const inside = new Set<NodeId>();
+  for (const d of outlineDescendantsOf(ctx.outline, scope)) {
+    if (d === scope) continue;
+    inside.add(ctx.outline.entityOf(d));
+  }
+  const scopeEntity = ctx.outline.entityOf(scope);
+  return {
+    positions: (id) => inside.has(id),
+    // The scope itself IS un-fitted: its size hugged a child arrangement that is about
+    // to be re-packed, so leaving it fitted would freeze a box around contents that no
+    // longer justify it.
+    fitted: (id) => inside.has(id) || id === scopeEntity,
+  };
+}
+
+function resetLayout(ctx: CommandContext, view: ViewState, scope?: OutlineNodeId): ViewState {
+  const affected = resetLayoutTargets(ctx, scope);
+
+  const positions = new Map<NodeId, Position>();
+  for (const [id, p] of view.positions) {
+    if (!affected.positions(id)) positions.set(id, p);
+  }
+  // R is the fit escape hatch: it un-fits every container it re-packs.
+  const fitted = new Set<NodeId>();
+  for (const id of view.fitted) {
+    if (!affected.fitted(id)) fitted.add(id);
+  }
+  return withFitted(withPositions(view, positions), fitted);
 }
 
 /**
