@@ -240,7 +240,25 @@ export function rankBadge(result: RankResult, child: OutlineNodeId): string | un
  * focus feature's mixed-subtree glyph and this one no longer compete for the field, and
  * there is no precedence rule to get wrong.
  */
-export const HIDES_INTERNAL_MARKER = '⇄';
+/**
+ * NOT `⇄`, and that is the whole point.
+ *
+ * `⇄` means, by contract, "these siblings need each other". A container that hides an
+ * entanglement INSIDE ITSELF may need no sibling at all — `pkg:cargo:src-tauri/Cargo.toml`
+ * has an SCC of one and hides 94 entangled files — so drawing `⇄` on it asserted something
+ * false about it, and put the same symbol on two different facts: a reader seeing it on two
+ * boxes would conclude the same thing about both, when one is tangled with its siblings and
+ * the other hides a tangle within. Exactly the class of defect this design already fixed
+ * twice: `unranked` reading as `forward`, and "level 0" indistinguishable from "nothing was
+ * measured".
+ *
+ * `▩` comes from the same Unicode block as the focus feature's `▣`, so it carries no new
+ * typographic risk, and it reads as "densely filled" — there is more in here than the box
+ * shows. It composes with `⇄` rather than competing with it: a container that is BOTH
+ * tangled with its siblings and hiding a tangle inside shows `L1⇄` in the badge and `▩`
+ * beside it, which is two facts stated separately.
+ */
+export const HIDES_INTERNAL_MARKER = '▩';
 
 export function levelMarker(result: RankResult, child: OutlineNodeId): string | undefined {
   return result.hidesInternal.has(child) ? HIDES_INTERNAL_MARKER : undefined;

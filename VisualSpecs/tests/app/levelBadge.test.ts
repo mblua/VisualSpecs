@@ -222,8 +222,69 @@ describe('a container that hides an entanglement does not look clean', () => {
 
     const P = 'P' as OutlineNodeId;
     expect(result.hidesInternal.has(P)).toBe(true);
-    expect(levelMarker(result, P)).toBe('⇄');
+    expect(levelMarker(result, P)).toBe('▩');
     // And a child that hides nothing carries no marker.
     expect(levelMarker(result, 'q' as OutlineNodeId)).toBeUndefined();
+  });
+
+  it('NEVER marks it with ⇄, which claims something else entirely', () => {
+    // `⇄` means "these siblings need each other". This container needs no sibling — its
+    // own SCC has one member — so `⇄` here would be a false claim about it, and would put
+    // one symbol on two different facts.
+    const text = docText(
+      [
+        node('C', 'directory', null),
+        node('P', 'directory', 'C'),
+        node('p1', 'file', 'P'),
+        node('p2', 'file', 'P'),
+      ],
+      [edge('e1', 'imports', 'p1', 'p2'), edge('e2', 'imports', 'p2', 'p1')],
+      { view: { expanded: ['C'] } },
+    );
+    const loaded = importDoc(text);
+    const outline = new OwnershipOutline(loaded.model);
+    const result = rank(loaded.model, outline, C, KINDS, 'observed');
+    const P = 'P' as OutlineNodeId;
+
+    const index = result.sccOf.get(P);
+    const scc = index === undefined ? undefined : result.sccs[index];
+    expect(scc === undefined || scc.members.length < 2).toBe(true);
+
+    expect(levelMarker(result, P)).not.toContain('⇄');
+    expect(rankBadge(result, P) ?? '').not.toContain('⇄');
+  });
+
+  it('states both facts separately when a container is tangled AND hides a tangle', () => {
+    // `A` and `B` need each other, and `A` also hides an entanglement among its own
+    // children. Two facts, two symbols, neither borrowed from the other.
+    const text = docText(
+      [
+        node('C', 'directory', null),
+        node('A', 'directory', 'C'),
+        node('B', 'directory', 'C'),
+        node('a1', 'file', 'A'),
+        node('a2', 'file', 'A'),
+        node('b1', 'file', 'B'),
+      ],
+      [
+        edge('e1', 'imports', 'a1', 'a2'),
+        edge('e2', 'imports', 'a2', 'a1'),
+        edge('e3', 'imports', 'a1', 'b1'),
+        edge('e4', 'imports', 'b1', 'a2'),
+      ],
+      { view: { expanded: ['C'] } },
+    );
+    const loaded = importDoc(text);
+    const outline = new OwnershipOutline(loaded.model);
+    const result = rank(loaded.model, outline, C, KINDS, 'observed');
+    const A = 'A' as OutlineNodeId;
+
+    const index = result.sccOf.get(A);
+    const scc = index === undefined ? undefined : result.sccs[index];
+    expect(scc?.members.length).toBeGreaterThan(1);
+    expect(result.hidesInternal.has(A)).toBe(true);
+
+    expect(rankBadge(result, A)).toContain('⇄'); // tangled with its sibling
+    expect(levelMarker(result, A)).toBe('▩'); // and hiding one inside
   });
 });
