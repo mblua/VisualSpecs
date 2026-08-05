@@ -50,6 +50,18 @@ export interface VisualSpecsEdge {
    *  'resolved'  — an identifier was resolved to a file that provably exists.
    *  'heuristic' — pattern-matched; may be wrong. Always carries evidence. */
   confidence: Confidence;
+  /**
+   * Build configurations under which this relation exists. **Absent means
+   * UNCONDITIONAL, not "default"** — only a relation living inside a conditional block
+   * carries the field, and one that exists in both test and production carries nothing.
+   *
+   * Open vocabulary; the first entry is `"cfg(test)"`. A consumer must not read it as a
+   * boolean: filtering out everything conditional would be wrong, because a relation
+   * under `cfg(target_os = "windows")` really is in the shipped build on Windows.
+   *
+   * The extractor RECORDS these; nothing in the pipeline evaluates them.
+   */
+  conditions?: readonly string[];
   metadata?: Record<string, unknown>;
   evidence?: Evidence[];
 }

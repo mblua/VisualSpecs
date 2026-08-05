@@ -41,6 +41,16 @@ export interface UseStatement {
    * two-cycle that does not exist.
    */
   enclosingModules: string[];
+  /**
+   * Attributes written immediately above the statement, verbatim (literals intact), e.g.
+   * `['#[cfg(windows)]']`. A `use` can be gated on its own, without any enclosing block.
+   */
+  attributes: string[];
+  /**
+   * The `#[cfg(…)]` attributes that gate this statement — its own, plus every enclosing
+   * inline module's, outermost first. Empty means the statement is unconditional.
+   */
+  cfg: string[];
 }
 
 /**
@@ -214,6 +224,27 @@ function attributesBefore(text: string, end: number): string[] {
 }
 
 /**
+ * Both views of a source at once. They come from the SAME scan, so they have identical
+ * length and identical newline positions and an offset means the same thing in either.
+ *
+ * That is what lets a caller match braces on the blanked view — where `format!("{}")`
+ * cannot be miscounted — while reading attribute text from the view that kept its
+ * literals, so `#[cfg(target_os = "windows")]` can be quoted verbatim instead of arriving
+ * as `#[cfg(target_os =           )]`. A condition nobody can name is a condition that
+ * has to be dropped, and dropping it would assert the relation is unconditional.
+ */
+export interface SourceViews {
+  /** Comments blanked, literals kept. Read attribute TEXT here. */
+  literal: string;
+  /** Comments and literal text blanked. Match BRACES here. */
+  blanked: string;
+}
+
+export function views(source: string): SourceViews {
+  return { literal: stripComments(source), blanked: neutralise(source) };
+}
+
+/**
  * Every inline `mod X { … }` in the source, nested ones included. Expects text whose
  * comments and literals have already been neutralised, so the braces it counts are code.
  *
@@ -222,7 +253,8 @@ function attributesBefore(text: string, end: number): string[] {
  * spot `test`, which is all any caller here needs; it is not enough to read a value, and
  * nothing should try.
  */
-export function inlineModuleSpans(text: string): InlineModuleSpan[] {
+export function inlineModuleSpans(text: string, attributeSource?: string): InlineModuleSpan[] {
+  const attrText = attributeSource ?? text;
   const out: InlineModuleSpan[] = [];
   const re = /(^|[;{}\s])(?:pub(?:\s*\([^)]*\))?\s+)?mod\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{/g;
   let match: RegExpExecArray | null;
@@ -234,7 +266,9 @@ export function inlineModuleSpans(text: string): InlineModuleSpan[] {
       name: match[2] as string,
       open,
       close,
-      attributes: attributesBefore(text, match.index + (match[1] === '' ? 0 : 1)),
+      // Offsets are shared between the two views, so attributes may be read from the one
+      // that kept its literals. See `SourceViews`.
+      attributes: attributesBefore(attrText, match.index + (match[1] === '' ? 0 : 1)),
     });
     // `lastIndex` is left just past the opening brace on purpose: a module nested inside
     // this one has to be found too.
@@ -246,8 +280,8 @@ const USE_RE = /(^|[;{}\s])(?:pub(?:\s*\([^)]*\))?\s+)?use\s+/g;
 
 /** Every `use` statement in a Rust source, with its nested tree fully expanded. */
 export function parseUseStatements(source: string): UseStatement[] {
-  const text = neutralise(source);
-  const spans = inlineModuleSpans(text);
+  const { literal, blanked: text } = views(source);
+  const spans = inlineModuleSpans(text, literal);
   const out: UseStatement[] = [];
 
   USE_RE.lastIndex = 0;
@@ -261,12 +295,17 @@ export function parseUseStatements(source: string): UseStatement[] {
 
     // Outermost first: the spans are emitted in source order, and one that contains this
     // statement and starts earlier is further out.
-    const enclosingModules = spans
-      .filter((s) => match !== null && s.open < match.index && match.index < s.close)
-      .map((s) => s.name);
+    const enclosing = spans.filter(
+      (s) => match !== null && s.open < match.index && match.index < s.close,
+    );
+    const enclosingModules = enclosing.map((s) => s.name);
+    const attributes = attributesBefore(literal, match.index + (match[1] === '' ? 0 : 1));
+    const cfg = [...enclosing.flatMap((s) => s.attributes), ...attributes].filter((a) =>
+      a.startsWith('#[cfg('),
+    );
 
     const leaves = parseTree(body);
-    if (leaves.length > 0) out.push({ leaves, line, enclosingModules });
+    if (leaves.length > 0) out.push({ leaves, line, enclosingModules, attributes, cfg });
     USE_RE.lastIndex = end;
   }
 
@@ -390,6 +429,12 @@ export interface ModDeclaration {
    * no `#[path]` to resolve".
    */
   attributes: string[];
+  /**
+   * The `#[cfg(…)]` attributes gating this declaration — its own, plus every enclosing
+   * inline module's. `#[cfg(target_os = "windows")] mod windows;` means the relation to
+   * that file exists only on Windows, and its sibling `mod unsupported;` only elsewhere.
+   */
+  cfg: string[];
 }
 
 /**
@@ -398,18 +443,53 @@ export interface ModDeclaration {
  * would invent a file that does not exist.
  */
 export function parseModDeclarations(source: string): ModDeclaration[] {
-  // `neutralise`, not `stripComments`: a `"mod foo;"` inside a string literal would
-  // otherwise declare a module, and declaring one invents a file.
-  const text = neutralise(source);
+  // Braces and statements are found on the blanked view — a `"mod foo;"` inside a string
+  // literal would otherwise declare a module, and declaring one invents a file. Attribute
+  // TEXT is read from the literal view at the same offsets. See `SourceViews`.
+  const { literal, blanked: text } = views(source);
+  const spans = inlineModuleSpans(text, literal);
   const out: ModDeclaration[] = [];
   const re = /(^|[;{}\s])(?:pub(?:\s*\([^)]*\))?\s+)?mod\s+([A-Za-z_][A-Za-z0-9_]*)\s*;/g;
   let match: RegExpExecArray | null;
   while ((match = re.exec(text)) !== null) {
+    const at = match.index + (match[1] === '' ? 0 : 1);
+    const attributes = attributesBefore(literal, at);
+    const enclosing = spans.filter((s) => s.open < match!.index && match!.index < s.close);
     out.push({
       name: match[2] as string,
       line: text.slice(0, match.index + match[0].length).split('\n').length,
-      attributes: attributesBefore(text, match.index + (match[1] === '' ? 0 : 1)),
+      attributes,
+      cfg: [...enclosing.flatMap((s) => s.attributes), ...attributes].filter((a) =>
+        a.startsWith('#[cfg('),
+      ),
     });
   }
   return out;
+}
+
+/**
+ * The `#[cfg(…)]` attributes gating one reference, as ONE vocabulary entry.
+ *
+ * A reference nested in two conditional blocks needs BOTH, so several attributes conjoin
+ * into Rust's own syntax for that — `cfg(all(test, windows))` — rather than becoming two
+ * array entries. `VisualSpecsEdge.conditions` is a set of configurations the relation
+ * exists under, so its entries read as alternatives; putting a conjunction in there would
+ * invert the meaning.
+ *
+ * Returns null when the reference is unconditional, which is not the same as an empty
+ * condition and must stay distinguishable from it.
+ */
+export function conditionOf(cfg: readonly string[]): string | null {
+  const predicates = [
+    ...new Set(
+      cfg
+        .map((a) => /^#\[\s*(cfg\s*\(.*\))\s*\]$/s.exec(a.replace(/\s+/g, ' '))?.[1])
+        .filter((p): p is string => p !== undefined)
+        .map((p) => p.replace(/\s+/g, ' ').trim()),
+    ),
+  ].sort();
+  if (predicates.length === 0) return null;
+  if (predicates.length === 1) return predicates[0] as string;
+  const inner = predicates.map((p) => p.replace(/^cfg\s*\(/, '').replace(/\)$/, ''));
+  return `cfg(all(${inner.join(', ')}))`;
 }

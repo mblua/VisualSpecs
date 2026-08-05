@@ -132,8 +132,24 @@ export function extract(options: ExtractOptions): ExtractResult {
     flags: options.flags,
   });
 
+  // The version locus for GRAPH data is HERE, not in `export.ts`.
+  //
+  // `raiseFormatVersion` derives the minor from the `view` subtree alone — `fitted` is
+  // 1.1, non-default `focus` is 1.2 — and `exportDoc` clones `raw` without touching
+  // `edges`. So nothing downstream can ever raise the minor for `conditions`. If the
+  // extractor does not stamp it, a 1.3 document declares itself 1.0, no reader is warned,
+  // and the omission is undetectable afterwards.
+  //
+  // Keyed off the EMITTED relations rather than off "the repository has some `cfg`":
+  // a repository full of `#[cfg(test)]` whose conditional references all resolve to
+  // nothing produces no conditional relation, and a document that carries none loses
+  // nothing when a 1.0 reader opens it.
+  const conditionVocabulary = countBy(kept.flatMap((e) => [...(e.conditions ?? [])]));
+  const conditionalEdges = kept.filter((e) => e.conditions !== undefined).length;
+  const formatVersion = conditionalEdges > 0 ? '1.3' : '1.0';
+
   const doc: VisualSpecsDoc = {
-    formatVersion: '1.0',
+    formatVersion,
     generator: {
       name: GENERATOR_NAME,
       version: GENERATOR_VERSION,
@@ -174,6 +190,12 @@ export function extract(options: ExtractOptions): ExtractResult {
       externalSpecifierNames: ts.externalSpecifiers.slice(0, 200),
       tsPathAliasUsages: ts.aliasHits,
       tsconfigs: ts.tsconfigs,
+      /** Relations that exist only under some build configuration, and the vocabulary
+       *  they used, with counts. Not optional: without it a typo coins a condition in
+       *  silence and nobody can enumerate what is in the file without scanning every
+       *  relation. Same argument as pinning `webRouterArms`. */
+      conditionalEdges,
+      conditionVocabulary,
       rustCrateRoots: rust.crateRoots,
       rustGroupedUseStatements: rust.groupedUseCount,
       /** Whether a directory box IS the Rust module a reader reads it as — measured per
