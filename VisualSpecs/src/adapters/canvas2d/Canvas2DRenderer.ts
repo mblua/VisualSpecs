@@ -21,6 +21,7 @@ import {
   HEADER_STRIP_HEIGHT,
   type EdgeRoute,
   type GraphRenderer,
+  type RenderBand,
   type RenderEdge,
   type RenderNode,
   type RenderScene,
@@ -30,6 +31,8 @@ import {
 
 const MIN_ZOOM = 0.05;
 const MAX_ZOOM = 8;
+/** A level band's label, in SCREEN pixels — it does not shrink with the map. */
+const BAND_LABEL_PX = 11;
 const DRAG_THRESHOLD = 3;
 const DBLCLICK_MS = 320;
 const DBLCLICK_SLOP = 6;
@@ -612,7 +615,22 @@ export class Canvas2DRenderer implements GraphRenderer {
     const containers = visible.filter((n) => n.isContainer && n.isExpanded).sort((a, b) => a.z - b.z);
     const leaves = visible.filter((n) => !(n.isContainer && n.isExpanded)).sort((a, b) => a.z - b.z);
 
-    for (const n of containers) this.paintNode(ctx, n);
+    // Containers and their level bands share one z-ordered backdrop pass: a band carries
+    // `z(container) + 0.5`, so it lands behind the container's children and in front of
+    // the container itself. Sorting them together is what keeps a nested container's
+    // bands from painting over its parent's.
+    const backdrop: Array<{ z: number; node: RenderNode | null; band: RenderBand | null }> = [];
+    for (const n of containers) backdrop.push({ z: n.z, node: n, band: null });
+    for (const b of drawn.bands ?? []) {
+      if (!b.hidden) backdrop.push({ z: b.z, node: null, band: b });
+    }
+    backdrop.sort((a, b) => a.z - b.z);
+    // One division per frame rather than one per band: the zoom is global.
+    const labelSize = BAND_LABEL_PX / this.viewport.zoom;
+    for (const item of backdrop) {
+      if (item.node !== null) this.paintNode(ctx, item.node);
+      else if (item.band !== null) this.paintBand(ctx, item.band, labelSize);
+    }
     for (const e of drawn.edges) {
       if (e.hidden) continue;
       const route = routes.get(e.id);
@@ -621,6 +639,45 @@ export class Canvas2DRenderer implements GraphRenderer {
     }
     for (const n of leaves) this.paintNode(ctx, n);
 
+    ctx.restore();
+  }
+
+  /**
+   * One level band: its rectangles, and its label.
+   *
+   * The label is drawn at a CONSTANT SCREEN SIZE (`BAND_LABEL_PX / zoom` in world units),
+   * not at a constant world size. A band is 72 px of world at its thinnest, so a
+   * world-sized 11 px label would shrink with the map and be unreadable at exactly the
+   * zoom `fit()` lands on. This is an adapter decision and touches no contract: the port
+   * hands over a string.
+   *
+   * AND IT IS ONLY DRAWN WHEN IT FITS. Two reasons, and the second is the one that
+   * matters. Unguarded, the inverse-zoom size asks Canvas2D for a 220 px world font on
+   * every band of every frame at the minimum zoom — wasteful, though it was not the cause
+   * of anything observed. What the guard really buys is honesty: a lane too thin to hold
+   * its own name does not get a name it cannot show. That is the same condition LVL-4'
+   * states, so the label is present exactly when the criterion says it must be legible.
+   *
+   * The band is PICTORIAL and takes no part in hit-testing: a click here still resolves
+   * to the container, exactly as it did before bands existed.
+   */
+  private paintBand(ctx: CanvasRenderingContext2D, band: RenderBand, labelSize: number): void {
+    ctx.save();
+    ctx.globalAlpha = band.opacity;
+    ctx.fillStyle = band.style.fill;
+    for (const rect of band.rects) ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+
+    const first = band.rects[0];
+    // `0.6` is the width of a digit relative to its size in this font, close enough for a
+    // two-or-three character label; the point is to skip, not to measure precisely.
+    const fitsHeight = first !== undefined && labelSize <= first.h * 0.9;
+    const fitsWidth = first !== undefined && labelSize * band.label.length * 0.6 <= first.w;
+    if (first !== undefined && fitsHeight && fitsWidth) {
+      ctx.font = `${labelSize}px ui-sans-serif, system-ui, sans-serif`;
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = band.style.text;
+      ctx.fillText(band.label, first.x + labelSize * 0.4, first.y + labelSize * 0.3);
+    }
     ctx.restore();
   }
 

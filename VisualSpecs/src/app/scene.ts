@@ -16,10 +16,12 @@ import { descendantsOf } from '../contract/model.ts';
 import { aggregateFocusOpacity, focusOpacity, resolve, type ResolvedFocus } from '../domain/focus.ts';
 import type { Geometry } from '../domain/layoutEngine.ts';
 import { labelWidthFor, truncateLabel } from '../domain/geometry.ts';
+import { buildOutlineParents } from '../domain/commands.ts';
 import type { VisibleGraph } from '../projection/types.ts';
-import type { RenderEdge, RenderNode, RenderScene } from '../ports/renderer.ts';
-import { edgeStyle, nodeStyle } from './registry.ts';
+import type { RenderBand, RenderEdge, RenderNode, RenderScene } from '../ports/renderer.ts';
+import { bandStyle, edgeStyle, nodeStyle } from './registry.ts';
 import type { AppState } from './state.ts';
+import { levelMarker, NO_RANKINGS, rankBadge, type Rankings } from './levelView.ts';
 
 /**
  * How strongly a search attenuates what it does not match. These were literals at
@@ -54,8 +56,17 @@ export interface SceneResult {
   focus: ResolvedFocus | null;
 }
 
-export function buildScene(state: AppState, geometry: Geometry, graph: VisibleGraph): SceneResult {
+export function buildScene(
+  state: AppState,
+  geometry: Geometry,
+  graph: VisibleGraph,
+  rankings: Rankings = NO_RANKINGS,
+): SceneResult {
   const { model, outline, view, selection, search, filters } = state;
+  // Which container each visible node hangs from — the rank of a box is stated by ITS
+  // OWN container's ranking, and a rank from one container is not comparable with a rank
+  // from another.
+  const parentOf = state.levels.active ? buildOutlineParents(outline) : null;
   const selectedNodes = new Set<string>(selection.nodeIds);
   const searching = search.query.trim() !== '';
 
@@ -121,7 +132,31 @@ export function buildScene(state: AppState, geometry: Geometry, graph: VisibleGr
       const count = descendantsOf(model, entity).length;
       if (count > 0) node.badge = String(count);
     }
-    if (resolved?.subtreeDiffers.has(n) === true) node.marker = MIXED_SUBTREE_MARKER;
+
+    // The rank badge is THE AUTHORITY and is present always in Levels mode, not only when
+    // the box is out of its lane: a badge that appears only when the band lies is one
+    // nobody has learned to read by the time it matters. Dragging a box never changes it.
+    const markers: string[] = [];
+    if (resolved?.subtreeDiffers.has(n) === true) markers.push(MIXED_SUBTREE_MARKER);
+
+    if (parentOf !== null) {
+      const container = parentOf.get(n);
+      const ranking = container === null || container === undefined ? undefined : rankings.get(container);
+      if (ranking !== undefined) {
+        const rankText = rankBadge(ranking, n);
+        if (rankText !== undefined) {
+          // A collapsed container already shows its descendant count; the two are joined
+          // rather than made to fight over the field.
+          node.badge = node.badge === undefined ? rankText : `${rankText}·${node.badge}`;
+        }
+        const hides = levelMarker(ranking, n);
+        if (hides !== undefined) markers.push(hides);
+      }
+    }
+    // `marker` is a free string the port draws without interpreting, so it COMPOSES:
+    // focus's mixed-subtree glyph and the hidden-entanglement glyph stop competing for
+    // one field, and there is no precedence rule to get wrong.
+    if (markers.length > 0) node.marker = markers.join('');
     nodes.push(node);
   }
 
@@ -176,8 +211,29 @@ export function buildScene(state: AppState, geometry: Geometry, graph: VisibleGr
     });
   }
 
+  // Level bands. The domain already resolved them into drawable rectangles, clipped
+  // exactly and only for containers whose lanes still describe their boxes — a
+  // desynchronized container emits none at all, and the header declares that.
+  const bands: RenderBand[] = [];
+  for (const [container, lanes] of geometry.bands) {
+    const z = (geometry.z.get(container) ?? 0) + 0.5;
+    const hidden = hiddenNodes.has(container);
+    for (const lane of lanes) {
+      bands.push({
+        containerId: container,
+        rank: lane.rank,
+        rects: lane.rects,
+        z,
+        label: `L${String(lane.rank)}`,
+        style: bandStyle(lane.rank),
+        opacity: 1,
+        hidden,
+      });
+    }
+  }
+
   return {
-    scene: { nodes, edges },
+    scene: bands.length > 0 ? { nodes, edges, bands } : { nodes, edges },
     hiddenByFilter: { nodes: hiddenNodeCount, edges: hiddenEdgeCount },
     focus: resolved,
   };
