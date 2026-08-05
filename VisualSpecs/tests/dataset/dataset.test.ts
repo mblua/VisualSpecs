@@ -145,15 +145,13 @@ describe('what the map says about AgentsCommander — every number from a parser
     });
   });
 
-  it('carries 817 nodes and 1947 relations — and every one of the six kinds reconstructs', () => {
+  it('carries 817 nodes and 1930 relations — and every one of the six kinds reconstructs', () => {
     // The README publishes these totals, so they are pinned here rather than left as
-    // prose with nothing watching them (#27). The whole edge count was rebuilt by a
-    // program that shares no code with the extractor and never opens this document —
-    // though sharing no CODE is not the same as sharing no ASSUMPTION, and for one of the
-    // six kinds it did share one. See the caveat under `rust-imports`.
+    // prose with nothing watching them (#27). Five of the six kinds were rebuilt by a
+    // program that shares no code with the extractor and never opens this document.
     // §10.2 concedes the TypeScript library is unavoidable for module resolution; the
-    // discovery loop, the tracked-tree fallback for asset imports, the Rust crate walk,
-    // the use-tree parser and every dedupe in that program were written from scratch.
+    // discovery loop, the tracked-tree fallback for asset imports, the use-tree parser
+    // and every dedupe in that program were written from scratch.
     //
     //   bundles         6  by hand: session-bridge ships 2 bins, npm/package.json declares
     //                      1 bin, index.html is the web app — and the Tauri app bundles
@@ -162,60 +160,52 @@ describe('what the map says about AgentsCommander — every number from a parser
     //   imports      1089  ts.preProcessFile + ts.resolveModuleName against the mapped
     //                      repository's own tsconfig, plus the tracked-tree fallback that
     //                      resolves asset imports, deduped per (source, target)
-    //   rust-imports  665  crate walk: `mod` resolution plus longest-prefix `use`
-    //                      resolution, deduped per (source, target). NOT independent for
-    //                      `super::` — see the caveat below.
+    //   rust-imports  648  NOT by a second count — see below
     //   tauri-command 137  registered ∩ called — see the command tests below
     //   web-command    45  called ∩ web-router arms
     //                 ----
-    //                 1947
+    //                 1930
     //
-    // CAVEAT on `rust-imports`, and it is the only one of the six (#31). That walk
-    // replicates the extractor's own `absolutise` rule for `super::` — pop one module
-    // segment per leading `super`, then append the tail — because it set out to measure
-    // the same CLAIM. Both sides therefore agree at 665 because both apply that rule, not
-    // because the rule was ever checked against Rust's module semantics. For the `super::`
-    // subset this is one opinion typed twice, not a second opinion.
+    // `rust-imports` IS NOT CORROBORATED BY A SECOND COUNT, DELIBERATELY. The earlier
+    // reconstruction agreed with the extractor at 665 — and 18 of those 665 existed in no
+    // build configuration. It agreed because it replicated the extractor's own `absolutise`
+    // rule for `super::` rather than checking that rule against Rust: code independence is
+    // not specification independence, and a second implementation bounds implementation
+    // error, never a shared spec error. Re-running it now would agree at 648 and mean
+    // exactly as much.
     //
-    // #28 reported that rule resolves one level too high inside an inline module, and #29
-    // — now MERGED — fixed it. So the caveat above is no longer a suspicion, it is settled:
-    // re-running both implementations would have moved them together and confirmed nothing.
-    // #31 carries the real check: re-derive `super`/`self` from the Rust reference rather
-    // than from `imports.ts`.
+    // What backs 648 instead is 19 NAMED CASES, each checkable by reading two files, and
+    // a total cannot be satisfied that way. 665 → 648 is 18 removed and 1 restored:
     //
-    // The other five kinds are derived by unrelated routes and stand as reported.
+    //   * All 18 removed were backed ONLY by `use super::…` written inside an INLINE
+    //     module — `mod tests`, `mod capture`, `mod codec_posix`, `mod codec_windows`,
+    //     `mod pty_viewport_tests`, `mod startup_gate_tests`, `mod windows_impl` and
+    //     others. All 32 of their evidence lines were re-read: every one sits inside an
+    //     inline module, every symbol is DEFINED IN THE SOURCE FILE ITSELF, and every one
+    //     is ABSENT from the `mod.rs`/`lib.rs` the old document named. `super` from inside
+    //     an inline module is the file, so each was a self-relation drawn as a relation.
+    //   * The 1 restored is `config/instance_gitignore.rs → config/injected_messages.rs`,
+    //     from the `super::super::` at `instance_gitignore.rs:1004` and `:1025`, previously
+    //     misattributed to `lib.rs`. `INJECTED_MESSAGES_FILENAME` is absent from `lib.rs`
+    //     and present at `config/injected_messages.rs:32` as a `pub(crate) const`.
     //
-    // ── THIS DOCUMENT IS 17 EDGES AHEAD OF THE EXTRACTOR THAT WOULD PRODUCE IT (#34) ──
-    //
-    // `data/agentscommander.json` was extracted BEFORE #29. Running the current extractor
-    // over the same AgentsCommander commit `1b0e934` yields 1930 edges, not 1947, and 648
-    // `rust-imports`, not 665 — measured in an isolated worktree, not inferred.
-    //
-    // Not 17 removals: **18 removed, 1 added**. The `super` defect invented and dropped in
-    // the same bug — it also lost `config/instance_gitignore.rs → config/injected_messages.rs`,
-    // from a `super::super::` at `instance_gitignore.rs:1004` misattributed to `lib.rs`.
-    // So this map carries 18 `rust-imports` that exist in no build configuration and is
-    // missing one that does. `rustGroupedUseStatements` is likewise 813 here and 812 from
-    // the current extractor (#25, closed by the same fix).
-    //
-    // The regeneration is deliberately deferred until the queued additive extractor changes
-    // land, so the sixteen-file re-pin happens once instead of three times. **Nothing can
-    // make this test go red on that drift**: it reads the committed document and cannot
-    // re-run the extractor, because §10.7 requires this suite to pass on a clean checkout
-    // where AgentsCommander is absent. #34 and this notice are the only mechanisms there
-    // are — which is why the map says so itself rather than only an issue saying it.
+    // One surviving edge also lost an evidence line: `commands/config.rs → lib.rs` keeps
+    // its two real `use crate::ApiServerHandle;` lines (`lib.rs:182`) and drops
+    // `config.rs:2254`, whose `super::super::settings_snapshot_from` is written inside
+    // `mod snapshot` NESTED in `mod tests`, so it resolves to config.rs itself — where
+    // `settings_snapshot_from` is defined, at line 390.
     //
     // 817 decomposes the same way: 705 tracked files + 102 directory boxes + 4 anchors
     // + 5 applications + 1 repository.
     expect(doc.nodes).toHaveLength(817);
-    expect(doc.edges).toHaveLength(1947);
+    expect(doc.edges).toHaveLength(1930);
     expect(stats['nodeCount']).toBe(817);
-    expect(stats['edgeCount']).toBe(1947);
+    expect(stats['edgeCount']).toBe(1930);
     expect(stats['edgesByKind']).toEqual({
       bundles: 6,
       entrypoint: 5,
       imports: 1089,
-      'rust-imports': 665,
+      'rust-imports': 648,
       'tauri-command': 137,
       'web-command': 45,
     });
@@ -314,31 +304,71 @@ describe('what the map says about AgentsCommander — every number from a parser
     expect(stats['webRouterArms']).toBe(46);
   });
 
-  it('counts 813 grouped Rust use-trees — the figure the docs cite, produced by the parser', () => {
+  it('counts 812 grouped Rust use-trees — the figure the docs cite, produced by the parser', () => {
     // An earlier draft of the architecture said "26 times across 21 files". That came
     // from a grep, it was never reproduced by a parser, and it is not even what the
     // parser measures. This is the number the tool produces, and the docs now cite THIS
     // one — which means if the tool changes, this test changes with it (§10.5).
     //
-    // THE REFRESH 753 → 813 IS REAL GROWTH, not a change in how the tool counts. An
-    // independent re-implementation of the count — its own comment stripper, its own
-    // leaf counter, its own crate walk — run over BOTH commits gives 752 at 0a3dc5a and
-    // 812 at 1b0e934. Same +60, measured by a program that shares no code with the
-    // extractor. The mapped repository gained 8 tracked `.rs` files over 151 commits.
-    //
-    // THE CONSTANT OFFSET OF ONE IS A KNOWN EXTRACTOR DEFECT, pinned here with its eyes
-    // open rather than quietly absorbed. `stripComments` does what its name says — it
-    // removes comments and COPIES string literals through — so `parseUseStatements`
-    // scans string contents as if they were code. In the `format!` template at
+    // 813 → 812 IS #25 CLOSED, AND IT IS A NAMED CASE RATHER THAN A TOTAL. The old
+    // `stripComments` removed comments and COPIED string literals through, so the scanner
+    // read string contents as code: in the `format!` template at
     // src-tauri/src/commands/entity_creation.rs:388 the English sentence
     //   "… NEVER use external memory systems from the coding agent …"
-    // supplies the word `use`; the scan then runs to the next `;`, and the braces and
-    // commas of the surrounding `format!` arguments parse as a six-leaf group. One
-    // phantom grouped use-tree, present identically at both commits (752+1, 812+1).
-    // The honest count of grouped use-trees in the repository is 812. 813 is what the
-    // committed document says, and this test characterises the committed document — so
-    // it pins 813 and NAMES the one figure inside it that is not backed by real code.
-    expect(stats['rustGroupedUseStatements']).toBe(813);
+    // supplied the word `use`, the scan ran to the next `;`, and the braces and commas of
+    // the surrounding `format!` arguments parsed as a six-leaf group. #29 replaced the two
+    // scanners with one pass that also blanks literal contents, and the phantom is gone:
+    // re-parsed at `1b0e934`, `entity_creation.rs` now yields 19 grouped statements rather
+    // than 20, and NONE anywhere in the 360–400 region. That is why 812 is the whole
+    // delta — the one statement I could point at and read is the one that left.
+    //
+    // The scanner was rewritten wholesale, so the two phase-loss cases #29 names were
+    // re-checked rather than trusted: `commands/session.rs` (the `'"'` char literal at
+    // line 206) parses 57 `use` statements against 57 textual `use` lines, and
+    // `agentscommander-api-helper.rs` (the `format!("http://{address}")` at line 1247)
+    // parses 11 against 11. No real `use` line was blanked by the new scan.
+    expect(stats['rustGroupedUseStatements']).toBe(812);
+  });
+
+  it('records the Rust module shape — and the two LISTS are checked by reading, not counting', () => {
+    // New in #36. Pinned here because a stats key nothing asserts is the gap #27 is about,
+    // and because two of these fields are ABSENCE claims — the kind that quietly becomes
+    // false without anyone noticing.
+    const shape = stats['rustModuleShape'] as Record<string, unknown>;
+
+    // `#[cfg(…)]` is NOT evaluated, so these two declarations are the ones where that
+    // matters: on a non-Windows build exactly one of them exists, and the map draws both
+    // files unconditionally. Read at the source: `screenshot/mod.rs:26` is `mod windows;`
+    // under `#[cfg(target_os = "windows")]`, and `:31` is `mod unsupported;` under
+    // `#[cfg(not(target_os = "windows"))]`.
+    expect(shape['conditionalModules']).toEqual([
+      'src-tauri/src/screenshot/mod.rs:26 mod windows;',
+      'src-tauri/src/screenshot/mod.rs:31 mod unsupported;',
+    ]);
+
+    // "Empty means there is none to resolve, which is a different claim from cannot
+    // resolve them" — so the absence is checked rather than assumed. A grep for `#[path`
+    // over all 203 tracked `.rs` files finds zero, in zero files.
+    expect(shape['pathAttributes']).toEqual([]);
+
+    // Likewise: no directory of tracked Rust code has its module root in a SIBLING
+    // `<dir>.rs`. Checked by asking git for a tracked `<dir>.rs` next to every directory
+    // holding a `.rs` file — there is none, so every directory's level is its module's.
+    expect(shape['rootOutsideDirectory']).toEqual([]);
+
+    // 18 = the tracked `*/mod.rs` files under the two crates, counted with `git ls-files`.
+    expect(shape['directoryModules']).toBe(18);
+    expect(shape['moduleFiles']).toBe(181);
+
+    // The ratio is the sanity check: test scaffolding dominates, and it should. All FIVE
+    // of the non-test inline modules were read, and every one is a platform shim written
+    // in a `#[cfg(windows)]` / `#[cfg(not(windows))]` pair:
+    //   pty/job.rs:31 `mod windows_impl` + :143 `mod stub_impl`
+    //   resource_monitor/windows.rs:7 `mod platform` + :574 `mod platform`
+    //   testability/window_info.rs:78 `mod windows_impl`  (`#[cfg(target_os = "windows")]`)
+    // There is no non-test inline module in this corpus that is not a platform shim.
+    expect(shape['inlineModules']).toBe(5);
+    expect(shape['inlineTestModules']).toBe(175);
   });
 
   it('records the REGISTERED-BUT-UNCALLED command that an earlier draft denied existed', () => {

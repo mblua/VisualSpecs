@@ -331,7 +331,7 @@ test('interaction budget: p95 from a transparency input to the painted frame, at
   await openMenuOnRow(page, PACKAGE);
   await page.locator('.row-menu-item', { hasText: 'Send out of focus' }).click();
 
-  // The worst case the corpus offers: every container open, 817 nodes and 1786 lines.
+  // The worst case the corpus offers: every container open, 817 nodes and 1769 lines.
   await page.locator('.canvas-host').click({ position: { x: 5, y: 5 } });
   await page.keyboard.press('e');
   await page.waitForTimeout(1200);

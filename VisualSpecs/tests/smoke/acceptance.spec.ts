@@ -265,7 +265,7 @@ test('selecting a container names WHICH relations are folded inside it', async (
 test('an internal bucket can be SELECTED and is announced', async ({ page }) => {
   // The detail panel used to hold an announcement for internal buckets that no UI could
   // reach: the branch existed, and clicking the disclosure only opened it. A screen
-  // reader never learned that 665 rust-imports had been folded into that box.
+  // reader never learned that 648 rust-imports had been folded into that box.
   await boot(page);
   await page.getByRole('option', { name: /agentscommander-new/ }).click();
   await expect(page.locator('.detail')).toContainText('Hidden inside this box');
