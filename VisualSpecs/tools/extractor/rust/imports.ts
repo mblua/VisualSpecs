@@ -14,13 +14,52 @@ import type { Manifest } from '../manifests.ts';
 import { dirOf } from '../manifests.ts';
 import { fileNodeId } from '../ownership.ts';
 import { readTextFile } from '../repo.ts';
-import { parseModDeclarations, parseUseStatements } from './usetree.ts';
+import { inlineModuleSpans, neutralise, parseModDeclarations, parseUseStatements } from './usetree.ts';
+
+/**
+ * Whether the box the map draws for a directory IS the Rust module a reader will read it
+ * as — measured, per repository, instead of assumed.
+ *
+ * Rust lets a module's root file sit OUTSIDE the directory holding its children:
+ * `src/config.rs` beside `src/config/foo.rs`. The map draws a `config/` box containing
+ * `foo.rs` and draws `config.rs` as a SIBLING of that box, so the box's level excludes the
+ * file that defines the module. Calling that level "the level of `config`" is then wrong.
+ * With `src/config/mod.rs` the two coincide, root included, and it is right.
+ *
+ * AgentsCommander is entirely the second shape, so a level per directory needs no caveat
+ * THERE. A modern Rust codebase defaults to the first, and needs one. Which it is belongs
+ * in the document, not in a reviewer's memory.
+ */
+export interface RustModuleShape {
+  /** Modules with a backing file, reached by walking `mod` declarations from every crate root. */
+  moduleFiles: number;
+  /** …whose file is `<dir>/mod.rs`: the directory IS the module, its root included. */
+  directoryModules: number;
+  /**
+   * Directories holding tracked Rust code whose module root is the SIBLING `<dir>.rs`,
+   * outside the box. Listed rather than counted: each entry is a directory whose level is
+   * not its module's level, and a reader deserves to see which.
+   */
+  rootOutsideDirectory: string[];
+  /** Inline `mod X { … }` outside `#[cfg(test)]` — a module with no file, so no box. */
+  inlineModules: number;
+  /** Inline modules inside `#[cfg(test)]`. Separated because test scaffolding dominates
+   *  the count and would drown the number above. */
+  inlineTestModules: number;
+  /** `mod X;` under a `#[cfg(…)]`: the map shows the file unconditionally, the build does
+   *  not. `#[cfg(…)]` is still not evaluated; these are the declarations where that matters. */
+  conditionalModules: string[];
+  /** `#[path = "…"]` declarations walked past. NOT resolved. Empty means there is none to
+   *  resolve, which is a different claim from "cannot resolve them". */
+  pathAttributes: string[];
+}
 
 export interface RustResult {
   edges: VisualSpecsEdge[];
   unresolved: Unresolved[];
   crateRoots: string[];
   groupedUseCount: number;
+  moduleShape: RustModuleShape;
 }
 
 interface CrateIndex {
@@ -42,6 +81,15 @@ export function extractRustImports(
   const unresolved: Unresolved[] = [];
   const crateRoots: string[] = [];
   let groupedUseCount = 0;
+
+  // Module shape. Sets, because a file can be reached from more than one crate root —
+  // `lib.rs` and every `src/bin/*.rs` are separate roots over a shared module tree.
+  const moduleFiles = new Set<string>();
+  const pathAttributes = new Set<string>();
+  const conditionalModules = new Set<string>();
+  let inlineModules = 0;
+  let inlineTestModules = 0;
+  const inlineCounted = new Set<string>();
 
   const crates = manifests.filter((m) => m.ecosystem === 'cargo' && m.isPackage);
 
@@ -66,8 +114,24 @@ export function extractRustImports(
         void modulePath;
         const source = readTextFile(root, file);
 
+        moduleFiles.add(file);
+        if (!inlineCounted.has(file)) {
+          inlineCounted.add(file);
+          const spans = inlineModuleSpans(neutralise(source));
+          for (const span of spans) {
+            if (isUnderCfgTest(span, spans)) inlineTestModules += 1;
+            else inlineModules += 1;
+          }
+        }
+
         // --- mod declarations: a file including another file. ---------------
         for (const decl of parseModDeclarations(source)) {
+          // Recorded, never acted on: `#[path]` is not resolved and `cfg` is not evaluated.
+          // Saying how many were walked past is what separates "cannot" from "none here".
+          const where = `${file}:${decl.line} mod ${decl.name};`;
+          if (decl.attributes.some((a) => a.startsWith('#[path'))) pathAttributes.add(where);
+          if (decl.attributes.some((a) => a.startsWith('#[cfg('))) conditionalModules.add(where);
+
           const target = resolveChildModuleFile(file, decl.name, tracked, rootFile);
           if (target === null) continue; // inline module or a file that is not tracked
           if (target === file) continue;
@@ -134,7 +198,63 @@ export function extractRustImports(
   unresolved.sort((a, b) => (JSON.stringify(a) < JSON.stringify(b) ? -1 : 1));
   crateRoots.sort();
 
-  return { edges, unresolved, crateRoots, groupedUseCount };
+  const moduleShape: RustModuleShape = {
+    moduleFiles: moduleFiles.size,
+    ...directoryShape(files, moduleFiles),
+    inlineModules,
+    inlineTestModules,
+    conditionalModules: [...conditionalModules].sort(),
+    pathAttributes: [...pathAttributes].sort(),
+  };
+
+  return { edges, unresolved, crateRoots, groupedUseCount, moduleShape };
+}
+
+/** Is this inline module a test module, or nested inside one? */
+function isUnderCfgTest(
+  span: { open: number; close: number; attributes: string[] },
+  all: readonly { open: number; close: number; attributes: string[] }[],
+): boolean {
+  const isTest = (attrs: readonly string[]): boolean =>
+    attrs.some((a) => /^#\[cfg\(.*\btest\b/.test(a));
+  if (isTest(span.attributes)) return true;
+  return all.some((s) => s.open < span.open && span.close < s.close && isTest(s.attributes));
+}
+
+/**
+ * For every directory holding tracked Rust code, is its module's root file INSIDE it
+ * (`<dir>/mod.rs`) or beside it (`<dir>.rs`)?
+ *
+ * Asked against the RESOLVED module files, not against path shapes: a `config.rs` that no
+ * `mod config;` ever reaches is not the root of anything, and counting it would report a
+ * gap that does not exist. Directories with neither — a crate's `src/`, a `src/bin/`, an
+ * integration-test directory — are modules of nothing and are simply not counted.
+ */
+function directoryShape(
+  files: readonly string[],
+  moduleFiles: ReadonlySet<string>,
+): { directoryModules: number; rootOutsideDirectory: string[] } {
+  const dirs = new Set<string>();
+  for (const f of files) {
+    if (!f.endsWith('.rs')) continue;
+    const dir = dirOf(f);
+    if (dir !== '') dirs.add(dir);
+  }
+
+  let directoryModules = 0;
+  const rootOutsideDirectory: string[] = [];
+  for (const dir of dirs) {
+    if (moduleFiles.has(`${dir}/mod.rs`)) {
+      directoryModules += 1;
+      continue;
+    }
+    const parent = dirOf(dir);
+    const name = parent === '' ? dir : dir.slice(parent.length + 1);
+    const sibling = parent === '' ? `${name}.rs` : `${parent}/${name}.rs`;
+    if (moduleFiles.has(sibling)) rootOutsideDirectory.push(dir);
+  }
+
+  return { directoryModules, rootOutsideDirectory: rootOutsideDirectory.sort() };
 }
 
 /** Walk `mod` declarations from a crate root and map module paths to files. */

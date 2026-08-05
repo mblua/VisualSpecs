@@ -176,6 +176,10 @@ export function extract(options: ExtractOptions): ExtractResult {
       tsconfigs: ts.tsconfigs,
       rustCrateRoots: rust.crateRoots,
       rustGroupedUseStatements: rust.groupedUseCount,
+      /** Whether a directory box IS the Rust module a reader reads it as — measured per
+       *  repository, so a level shown per directory is backed by this and not by a habit
+       *  picked up from one corpus. See `RustModuleShape`. */
+      rustModuleShape: rust.moduleShape,
       ...commands.stats,
     },
   };

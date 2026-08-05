@@ -202,11 +202,25 @@ export interface InlineModuleSpan {
   open: number;
   /** Offset of the matching closing brace. */
   close: number;
+  /** Attributes written immediately above, e.g. `['#[cfg(test)]']`. */
+  attributes: string[];
+}
+
+/** A contiguous run of `#[…]` attributes ending just before `end`, outermost first. */
+const ATTR_RUN = /((?:#\[[^\]]*\]\s*)*)$/;
+function attributesBefore(text: string, end: number): string[] {
+  const run = ATTR_RUN.exec(text.slice(Math.max(0, end - 600), end))?.[1] ?? '';
+  return run.match(/#\[[^\]]*\]/g) ?? [];
 }
 
 /**
  * Every inline `mod X { … }` in the source, nested ones included. Expects text whose
  * comments and literals have already been neutralised, so the braces it counts are code.
+ *
+ * Literal TEXT inside an attribute is blanked by `neutralise`, so `#[cfg(feature = "x")]`
+ * arrives as `#[cfg(feature =     )]`. That is enough to tell `cfg` from `path` and to
+ * spot `test`, which is all any caller here needs; it is not enough to read a value, and
+ * nothing should try.
  */
 export function inlineModuleSpans(text: string): InlineModuleSpan[] {
   const out: InlineModuleSpan[] = [];
@@ -216,7 +230,12 @@ export function inlineModuleSpans(text: string): InlineModuleSpan[] {
     const open = match.index + match[0].length - 1;
     const close = matchBrace(text, open);
     if (close === -1) continue;
-    out.push({ name: match[2] as string, open, close });
+    out.push({
+      name: match[2] as string,
+      open,
+      close,
+      attributes: attributesBefore(text, match.index + (match[1] === '' ? 0 : 1)),
+    });
     // `lastIndex` is left just past the opening brace on purpose: a module nested inside
     // this one has to be found too.
   }
@@ -360,6 +379,17 @@ function splitTopLevel(s: string): string[] {
 export interface ModDeclaration {
   name: string;
   line: number;
+  /**
+   * Attributes written immediately above, e.g. `['#[cfg(target_os =     )]']`. Literal
+   * text inside them is blanked (see `inlineModuleSpans`), so these are good for asking
+   * WHICH attribute is present and never for reading its value.
+   *
+   * Nothing here acts on them: `#[path = "…"]` is still not resolved and `#[cfg(…)]` is
+   * still not evaluated. They are carried so the extractor can REPORT how many of each it
+   * walked past, which is the difference between "cannot resolve `#[path]`" and "there is
+   * no `#[path]` to resolve".
+   */
+  attributes: string[];
 }
 
 /**
@@ -378,6 +408,7 @@ export function parseModDeclarations(source: string): ModDeclaration[] {
     out.push({
       name: match[2] as string,
       line: text.slice(0, match.index + match[0].length).split('\n').length,
+      attributes: attributesBefore(text, match.index + (match[1] === '' ? 0 : 1)),
     });
   }
   return out;
