@@ -148,7 +148,9 @@ describe('what the map says about AgentsCommander — every number from a parser
   it('carries 817 nodes and 1947 relations — and every one of the six kinds reconstructs', () => {
     // The README publishes these totals, so they are pinned here rather than left as
     // prose with nothing watching them (#27). The whole edge count was rebuilt by a
-    // program that shares no code with the extractor and never opens this document.
+    // program that shares no code with the extractor and never opens this document —
+    // though sharing no CODE is not the same as sharing no ASSUMPTION, and for one of the
+    // six kinds it did share one. See the caveat under `rust-imports`.
     // §10.2 concedes the TypeScript library is unavoidable for module resolution; the
     // discovery loop, the tracked-tree fallback for asset imports, the Rust crate walk,
     // the use-tree parser and every dedupe in that program were written from scratch.
@@ -160,12 +162,31 @@ describe('what the map says about AgentsCommander — every number from a parser
     //   imports      1089  ts.preProcessFile + ts.resolveModuleName against the mapped
     //                      repository's own tsconfig, plus the tracked-tree fallback that
     //                      resolves asset imports, deduped per (source, target)
-    //   rust-imports  665  independent crate walk: `mod` resolution plus longest-prefix
-    //                      `use` resolution, deduped per (source, target)
+    //   rust-imports  665  crate walk: `mod` resolution plus longest-prefix `use`
+    //                      resolution, deduped per (source, target). NOT independent for
+    //                      `super::` — see the caveat below.
     //   tauri-command 137  registered ∩ called — see the command tests below
     //   web-command    45  called ∩ web-router arms
     //                 ----
     //                 1947
+    //
+    // CAVEAT on `rust-imports`, and it is the only one of the six (#31). That walk
+    // replicates the extractor's own `absolutise` rule for `super::` — pop one module
+    // segment per leading `super`, then append the tail — because it set out to measure
+    // the same CLAIM. Both sides therefore agree at 665 because both apply that rule, not
+    // because the rule was ever checked against Rust's module semantics. For the `super::`
+    // subset this is one opinion typed twice, not a second opinion.
+    //
+    // That matters now: #28 reports the rule resolves one level too high inside an inline
+    // module, publishing 18 relations no build has, and #29 is the fix. If it is right,
+    // this document contains 18 phantom edges and the two totals below encode them. The
+    // assertions are still exactly what they claim to be — a characterisation of the
+    // COMMITTED DOCUMENT, which says 665 — but nobody should read 665 as corroborated.
+    // Re-running both implementations after #29 would move them together and confirm
+    // nothing. #31 carries the real check: re-derive `super`/`self` from the Rust
+    // reference rather than from `imports.ts`.
+    //
+    // The other five kinds are derived by unrelated routes and stand as reported.
     //
     // 817 decomposes the same way: 705 tracked files + 102 directory boxes + 4 anchors
     // + 5 applications + 1 repository.
