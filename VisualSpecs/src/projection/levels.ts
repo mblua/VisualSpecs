@@ -196,8 +196,20 @@ function cmp(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-/** Field-by-field over the member tuple. Never a concatenated string (§6.3). */
-function compareMemberTuples(a: readonly string[], b: readonly string[]): number {
+/**
+ * Field-by-field over the member tuple. Never a concatenated string (§6.3).
+ *
+ * EXPORTED SO IT CAN BE TESTED DIRECTLY, and that is not incidental. The SCCs of a
+ * graph are disjoint, so no two member tuples from a real corpus ever share a prefix
+ * — which means a test that permutes the corpus and checks the numbering passes
+ * identically against a comparator that only ever looks at field 0. The corpus cannot
+ * reach the rest of this function, so the test has to.
+ *
+ * The prefix case is what makes the order TOTAL: when one tuple runs out, the shorter
+ * one sorts first. Without that, sorting is not a total order and the "canonical"
+ * numbering is only canonical for the inputs someone happened to try.
+ */
+export function compareMemberTuples(a: readonly string[], b: readonly string[]): number {
   const shared = Math.min(a.length, b.length);
   for (let i = 0; i < shared; i += 1) {
     const d = cmp(a[i] as string, b[i] as string);

@@ -8,7 +8,12 @@ import { importDoc } from '../../src/contract/load.ts';
 import { OwnershipOutline } from '../../src/domain/outline.ts';
 import type { Outline, OutlineNodeId } from '../../src/domain/outline.ts';
 import type { GraphModel } from '../../src/contract/model.ts';
-import { aggregateConfidence, rank, sccSizeOf } from '../../src/projection/levels.ts';
+import {
+  aggregateConfidence,
+  compareMemberTuples,
+  rank,
+  sccSizeOf,
+} from '../../src/projection/levels.ts';
 import type { RankResult } from '../../src/projection/levels.ts';
 import { docText, edge, node } from '../support/doc.ts';
 import type { VisualSpecsEdge, VisualSpecsNode } from '../../src/contract/types.ts';
@@ -192,6 +197,62 @@ describe('identity and determinism', () => {
     expect(rank.length).toBeLessThanOrEqual(5);
     const source = rank.toString();
     expect(source.includes('expanded')).toBe(false);
+  });
+});
+
+// The SCCs of a graph are disjoint, so no corpus produces two member tuples sharing a
+// prefix. Every test above that touches SCC numbering therefore passes unchanged
+// against a comparator that only looks at field 0 — the corpus cannot reach the rest
+// of the function, so these do it with tuples built by hand.
+describe('the member-tuple order, which no corpus can exercise', () => {
+  it('compares field by field PAST field 0', () => {
+    expect(compareMemberTuples(['a', 'b'], ['a', 'c'])).toBeLessThan(0);
+    expect(compareMemberTuples(['a', 'c'], ['a', 'b'])).toBeGreaterThan(0);
+    expect(compareMemberTuples(['a', 'b', 'x'], ['a', 'b', 'y'])).toBeLessThan(0);
+    // Kills the "only look at field 0" implementation: identical there, ordered here.
+    expect(compareMemberTuples(['a', 'b'], ['a', 'c'])).not.toBe(0);
+  });
+
+  it('sorts the SHORTER tuple first when one runs out — the prefix case', () => {
+    expect(compareMemberTuples(['a'], ['a', 'b'])).toBeLessThan(0);
+    expect(compareMemberTuples(['a', 'b'], ['a'])).toBeGreaterThan(0);
+    expect(compareMemberTuples([], ['a'])).toBeLessThan(0);
+  });
+
+  it('is a TOTAL order: irreflexive, antisymmetric and transitive on a hand-built set', () => {
+    const tuples: readonly (readonly string[])[] = [
+      [],
+      ['a'],
+      ['a', 'a'],
+      ['a', 'b'],
+      ['a', 'b', 'c'],
+      ['b'],
+      ['b', 'a'],
+    ];
+    // Not Math.sign: it returns -0 for 0, and `toBe` is Object.is.
+    const sign = (n: number): number => (n < 0 ? -1 : n > 0 ? 1 : 0);
+
+    for (const t of tuples) expect(compareMemberTuples(t, t)).toBe(0);
+    for (const x of tuples) {
+      for (const y of tuples) {
+        expect(sign(compareMemberTuples(x, y))).toBe(-sign(compareMemberTuples(y, x)) + 0);
+      }
+    }
+    for (const x of tuples) {
+      for (const y of tuples) {
+        for (const z of tuples) {
+          if (compareMemberTuples(x, y) < 0 && compareMemberTuples(y, z) < 0) {
+            expect(compareMemberTuples(x, z)).toBeLessThan(0);
+          }
+        }
+      }
+    }
+  });
+
+  it('never joins the fields into one string — a delimiter would collide (§6.3)', () => {
+    // ['a|b'] and ['a', 'b'] are different tuples; concatenating with '|' makes them
+    // equal, and an imported document can produce ids containing any character.
+    expect(compareMemberTuples(['a|b'], ['a', 'b'])).not.toBe(0);
   });
 });
 
