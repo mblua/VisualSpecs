@@ -12,6 +12,7 @@ import { exportDoc } from '../../src/contract/export.ts';
 import { importDoc } from '../../src/contract/load.ts';
 import { DEFAULT_LIMITS, LimitsError } from '../../src/contract/limits.ts';
 import { FOCUS_TRANSPARENCY_DEFAULT, withFocus, type FocusMark } from '../../src/contract/view.ts';
+import { SUPPORTED_MAJOR, SUPPORTED_MINOR } from '../../src/contract/validate.ts';
 import type { JsonObject } from '../../src/contract/types.ts';
 import { docText, edge, node } from '../support/doc.ts';
 
@@ -126,8 +127,14 @@ describe('export invents nothing under view.focus', () => {
   it('writes marks when there are marks, and preserves an unknown token beside them', () => {
     // Above `SUPPORTED_MINOR` the same token is a warning and survives export verbatim,
     // because the additive-minor contract has to hold on the one axis this shape extends.
+    //
+    // DERIVED from `SUPPORTED_MINOR`, not written as a literal. This case used to say
+    // `'1.3'`, which was "one above" only until 1.3 was taken — and when it was, the case
+    // silently stopped testing what it describes: the token became a problem instead of a
+    // warning and the whole assertion collapsed. A fixture that names a version by number
+    // is a fixture that expires.
     const higher = docWith({ ...FULL_VIEW, focus: { marks: { repo: 'muted' } } }, {
-      formatVersion: '1.3',
+      formatVersion: `${SUPPORTED_MAJOR}.${SUPPORTED_MINOR + 1}`,
     });
     const l = importDoc(higher);
     expect(l.warnings.map((w) => w.code)).toContain('unknown-focus-mark');
@@ -139,7 +146,9 @@ describe('export invents nothing under view.focus', () => {
     const focus = (out['view'] as JsonObject)['focus'] as JsonObject;
     // The typed state wins for ids it contains; the unknown token is preserved verbatim.
     expect(focus['marks']).toEqual({ a: 'out-of-focus', repo: 'muted' });
-    // 1.3 is not lowered.
-    expect(out['formatVersion']).toBe('1.3');
+    // A higher minor is not lowered, even though this build's typed state would only
+    // have required 1.2 — lowering would suppress `unknown-minor` for any OTHER extension
+    // the raw envelope is carrying.
+    expect(out['formatVersion']).toBe(`${SUPPORTED_MAJOR}.${SUPPORTED_MINOR + 1}`);
   });
 });

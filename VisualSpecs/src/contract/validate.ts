@@ -24,9 +24,14 @@ import { checkRelativePath, checkSourceRoot, describePathProblem } from './paths
 export const SUPPORTED_MAJOR = 1;
 // 1.1 adds `view.fitted` (Issue #13): additive and optional, read by this build.
 // 1.2 adds `view.focus` (Issue #17): likewise.
-// Fresh extracts still emit 1.0; a doc becomes 1.1 or 1.2 only when it carries the
-// corresponding state (see export.ts `raiseFormatVersion`).
-export const SUPPORTED_MINOR = 2;
+// 1.3 adds `edges[].conditions` (Issue #38): likewise.
+//
+// A doc becomes 1.1 or 1.2 only when it carries the corresponding VIEW state, which
+// `export.ts raiseFormatVersion` derives. 1.3 is the first minor about GRAPH data, and
+// `raiseFormatVersion` reads only the `view` subtree — so it can never raise it, and the
+// EXTRACTOR stamps 1.3 itself when it emits a conditional relation. A fresh extract is
+// still 1.0 when nothing in the repository is conditional.
+export const SUPPORTED_MINOR = 3;
 export const SUPPORTED_VERSION = `${SUPPORTED_MAJOR}.${SUPPORTED_MINOR}`;
 
 /** Optional capabilities this build can honour. v1 declares none, so ANY entry in
@@ -357,6 +362,25 @@ function validateEdge(
     if (typeof label !== 'string') problems.push(`${at}.label is not a string`);
     else edge.label = label;
   }
+
+  // `conditions` (1.3). Absent means UNCONDITIONAL, so an EMPTY array is refused rather
+  // than normalised away: writing `[]` asks the reader to distinguish "no conditions"
+  // from "unconditional", which is a distinction this field deliberately does not have.
+  const conditions = value['conditions'];
+  if (conditions !== undefined) {
+    if (!Array.isArray(conditions)) {
+      problems.push(`${at}.conditions is not an array`);
+    } else if (conditions.length === 0) {
+      problems.push(`${at}.conditions is empty; omit the key for an unconditional relation`);
+    } else if (conditions.some((c) => typeof c !== 'string' || c === '')) {
+      problems.push(`${at}.conditions must contain non-empty strings`);
+    } else {
+      // Sorted and de-duplicated: two documents that assert the same thing compare equal,
+      // which §10.6 determinism and any diff of the corpus both rely on.
+      edge.conditions = [...new Set(conditions as string[])].sort();
+    }
+  }
+
   if (metadata !== undefined) edge.metadata = metadata as Record<string, unknown>;
 
   const evidence = validateEvidenceArray(value['evidence'], `${at}.evidence`, limits, problems);
