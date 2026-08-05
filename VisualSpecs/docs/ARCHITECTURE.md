@@ -870,7 +870,9 @@ Discovery and resolution are **two different problems**, and an earlier draft co
 
 ### 10.3 Rust imports
 
-A naive line scanner is not adequate, and the repository proves it: **grouped use-trees are real** — `use crate::{…}`, `use crate::a::{…}`, `use super::{…}`. The extractor's own parser counts **516** of them (`stats.rustGroupedUseStatements`, pinned by the dataset test). A per-line regex mis-parses every one.
+A naive line scanner is not adequate, and the repository proves it: **grouped use-trees are real** — `use crate::{…}`, `use crate::a::{…}`, `use super::{…}`. The extractor's own parser counts **813** of them (`stats.rustGroupedUseStatements`, pinned by the dataset test). A per-line regex mis-parses every one.
+
+> **813 includes one known false positive**, and the dataset test names it rather than absorbing it. `stripComments` removes comments but copies **string literals** through, so `parseUseStatements` scans string contents as code: the English word `use` in a `format!` template at `src-tauri/src/commands/entity_creation.rs:388` opens a statement that runs to the next `;` and parses the surrounding arguments as a six-leaf group. An independent re-implementation counts **812** real grouped use-trees. The defect is stable across commits — 752+1 at `0a3dc5a`, 812+1 at `1b0e934` — so it distorts the level, never the trend.
 
 > An earlier draft of this document said "26 times across 21 files". That number came from a grep, it was never reproduced by a parser, and it is not what the parser measures — which is the whole point of §10.5. The figure above is the one the tool produces, and if the tool changes, the test changes with it.
 
@@ -886,10 +888,10 @@ This is the relation that makes the map worth reading, and it is where the earli
 
 What is actually there, all verified:
 
-* `src/shared/ipc.ts` defines a **facade**: `const transport = { invoke: <T>(cmd, args) => currentTransport().invoke<T>(cmd, args), … }`, and every command call in the frontend goes through it as `transport.invoke<T>("name", args)` — **136 call sites, all in that one file.**
+* `src/shared/ipc.ts` defines a **facade**: `const transport = { invoke: <T>(cmd, args) => currentTransport().invoke<T>(cmd, args), … }`, and every command call in the frontend goes through it as `transport.invoke<T>("name", args)` — **140 call sites, all in that one file** (`stats.invokeCallSites`, pinned by the dataset test).
 * `createDefaultTransport()` returns **`isTauri ? new TauriTransport() : new WsTransport()`**. `TauriTransport` dynamically imports `@tauri-apps/api/core` and calls its `invoke`. `WsTransport.invoke(cmd, args)` sends `{id, cmd, args}` **over a WebSocket**.
 * **So a call site is not unconditionally Tauri IPC.** It is a *command contract* with **two backends**, selected at runtime by platform.
-* Backend 1 — **Tauri**: `#[tauri::command]` attributes (**134**, across 21 files, using an *anchored* pattern) **plus** registration in `tauri::generate_handler![…]` at `src-tauri/src/lib.rs:2047`. Tauri requires that registration; an unregistered attribute is not callable.
+* Backend 1 — **Tauri**: `#[tauri::command]` attributes (**138**, across 20 files, using an *anchored* pattern — `stats.tauriCommandAttributes` and `stats.tauriCommandAttributeFiles`) **plus** registration in `tauri::generate_handler![…]` at `src-tauri/src/lib.rs:2550`. Tauri requires that registration; an unregistered attribute is not callable.
 * Backend 2 — **the web router**: `src-tauri/src/web/commands.rs`, a `match` with **37 arms** keyed by command name, reached over the WebSocket transport.
 
 The extraction rules that follow:
@@ -913,8 +915,8 @@ Verified consequences that the earlier draft got wrong:
 
 The previous version of this document asserted three numbers as observed fact. Two were wrong and one was invented:
 
-* "135 `#[tauri::command]`" — an **unanchored grep**, which also matched a comment at `src-tauri/src/commands/task.rs:424`. The anchored count is **134**.
-* "131 invoke sites in `ipc.ts`, 136 overall" — the regex matched `invoke` in unrelated contexts. The real figure is **136 `transport.invoke` sites, all in `ipc.ts`**.
+* "135 `#[tauri::command]`" — an **unanchored grep**, which also matched a comment at `src-tauri/src/commands/task.rs`. At `1b0e934` the same mistake would report **141** across 21 files, three of them prose inside comments; the anchored count is **138** across 20 files.
+* "131 invoke sites in `ipc.ts`, 136 overall" — the regex matched `invoke` in unrelated contexts. The real figure at `1b0e934` is **140 `transport.invoke` sites, all in `ipc.ts`**.
 * `"unusedCommands": []` — never measured. It is **false**; see `get_instance_label` above.
 
 Hence the rule, which is now part of the product: **every dataset count must be produced by an anchored pattern or a parser, and pinned by a fixture test. A raw grep is not evidence.** A tool whose purpose is to let people trust a map without reading the code cannot afford to be casual about its own numbers.
