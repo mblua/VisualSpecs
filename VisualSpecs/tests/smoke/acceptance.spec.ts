@@ -158,11 +158,16 @@ test('the map opens on the real AgentsCommander dataset, and the canvas is not b
 
   expect(await inkCoverage(page), 'the canvas is blank').toBeGreaterThan(0.01);
 
-  // The COMMITTED corpus, `data/agentscommander.json` at `e94f003`. These numbers went
-  // stale when that refresh landed after this file was last touched, and the gate has
-  // been red on them ever since — the assertion is unchanged in strictness, only in
-  // which dataset it is true of.
-  await expect(page.locator('.counts-grid')).toContainText('787');
+  // The COMMITTED corpus, `data/agentscommander.json`, refreshed to AgentsCommander
+  // `1b0e934` (#24). These numbers go stale whenever that dataset moves and this file is
+  // not touched with it — the assertion is unchanged in strictness, only in which
+  // dataset it is true of.
+  //
+  // 817 is not a figure to take on faith. It is 705 git-tracked files + 102 directory
+  // boxes + 4 anchors + 5 applications + 1 repository, and the first two are corroborated
+  // off-extractor by the dataset test: `git ls-files` gives 705, and the §5.2 rule gives
+  // 102 from that list plus the four anchor directories alone.
+  await expect(page.locator('.counts-grid')).toContainText('817');
   await expect(page.locator('.node-list')).toContainText('AgentsCommander');
 
   // A quiet map is not a trustworthy map.
@@ -205,7 +210,7 @@ test('the initial view is LEGIBLE: the repository, its applications, its package
   const { scene } = await readScene(page);
   const visible = scene.nodes.filter((n) => !n.hidden);
 
-  // 1 repository + 5 applications + 2 packages + 2 crates. Not 637 files.
+  // 1 repository + 5 applications + 2 packages + 2 crates. Not 705 files.
   expect(visible).toHaveLength(10);
   expect(visible.filter((n) => n.kind === 'crate')).toHaveLength(2);
   expect(visible.filter((n) => n.kind === 'package')).toHaveLength(2);
@@ -260,7 +265,7 @@ test('selecting a container names WHICH relations are folded inside it', async (
 test('an internal bucket can be SELECTED and is announced', async ({ page }) => {
   // The detail panel used to hold an announcement for internal buckets that no UI could
   // reach: the branch existed, and clicking the disclosure only opened it. A screen
-  // reader never learned that 530 rust-imports had been folded into that box.
+  // reader never learned that 665 rust-imports had been folded into that box.
   await boot(page);
   await page.getByRole('option', { name: /agentscommander-new/ }).click();
   await expect(page.locator('.detail')).toContainText('Hidden inside this box');
@@ -364,7 +369,15 @@ test('clicking the aggregated command edge lists every relation behind it, with 
   const edge = scene.edges.find((e) => e.kind === 'tauri-command' && !e.hidden);
   expect(edge, 'no aggregated tauri-command edge is drawn').toBeDefined();
   if (edge === undefined) throw new Error('unreachable');
-  expect(edge.count).toBe(136);
+  // 137, and NOT the 138 commands `generate_handler!` registers. The gap is one command:
+  // `get_instance_label` is registered but has no call site in `ipc.ts`, so there is no
+  // relation to draw. Corroborated off-extractor by intersecting the names parsed out of
+  // the two `generate_handler![…]` lists (138) with the literal command names passed to
+  // `transport.invoke` in `ipc.ts` (139 distinct over 140 call sites): the intersection
+  // is 137, the only registered-but-uncalled name is `get_instance_label`, and the only
+  // called-but-unregistered names are `get_pty_size` and `subscribe_session` — the two
+  // web-router-only commands. The dataset test pins all three facts (§12).
+  expect(edge.count).toBe(137);
 
   const route = routeEdges(scene as unknown as RenderScene).get(edge.id);
   expect(route).toBeDefined();
@@ -374,7 +387,7 @@ test('clicking the aggregated command edge lists every relation behind it, with 
 
   // THIS is where the product delivers its promise.
   await expect(page.locator('.detail .chip')).toContainText('tauri-command');
-  await expect(page.locator('.detail')).toContainText('136 logical relations behind this line');
+  await expect(page.locator('.detail')).toContainText('137 logical relations behind this line');
 
   const first = page.locator('.logical').first();
   await expect(first.locator('.confidence')).toContainText('resolved');
@@ -390,7 +403,7 @@ test('clicking the aggregated command edge lists every relation behind it, with 
   // …and an aggregated relation is ANNOUNCED. The thing this product exists to say
   // out loud was, for one release, the one thing it would not say.
   await expect(page.locator('.status')).toContainText('Selected relation tauri-command');
-  await expect(page.locator('.status')).toContainText('136 logical relations');
+  await expect(page.locator('.status')).toContainText('137 logical relations');
 
   await shot(page, testInfo, 'edge-detail');
 });
