@@ -86,7 +86,11 @@ describe('C1 · el enredo fabricado sigue existiendo, y el producto no lo llama 
     const i = r.sccOf.get('dir:src/shared/stores');
     expect(i).toBeDefined();
     const scc = r.sccs[i as number];
-    expect([...scc.members].sort()).toEqual(['dir:src/shared/stores', 'dir:src/shared/testing']);
+    expect(scc).toBeDefined();
+    expect([...(scc?.members ?? [])].sort()).toEqual([
+      'dir:src/shared/stores',
+      'dir:src/shared/testing',
+    ]);
   });
 
   it('la identidad del SCC son sus miembros, no un índice', () => {
@@ -198,7 +202,17 @@ describe('V2 end-to-end · la escena, no el resultado', () => {
     let state = stateFromLoaded(loaded, null);
     // la vista por defecto que trae el documento
     expect([...state.view.expanded]).toEqual([ROOT]);
-    state = apply(state, { type: 'SetLevels', active: true }, { model: state.model, outline: state.outline });
+    // `SetLevels` does not read geometry or limits, but `CommandContext` is one type
+    // for every command, so the whole of it is built rather than cast away.
+    const { computeGeometry } = await import('../../src/domain/layoutEngine.ts');
+    const { DEFAULT_LIMITS } = await import('../../src/contract/limits.ts');
+    const ctx = {
+      model: state.model,
+      outline: state.outline,
+      geometry: computeGeometry(state.model, state.outline, state.view.expanded, state.view.positions),
+      limits: DEFAULT_LIMITS,
+    };
+    state = apply(state, { type: 'SetLevels', active: true }, ctx);
 
     const { scene: sceneResult } = derive(state);
     const scene = sceneResult.scene;
