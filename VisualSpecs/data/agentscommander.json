@@ -13,27 +13,27 @@
       "unresolved": 0
     },
     {
-      "emitted": 1089,
+      "emitted": 1090,
       "kind": "imports",
       "status": "available",
       "unresolved": 0
     },
     {
-      "emitted": 648,
+      "emitted": 695,
       "kind": "rust-imports",
       "reason": "no macro expansion, no #[path], no cfg evaluation; glob imports are unresolved and item-level symbols are not resolved",
       "status": "degraded",
-      "unresolved": 149
+      "unresolved": 159
     },
     {
-      "emitted": 137,
+      "emitted": 138,
       "kind": "tauri-command",
       "reason": "requires a literal call, a #[tauri::command] attribute, and registration in generate_handler!",
       "status": "available",
       "unresolved": 3
     },
     {
-      "emitted": 45,
+      "emitted": 46,
       "kind": "web-command",
       "reason": "requires a literal call and a matching arm in the web router",
       "status": "available",
@@ -3358,6 +3358,22 @@
       },
       "sourceId": "file:src/shared/testing/session-selection.ts",
       "targetId": "file:src/shared/types.ts"
+    },
+    {
+      "confidence": "resolved",
+      "evidence": [
+        {
+          "line": 12,
+          "path": "src/shared/testing/ui-harness.animation-frames.test.ts"
+        }
+      ],
+      "id": "imports:file:src/shared/testing/ui-harness.animation-frames.test.ts->file:src/shared/testing/ui-harness.tsx",
+      "kind": "imports",
+      "metadata": {
+        "specifier": "./ui-harness"
+      },
+      "sourceId": "file:src/shared/testing/ui-harness.animation-frames.test.ts",
+      "targetId": "file:src/shared/testing/ui-harness.tsx"
     },
     {
       "confidence": "resolved",
@@ -12484,7 +12500,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 22,
+          "line": 23,
           "path": "src/sidebar/components/WorkgroupGroupRail.favorites.test.tsx"
         }
       ],
@@ -12548,7 +12564,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 21,
+          "line": 22,
           "path": "src/sidebar/components/WorkgroupGroupRail.favorites.test.tsx"
         }
       ],
@@ -17007,7 +17023,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 38,
+          "line": 41,
           "path": "src/terminal/components/TerminalView.spawn-size.test.tsx"
         }
       ],
@@ -17023,7 +17039,11 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 37,
+          "line": 39,
+          "path": "src/terminal/components/TerminalView.spawn-size.test.tsx"
+        },
+        {
+          "line": 40,
           "path": "src/terminal/components/TerminalView.spawn-size.test.tsx"
         }
       ],
@@ -17729,6 +17749,182 @@
       "confidence": "heuristic",
       "evidence": [
         {
+          "line": 8,
+          "note": "use crate::protocol::validate_requester_identity;",
+          "path": "crates/terminal-snapshot-renderer/src/json.rs"
+        }
+      ],
+      "id": "rust-imports:file:crates/terminal-snapshot-renderer/src/json.rs->file:crates/terminal-snapshot-renderer/src/protocol.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:crates/terminal-snapshot-renderer/src/json.rs",
+      "targetId": "file:crates/terminal-snapshot-renderer/src/protocol.rs"
+    },
+    {
+      "confidence": "resolved",
+      "evidence": [
+        {
+          "line": 4,
+          "note": "mod json;",
+          "path": "crates/terminal-snapshot-renderer/src/lib.rs"
+        }
+      ],
+      "id": "rust-imports:file:crates/terminal-snapshot-renderer/src/lib.rs->file:crates/terminal-snapshot-renderer/src/json.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "mod"
+        ]
+      },
+      "sourceId": "file:crates/terminal-snapshot-renderer/src/lib.rs",
+      "targetId": "file:crates/terminal-snapshot-renderer/src/json.rs"
+    },
+    {
+      "confidence": "resolved",
+      "evidence": [
+        {
+          "line": 6,
+          "note": "mod png_validation;",
+          "path": "crates/terminal-snapshot-renderer/src/lib.rs"
+        }
+      ],
+      "id": "rust-imports:file:crates/terminal-snapshot-renderer/src/lib.rs->file:crates/terminal-snapshot-renderer/src/png_validation.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "mod"
+        ]
+      },
+      "sourceId": "file:crates/terminal-snapshot-renderer/src/lib.rs",
+      "targetId": "file:crates/terminal-snapshot-renderer/src/png_validation.rs"
+    },
+    {
+      "confidence": "resolved",
+      "evidence": [
+        {
+          "line": 8,
+          "note": "mod protocol;",
+          "path": "crates/terminal-snapshot-renderer/src/lib.rs"
+        }
+      ],
+      "id": "rust-imports:file:crates/terminal-snapshot-renderer/src/lib.rs->file:crates/terminal-snapshot-renderer/src/protocol.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "mod"
+        ]
+      },
+      "sourceId": "file:crates/terminal-snapshot-renderer/src/lib.rs",
+      "targetId": "file:crates/terminal-snapshot-renderer/src/protocol.rs"
+    },
+    {
+      "confidence": "resolved",
+      "evidence": [
+        {
+          "line": 10,
+          "note": "mod render;",
+          "path": "crates/terminal-snapshot-renderer/src/lib.rs"
+        }
+      ],
+      "id": "rust-imports:file:crates/terminal-snapshot-renderer/src/lib.rs->file:crates/terminal-snapshot-renderer/src/render.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "mod"
+        ]
+      },
+      "sourceId": "file:crates/terminal-snapshot-renderer/src/lib.rs",
+      "targetId": "file:crates/terminal-snapshot-renderer/src/render.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 5,
+          "note": "use crate::protocol::ProtocolError;",
+          "path": "crates/terminal-snapshot-renderer/src/png_validation.rs"
+        }
+      ],
+      "id": "rust-imports:file:crates/terminal-snapshot-renderer/src/png_validation.rs->file:crates/terminal-snapshot-renderer/src/protocol.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:crates/terminal-snapshot-renderer/src/png_validation.rs",
+      "targetId": "file:crates/terminal-snapshot-renderer/src/protocol.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 8,
+          "note": "use crate::json::CappedWriter;",
+          "path": "crates/terminal-snapshot-renderer/src/render.rs"
+        }
+      ],
+      "id": "rust-imports:file:crates/terminal-snapshot-renderer/src/render.rs->file:crates/terminal-snapshot-renderer/src/json.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:crates/terminal-snapshot-renderer/src/render.rs",
+      "targetId": "file:crates/terminal-snapshot-renderer/src/json.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 9,
+          "note": "use crate::png_validation::validate_generated_png;",
+          "path": "crates/terminal-snapshot-renderer/src/render.rs"
+        }
+      ],
+      "id": "rust-imports:file:crates/terminal-snapshot-renderer/src/render.rs->file:crates/terminal-snapshot-renderer/src/png_validation.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:crates/terminal-snapshot-renderer/src/render.rs",
+      "targetId": "file:crates/terminal-snapshot-renderer/src/png_validation.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 10,
+          "note": "use crate::protocol::ProtocolError;",
+          "path": "crates/terminal-snapshot-renderer/src/render.rs"
+        },
+        {
+          "line": 704,
+          "note": "use crate::protocol::canonical_timestamp;",
+          "path": "crates/terminal-snapshot-renderer/src/render.rs"
+        }
+      ],
+      "id": "rust-imports:file:crates/terminal-snapshot-renderer/src/render.rs->file:crates/terminal-snapshot-renderer/src/protocol.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:crates/terminal-snapshot-renderer/src/render.rs",
+      "targetId": "file:crates/terminal-snapshot-renderer/src/protocol.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
           "line": 20,
           "note": "use super::error::ApiError;",
           "path": "src-tauri/src/api/actuation.rs"
@@ -18000,7 +18196,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 13,
+          "line": 14,
           "note": "use crate::api::auth::ApiClient;",
           "path": "src-tauri/src/api/handlers/mod.rs"
         }
@@ -18019,7 +18215,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 14,
+          "line": 15,
           "note": "use crate::api::error::ApiError;",
           "path": "src-tauri/src/api/handlers/mod.rs"
         }
@@ -18111,10 +18307,29 @@
       "targetId": "file:src-tauri/src/api/handlers/session_transport.rs"
     },
     {
+      "confidence": "resolved",
+      "evidence": [
+        {
+          "line": 7,
+          "note": "mod terminal_snapshot;",
+          "path": "src-tauri/src/api/handlers/mod.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/api/handlers/mod.rs->file:src-tauri/src/api/handlers/terminal_snapshot.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "mod"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/api/handlers/mod.rs",
+      "targetId": "file:src-tauri/src/api/handlers/terminal_snapshot.rs"
+    },
+    {
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 16,
+          "line": 17,
           "note": "use crate::api::ApiState;",
           "path": "src-tauri/src/api/handlers/mod.rs"
         }
@@ -18133,7 +18348,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 15,
+          "line": 16,
           "note": "use crate::api::schema::HealthResponse;",
           "path": "src-tauri/src/api/handlers/mod.rs"
         }
@@ -18252,7 +18467,7 @@
           "path": "src-tauri/src/api/handlers/pty_input.rs"
         },
         {
-          "line": 281,
+          "line": 285,
           "note": "use crate::phone::types::PtyInputReasonCode;",
           "path": "src-tauri/src/api/handlers/pty_input.rs"
         }
@@ -18542,12 +18757,107 @@
       "confidence": "heuristic",
       "evidence": [
         {
+          "line": 13,
+          "note": "use crate::api::auth::FreshRegistryError;",
+          "path": "src-tauri/src/api/handlers/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/api/handlers/terminal_snapshot.rs->file:src-tauri/src/api/auth.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/api/handlers/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/api/auth.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 14,
+          "note": "use crate::api::identity::BoundContainerCoordinatorError;",
+          "path": "src-tauri/src/api/handlers/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/api/handlers/terminal_snapshot.rs->file:src-tauri/src/api/identity.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/api/handlers/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/api/identity.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 16,
+          "note": "use crate::api::ApiState;",
+          "path": "src-tauri/src/api/handlers/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/api/handlers/terminal_snapshot.rs->file:src-tauri/src/api/mod.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/api/handlers/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/api/mod.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 15,
+          "note": "use crate::api::schema::TerminalSnapshotApiError;",
+          "path": "src-tauri/src/api/handlers/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/api/handlers/terminal_snapshot.rs->file:src-tauri/src/api/schema.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/api/handlers/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/api/schema.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 17,
+          "note": "use crate::pty::terminal_snapshot::TerminalSnapshotAuditGuard;",
+          "path": "src-tauri/src/api/handlers/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/api/handlers/terminal_snapshot.rs->file:src-tauri/src/pty/terminal_snapshot.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/api/handlers/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/pty/terminal_snapshot.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
           "line": 9,
           "note": "use super::auth::ApiClient;",
           "path": "src-tauri/src/api/identity.rs"
         },
         {
-          "line": 164,
+          "line": 304,
           "note": "use crate::api::auth::ApiClient;",
           "path": "src-tauri/src/api/identity.rs"
         }
@@ -19184,7 +19494,7 @@
           "path": "src-tauri/src/cli/list_peers.rs"
         },
         {
-          "line": 1251,
+          "line": 1401,
           "note": "use crate::config::sessions_persistence::PersistedSession;",
           "path": "src-tauri/src/cli/list_peers.rs"
         }
@@ -19227,7 +19537,7 @@
           "path": "src-tauri/src/cli/list_peers.rs"
         },
         {
-          "line": 1252,
+          "line": 1402,
           "note": "use crate::session::session::SessionStatus;",
           "path": "src-tauri/src/cli/list_peers.rs"
         }
@@ -19798,6 +20108,25 @@
       "evidence": [
         {
           "line": 26,
+          "note": "mod terminal_snapshot;",
+          "path": "src-tauri/src/cli/mod.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/cli/mod.rs->file:src-tauri/src/cli/terminal_snapshot.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "mod"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/cli/mod.rs",
+      "targetId": "file:src-tauri/src/cli/terminal_snapshot.rs"
+    },
+    {
+      "confidence": "resolved",
+      "evidence": [
+        {
+          "line": 27,
           "note": "mod workgroup;",
           "path": "src-tauri/src/cli/mod.rs"
         }
@@ -20382,6 +20711,25 @@
       "confidence": "heuristic",
       "evidence": [
         {
+          "line": 13,
+          "note": "use crate::phone::terminal_snapshot::confirmation_tag;",
+          "path": "src-tauri/src/cli/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/cli/terminal_snapshot.rs->file:src-tauri/src/phone/terminal_snapshot.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/cli/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/phone/terminal_snapshot.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
           "line": 7,
           "note": "use crate::cli::create_agent_matrix::write_project_refresh_request;",
           "path": "src-tauri/src/cli/workgroup.rs"
@@ -20711,7 +21059,7 @@
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2235,
+          "line": 2264,
           "note": "use crate::api::auth;",
           "path": "src-tauri/src/commands/config.rs"
         }
@@ -20735,7 +21083,7 @@
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2255,
+          "line": 2284,
           "note": "use crate::config::projects::DirectoryIdentity;",
           "path": "src-tauri/src/commands/config.rs"
         }
@@ -20754,7 +21102,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 2236,
+          "line": 2265,
           "note": "use crate::config::sessions_persistence::session_retention_project_paths;",
           "path": "src-tauri/src/commands/config.rs"
         }
@@ -20778,12 +21126,12 @@
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2237,
+          "line": 2266,
           "note": "use crate::config::settings::AgentConfig;",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2259,
+          "line": 2288,
           "note": "use crate::config::settings::AppSettings;",
           "path": "src-tauri/src/commands/config.rs"
         }
@@ -20807,7 +21155,7 @@
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2242,
+          "line": 2271,
           "note": "use crate::ApiServerHandle;",
           "path": "src-tauri/src/commands/config.rs"
         }
@@ -20869,7 +21217,7 @@
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2241,
+          "line": 2270,
           "note": "use crate::session::manager::SessionManager;",
           "path": "src-tauri/src/commands/config.rs"
         }
@@ -20964,7 +21312,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 7619,
+          "line": 7674,
           "note": "use crate::cli::team::stage_d_lock_order_child::ACTION_VAR;",
           "path": "src-tauri/src/commands/entity_creation.rs"
         }
@@ -21002,17 +21350,17 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 7451,
+          "line": 7506,
           "note": "use crate::config::coordinator_clocks::CoordinatorClocks;",
           "path": "src-tauri/src/commands/entity_creation.rs"
         },
         {
-          "line": 7523,
+          "line": 7578,
           "note": "use crate::config::coordinator_clocks::CoordinatorClocks;",
           "path": "src-tauri/src/commands/entity_creation.rs"
         },
         {
-          "line": 7563,
+          "line": 7618,
           "note": "use crate::config::coordinator_clocks::CoordinatorClocks;",
           "path": "src-tauri/src/commands/entity_creation.rs"
         }
@@ -21055,12 +21403,12 @@
           "path": "src-tauri/src/commands/entity_creation.rs"
         },
         {
-          "line": 5993,
+          "line": 6048,
           "note": "use crate::config::seed_manifest::ManifestActivationToken;",
           "path": "src-tauri/src/commands/entity_creation.rs"
         },
         {
-          "line": 7622,
+          "line": 7677,
           "note": "use crate::config::seed_manifest::ProjectSeedManifestGuard;",
           "path": "src-tauri/src/commands/entity_creation.rs"
         }
@@ -21079,7 +21427,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 7452,
+          "line": 7507,
           "note": "use crate::config::session_context::sweep_context_cache_dir;",
           "path": "src-tauri/src/commands/entity_creation.rs"
         }
@@ -21231,7 +21579,26 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 16,
+          "line": 17,
+          "note": "use crate::loops::events::emit_loop_change;",
+          "path": "src-tauri/src/commands/loops.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/commands/loops.rs->file:src-tauri/src/loops/events.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/commands/loops.rs",
+      "targetId": "file:src-tauri/src/loops/events.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 18,
           "note": "use crate::loops::scheduler::LoopScheduler;",
           "path": "src-tauri/src/commands/loops.rs"
         }
@@ -24658,12 +25025,12 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 2073,
+          "line": 2079,
           "note": "use super::projects;",
           "path": "src-tauri/src/config/settings.rs"
         },
         {
-          "line": 5053,
+          "line": 5614,
           "note": "use crate::config::projects::IssueKind;",
           "path": "src-tauri/src/config/settings.rs"
         }
@@ -24853,7 +25220,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 3046,
+          "line": 3106,
           "note": "use crate::config::sessions_persistence::PersistedSession;",
           "path": "src-tauri/src/lib.rs"
         }
@@ -24872,7 +25239,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 3047,
+          "line": 3107,
           "note": "use crate::config::settings::AgentConfig;",
           "path": "src-tauri/src/lib.rs"
         }
@@ -25043,7 +25410,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 883,
+          "line": 915,
           "note": "use crate::pty::watchers::history::SessionStatus;",
           "path": "src-tauri/src/lib.rs"
         }
@@ -25062,12 +25429,12 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 880,
+          "line": 912,
           "note": "use crate::pty::watchers::WatcherMatchBatch;",
           "path": "src-tauri/src/lib.rs"
         },
         {
-          "line": 884,
+          "line": 916,
           "note": "use crate::pty::watchers::WatcherMatchPayload;",
           "path": "src-tauri/src/lib.rs"
         }
@@ -25143,7 +25510,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 3048,
+          "line": 3108,
           "note": "use crate::session::session::SessionStatus;",
           "path": "src-tauri/src/lib.rs"
         }
@@ -25411,6 +25778,25 @@
       "targetId": "file:src-tauri/src/session/session.rs"
     },
     {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 16,
+          "note": "use crate::config::loops::AcLoopSummary;",
+          "path": "src-tauri/src/loops/events.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/loops/events.rs->file:src-tauri/src/config/loops.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/loops/events.rs",
+      "targetId": "file:src-tauri/src/config/loops.rs"
+    },
+    {
       "confidence": "resolved",
       "evidence": [
         {
@@ -25434,6 +25820,25 @@
       "evidence": [
         {
           "line": 2,
+          "note": "mod events;",
+          "path": "src-tauri/src/loops/mod.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/loops/mod.rs->file:src-tauri/src/loops/events.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "mod"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/loops/mod.rs",
+      "targetId": "file:src-tauri/src/loops/events.rs"
+    },
+    {
+      "confidence": "resolved",
+      "evidence": [
+        {
+          "line": 3,
           "note": "mod non_stop_watchdog;",
           "path": "src-tauri/src/loops/mod.rs"
         }
@@ -25452,7 +25857,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 3,
+          "line": 4,
           "note": "mod scheduler;",
           "path": "src-tauri/src/loops/mod.rs"
         }
@@ -25514,7 +25919,7 @@
           "path": "src-tauri/src/loops/scheduler.rs"
         },
         {
-          "line": 556,
+          "line": 557,
           "note": "use crate::config::loops::write_loop_config;",
           "path": "src-tauri/src/loops/scheduler.rs"
         }
@@ -25629,6 +26034,25 @@
       "evidence": [
         {
           "line": 20,
+          "note": "use crate::loops::events::emit_loop_change;",
+          "path": "src-tauri/src/loops/scheduler.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/loops/scheduler.rs->file:src-tauri/src/loops/events.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/loops/scheduler.rs",
+      "targetId": "file:src-tauri/src/loops/events.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 21,
           "note": "use crate::shutdown::ShutdownSignal;",
           "path": "src-tauri/src/loops/scheduler.rs"
         }
@@ -25666,7 +26090,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 10763,
+          "line": 10863,
           "note": "use crate::config::coding_agent_mutations;",
           "path": "src-tauri/src/phone/mailbox.rs"
         }
@@ -25728,7 +26152,7 @@
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 10883,
+          "line": 10983,
           "note": "use crate::config::settings::AppSettings;",
           "path": "src-tauri/src/phone/mailbox.rs"
         }
@@ -25766,7 +26190,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 19473,
+          "line": 19565,
           "note": "use crate::errors::AppError;",
           "path": "src-tauri/src/phone/mailbox.rs"
         }
@@ -25833,62 +26257,62 @@
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 2924,
+          "line": 3014,
           "note": "use crate::phone::types::PtyInputHostArtifact;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 2978,
+          "line": 3068,
           "note": "use crate::phone::types::parse_canonical_pty_timestamp;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 3089,
+          "line": 3179,
           "note": "use crate::phone::types::PtyInputHostArtifact;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 3154,
+          "line": 3244,
           "note": "use crate::phone::types::parse_canonical_pty_timestamp;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 3503,
+          "line": 3593,
           "note": "use crate::phone::types::PtyInputReasonCode;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 3774,
+          "line": 3864,
           "note": "use crate::phone::types::parse_canonical_pty_timestamp;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 4169,
+          "line": 4259,
           "note": "use crate::phone::types::PtyInputPublicStatus;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 5312,
+          "line": 5409,
           "note": "use crate::phone::types::PtyInputReasonCode;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 5594,
+          "line": 5691,
           "note": "use crate::phone::types::PtyInputReasonCode;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 12980,
+          "line": 13080,
           "note": "use crate::phone::types::canonical_pty_timestamp;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 13047,
+          "line": 13147,
           "note": "use crate::phone::types::canonical_pty_timestamp;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 13155,
+          "line": 13255,
           "note": "use crate::phone::types::canonical_pty_timestamp;",
           "path": "src-tauri/src/phone/mailbox.rs"
         }
@@ -25912,27 +26336,27 @@
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 10890,
+          "line": 10990,
           "note": "use crate::pty::backend::BackendSpawnSpec;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 11996,
+          "line": 12096,
           "note": "use crate::pty::backend::SessionBackendKind;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 12414,
+          "line": 12514,
           "note": "use crate::pty::backend::SessionBackendKind;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 12670,
+          "line": 12770,
           "note": "use crate::pty::backend::SessionBackendKind;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 12785,
+          "line": 12885,
           "note": "use crate::pty::backend::SessionBackendKind;",
           "path": "src-tauri/src/phone/mailbox.rs"
         }
@@ -25951,12 +26375,12 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 12415,
+          "line": 12515,
           "note": "use crate::pty::idle_detector::PtyInputBoundaryFailure;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 12786,
+          "line": 12886,
           "note": "use crate::pty::idle_detector::PtyInputBoundaryFailure;",
           "path": "src-tauri/src/phone/mailbox.rs"
         }
@@ -25999,7 +26423,7 @@
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 10891,
+          "line": 10991,
           "note": "use crate::pty::manager::PtyManager;",
           "path": "src-tauri/src/phone/mailbox.rs"
         }
@@ -26037,17 +26461,17 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 12416,
+          "line": 12516,
           "note": "use crate::session::profile::IdleTuning;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 12671,
+          "line": 12771,
           "note": "use crate::session::profile::IdleTuning;",
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 12787,
+          "line": 12887,
           "note": "use crate::session::profile::IdleTuning;",
           "path": "src-tauri/src/phone/mailbox.rs"
         }
@@ -26076,7 +26500,7 @@
           "path": "src-tauri/src/phone/mailbox.rs"
         },
         {
-          "line": 14864,
+          "line": 14956,
           "note": "use crate::session::session::SessionStatus;",
           "path": "src-tauri/src/phone/mailbox.rs"
         }
@@ -26095,7 +26519,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 10884,
+          "line": 10984,
           "note": "use crate::telegram::manager::TelegramBridgeManager;",
           "path": "src-tauri/src/phone/mailbox.rs"
         }
@@ -26172,6 +26596,25 @@
       "evidence": [
         {
           "line": 4,
+          "note": "mod terminal_snapshot;",
+          "path": "src-tauri/src/phone/mod.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/phone/mod.rs->file:src-tauri/src/phone/terminal_snapshot.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "mod"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/phone/mod.rs",
+      "targetId": "file:src-tauri/src/phone/terminal_snapshot.rs"
+    },
+    {
+      "confidence": "resolved",
+      "evidence": [
+        {
+          "line": 5,
           "note": "mod types;",
           "path": "src-tauri/src/phone/mod.rs"
         }
@@ -26185,6 +26628,85 @@
       },
       "sourceId": "file:src-tauri/src/phone/mod.rs",
       "targetId": "file:src-tauri/src/phone/types.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 1727,
+          "note": "use crate::pty::terminal_snapshot::TerminalSnapshotResponsePublicationStage;",
+          "path": "src-tauri/src/phone/terminal_snapshot.rs"
+        },
+        {
+          "line": 1761,
+          "note": "use crate::pty::terminal_snapshot::TerminalSnapshotResponsePublicationStage;",
+          "path": "src-tauri/src/phone/terminal_snapshot.rs"
+        },
+        {
+          "line": 1811,
+          "note": "use crate::pty::terminal_snapshot::TerminalSnapshotResponsePublicationStage;",
+          "path": "src-tauri/src/phone/terminal_snapshot.rs"
+        },
+        {
+          "line": 1839,
+          "note": "use crate::pty::terminal_snapshot::TerminalSnapshotResponsePublicationStage;",
+          "path": "src-tauri/src/phone/terminal_snapshot.rs"
+        },
+        {
+          "line": 1960,
+          "note": "use crate::pty::terminal_snapshot::TerminalSnapshotResponsePublicationStage;",
+          "path": "src-tauri/src/phone/terminal_snapshot.rs"
+        },
+        {
+          "line": 2025,
+          "note": "use crate::pty::terminal_snapshot::TerminalSnapshotResponsePublicationStage;",
+          "path": "src-tauri/src/phone/terminal_snapshot.rs"
+        },
+        {
+          "line": 2069,
+          "note": "use crate::pty::terminal_snapshot::TerminalSnapshotResponsePublicationStage;",
+          "path": "src-tauri/src/phone/terminal_snapshot.rs"
+        },
+        {
+          "line": 2116,
+          "note": "use crate::pty::terminal_snapshot::TerminalSnapshotResponsePublicationStage;",
+          "path": "src-tauri/src/phone/terminal_snapshot.rs"
+        },
+        {
+          "line": 2155,
+          "note": "use crate::pty::terminal_snapshot::TerminalSnapshotResponsePublicationStage;",
+          "path": "src-tauri/src/phone/terminal_snapshot.rs"
+        },
+        {
+          "line": 2207,
+          "note": "use crate::pty::terminal_snapshot::TerminalSnapshotResponsePublicationStage;",
+          "path": "src-tauri/src/phone/terminal_snapshot.rs"
+        },
+        {
+          "line": 2254,
+          "note": "use crate::pty::terminal_snapshot::TerminalSnapshotResponsePublicationFailure;",
+          "path": "src-tauri/src/phone/terminal_snapshot.rs"
+        },
+        {
+          "line": 2292,
+          "note": "use crate::pty::terminal_snapshot::TerminalSnapshotResponsePublicationFailure;",
+          "path": "src-tauri/src/phone/terminal_snapshot.rs"
+        },
+        {
+          "line": 2339,
+          "note": "use crate::pty::terminal_snapshot::TerminalSnapshotResponsePublicationStage;",
+          "path": "src-tauri/src/phone/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/phone/terminal_snapshot.rs->file:src-tauri/src/pty/terminal_snapshot.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/phone/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/pty/terminal_snapshot.rs"
     },
     {
       "confidence": "heuristic",
@@ -26229,7 +26751,7 @@
       "evidence": [
         {
           "line": 10,
-          "note": "use crate::pty::output::PtyOutputTarget;",
+          "note": "use crate::pty::output::CapturedVtScreen;",
           "path": "src-tauri/src/pty/backend.rs"
         }
       ],
@@ -26304,7 +26826,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 5721,
+          "line": 5764,
           "note": "use crate::api::auth;",
           "path": "src-tauri/src/pty/container_backend.rs"
         }
@@ -26347,7 +26869,7 @@
           "path": "src-tauri/src/pty/container_backend.rs"
         },
         {
-          "line": 3446,
+          "line": 3489,
           "note": "use crate::pty::backend::SessionBackendKind;",
           "path": "src-tauri/src/pty/container_backend.rs"
         }
@@ -26395,7 +26917,7 @@
           "path": "src-tauri/src/pty/container_backend.rs"
         },
         {
-          "line": 3447,
+          "line": 3490,
           "note": "use crate::pty::container_paths::CLAUDE_CONFIG_DIR_KEY;",
           "path": "src-tauri/src/pty/container_backend.rs"
         }
@@ -26419,7 +26941,7 @@
           "path": "src-tauri/src/pty/container_backend.rs"
         },
         {
-          "line": 3448,
+          "line": 3491,
           "note": "use crate::pty::container_runtime::ContainerCleanupReport;",
           "path": "src-tauri/src/pty/container_backend.rs"
         }
@@ -26495,7 +27017,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 3449,
+          "line": 3492,
           "note": "use crate::pty::manager::PtyManager;",
           "path": "src-tauri/src/pty/container_backend.rs"
         }
@@ -26571,7 +27093,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 3450,
+          "line": 3493,
           "note": "use crate::session::manager::SessionManager;",
           "path": "src-tauri/src/pty/container_backend.rs"
         }
@@ -26704,7 +27226,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 9,
+          "line": 10,
           "note": "use crate::errors::AppError;",
           "path": "src-tauri/src/pty/container_tokens.rs"
         }
@@ -27028,7 +27550,7 @@
           "path": "src-tauri/src/pty/local_backend.rs"
         },
         {
-          "line": 2004,
+          "line": 2009,
           "note": "use crate::pty::context_scrape::ScreenRowsRead;",
           "path": "src-tauri/src/pty/local_backend.rs"
         }
@@ -27071,7 +27593,7 @@
           "path": "src-tauri/src/pty/local_backend.rs"
         },
         {
-          "line": 2005,
+          "line": 2010,
           "note": "use crate::pty::idle_detector::IdleDetector;",
           "path": "src-tauri/src/pty/local_backend.rs"
         }
@@ -27095,7 +27617,7 @@
           "path": "src-tauri/src/pty/local_backend.rs"
         },
         {
-          "line": 2006,
+          "line": 2011,
           "note": "use crate::pty::output::PtyOutputTarget;",
           "path": "src-tauri/src/pty/local_backend.rs"
         }
@@ -27152,7 +27674,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 2007,
+          "line": 2012,
           "note": "use crate::session::profile::IdleTuning;",
           "path": "src-tauri/src/pty/local_backend.rs"
         }
@@ -27228,7 +27750,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 8,
+          "line": 10,
           "note": "use crate::pty::container_backend::ContainerTransportBackend;",
           "path": "src-tauri/src/pty/manager.rs"
         }
@@ -27247,7 +27769,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 9,
+          "line": 11,
           "note": "use crate::pty::container_tokens::ContainerApiTokenManager;",
           "path": "src-tauri/src/pty/manager.rs"
         }
@@ -27266,7 +27788,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 10,
+          "line": 12,
           "note": "use crate::pty::context_scrape::ContextSessionLiveness;",
           "path": "src-tauri/src/pty/manager.rs"
         }
@@ -27285,7 +27807,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 11,
+          "line": 13,
           "note": "use crate::pty::docker_runtime::DockerRuntime;",
           "path": "src-tauri/src/pty/manager.rs"
         }
@@ -27304,7 +27826,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 12,
+          "line": 14,
           "note": "use crate::pty::git_watcher::GitWatcher;",
           "path": "src-tauri/src/pty/manager.rs"
         }
@@ -27323,7 +27845,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 13,
+          "line": 15,
           "note": "use crate::pty::idle_detector::IdleDetector;",
           "path": "src-tauri/src/pty/manager.rs"
         }
@@ -27342,7 +27864,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 14,
+          "line": 16,
           "note": "use crate::pty::local_backend::LocalProcessBackend;",
           "path": "src-tauri/src/pty/manager.rs"
         }
@@ -27361,7 +27883,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 15,
+          "line": 17,
           "note": "use crate::pty::output::PtyScreenSnapshot;",
           "path": "src-tauri/src/pty/manager.rs"
         }
@@ -27380,7 +27902,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 1189,
+          "line": 1424,
           "note": "use crate::pty::watchers::FrameStamp;",
           "path": "src-tauri/src/pty/manager.rs"
         }
@@ -27399,7 +27921,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 16,
+          "line": 18,
           "note": "use crate::telegram::manager::OutputSenderMap;",
           "path": "src-tauri/src/pty/manager.rs"
         }
@@ -27780,6 +28302,25 @@
       "evidence": [
         {
           "line": 20,
+          "note": "mod terminal_snapshot;",
+          "path": "src-tauri/src/pty/mod.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/mod.rs->file:src-tauri/src/pty/terminal_snapshot.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "mod"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/mod.rs",
+      "targetId": "file:src-tauri/src/pty/terminal_snapshot.rs"
+    },
+    {
+      "confidence": "resolved",
+      "evidence": [
+        {
+          "line": 21,
           "note": "mod watchers;",
           "path": "src-tauri/src/pty/mod.rs"
         }
@@ -27798,7 +28339,31 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 7,
+          "line": 14,
+          "note": "use crate::pty::backend::SessionBackendKind;",
+          "path": "src-tauri/src/pty/output.rs"
+        },
+        {
+          "line": 460,
+          "note": "use crate::pty::backend::TerminalScreenCopyRead;",
+          "path": "src-tauri/src/pty/output.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/output.rs->file:src-tauri/src/pty/backend.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/output.rs",
+      "targetId": "file:src-tauri/src/pty/backend.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 15,
           "note": "use crate::pty::idle_detector::IdleDetector;",
           "path": "src-tauri/src/pty/output.rs"
         }
@@ -27817,7 +28382,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 328,
+          "line": 576,
           "note": "use crate::pty::watchers::FrameStamp;",
           "path": "src-tauri/src/pty/output.rs"
         }
@@ -27836,7 +28401,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 8,
+          "line": 16,
           "note": "use crate::session::profile::IdleTuning;",
           "path": "src-tauri/src/pty/output.rs"
         }
@@ -27855,7 +28420,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 9,
+          "line": 17,
           "note": "use crate::telegram::manager::OutputSenderMap;",
           "path": "src-tauri/src/pty/output.rs"
         }
@@ -27888,6 +28453,424 @@
       },
       "sourceId": "file:src-tauri/src/pty/spawn_diagnostics.rs",
       "targetId": "file:src-tauri/src/session/profile.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 16,
+          "note": "use crate::config::settings::SettingsState;",
+          "path": "src-tauri/src/pty/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot.rs->file:src-tauri/src/config/settings.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/config/settings.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 17,
+          "note": "use crate::config::teams::VerifiedPtyInputIdentity;",
+          "path": "src-tauri/src/pty/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot.rs->file:src-tauri/src/config/teams.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/config/teams.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 18,
+          "note": "use crate::pty::backend::SessionBackendKind;",
+          "path": "src-tauri/src/pty/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot.rs->file:src-tauri/src/pty/backend.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/pty/backend.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 19,
+          "note": "use crate::pty::context_scrape::ContextSessionLiveness;",
+          "path": "src-tauri/src/pty/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot.rs->file:src-tauri/src/pty/context_scrape/mod.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/pty/context_scrape/mod.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 20,
+          "note": "use crate::pty::manager::PtyManager;",
+          "path": "src-tauri/src/pty/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot.rs->file:src-tauri/src/pty/manager.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/pty/manager.rs"
+    },
+    {
+      "confidence": "resolved",
+      "evidence": [
+        {
+          "line": 3147,
+          "note": "mod acceptance_tests;",
+          "path": "src-tauri/src/pty/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot.rs->file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "mod"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs"
+    },
+    {
+      "confidence": "resolved",
+      "evidence": [
+        {
+          "line": 3149,
+          "note": "mod resource_tests;",
+          "path": "src-tauri/src/pty/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot.rs->file:src-tauri/src/pty/terminal_snapshot/resource_tests.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "mod"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/pty/terminal_snapshot/resource_tests.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 21,
+          "note": "use crate::session::manager::SessionManager;",
+          "path": "src-tauri/src/pty/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot.rs->file:src-tauri/src/session/manager.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/session/manager.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 24,
+          "note": "use crate::session::session::SessionStatus;",
+          "path": "src-tauri/src/pty/terminal_snapshot.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot.rs->file:src-tauri/src/session/session.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot.rs",
+      "targetId": "file:src-tauri/src/session/session.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 17,
+          "note": "use crate::errors::AppError;",
+          "path": "src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs->file:src-tauri/src/errors.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs",
+      "targetId": "file:src-tauri/src/errors.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 18,
+          "note": "use crate::pty::backend::BackendSpawnSpec;",
+          "path": "src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs->file:src-tauri/src/pty/backend.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs",
+      "targetId": "file:src-tauri/src/pty/backend.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 21,
+          "note": "use crate::pty::context_scrape::ContextSessionLiveness;",
+          "path": "src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs->file:src-tauri/src/pty/context_scrape/mod.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs",
+      "targetId": "file:src-tauri/src/pty/context_scrape/mod.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 22,
+          "note": "use crate::pty::manager::BackendWriteAuthority;",
+          "path": "src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs->file:src-tauri/src/pty/manager.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs",
+      "targetId": "file:src-tauri/src/pty/manager.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 23,
+          "note": "use crate::pty::output::PtyOutputTarget;",
+          "path": "src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs->file:src-tauri/src/pty/output.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs",
+      "targetId": "file:src-tauri/src/pty/output.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 24,
+          "note": "use crate::session::manager::SessionManager;",
+          "path": "src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs->file:src-tauri/src/session/manager.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs",
+      "targetId": "file:src-tauri/src/session/manager.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 25,
+          "note": "use crate::session::session::Session;",
+          "path": "src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs->file:src-tauri/src/session/session.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs",
+      "targetId": "file:src-tauri/src/session/session.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 26,
+          "note": "use crate::telegram::manager::OutputSenderMap;",
+          "path": "src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs->file:src-tauri/src/telegram/manager.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs",
+      "targetId": "file:src-tauri/src/telegram/manager.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 19,
+          "note": "use crate::pty::backend::SessionBackendKind;",
+          "path": "src-tauri/src/pty/terminal_snapshot/resource_tests.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot/resource_tests.rs->file:src-tauri/src/pty/backend.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot/resource_tests.rs",
+      "targetId": "file:src-tauri/src/pty/backend.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 20,
+          "note": "use crate::pty::idle_detector::IdleDetector;",
+          "path": "src-tauri/src/pty/terminal_snapshot/resource_tests.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot/resource_tests.rs->file:src-tauri/src/pty/idle_detector.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot/resource_tests.rs",
+      "targetId": "file:src-tauri/src/pty/idle_detector.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 21,
+          "note": "use crate::pty::output::SessionIoFanout;",
+          "path": "src-tauri/src/pty/terminal_snapshot/resource_tests.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot/resource_tests.rs->file:src-tauri/src/pty/output.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot/resource_tests.rs",
+      "targetId": "file:src-tauri/src/pty/output.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 22,
+          "note": "use crate::session::profile::IdleTuning;",
+          "path": "src-tauri/src/pty/terminal_snapshot/resource_tests.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot/resource_tests.rs->file:src-tauri/src/session/profile.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot/resource_tests.rs",
+      "targetId": "file:src-tauri/src/session/profile.rs"
+    },
+    {
+      "confidence": "heuristic",
+      "evidence": [
+        {
+          "line": 23,
+          "note": "use crate::telegram::manager::OutputSenderMap;",
+          "path": "src-tauri/src/pty/terminal_snapshot/resource_tests.rs"
+        }
+      ],
+      "id": "rust-imports:file:src-tauri/src/pty/terminal_snapshot/resource_tests.rs->file:src-tauri/src/telegram/manager.rs",
+      "kind": "rust-imports",
+      "metadata": {
+        "via": [
+          "use"
+        ]
+      },
+      "sourceId": "file:src-tauri/src/pty/terminal_snapshot/resource_tests.rs",
+      "targetId": "file:src-tauri/src/telegram/manager.rs"
     },
     {
       "confidence": "heuristic",
@@ -28922,7 +29905,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 639,
+          "line": 729,
           "note": "use crate::pty::idle_detector::PtyInputBoundaryFailure;",
           "path": "src-tauri/src/session/manager.rs"
         }
@@ -28965,7 +29948,7 @@
           "path": "src-tauri/src/session/manager.rs"
         },
         {
-          "line": 2076,
+          "line": 2295,
           "note": "use crate::session::selection::TrustedCreateIntent;",
           "path": "src-tauri/src/session/manager.rs"
         }
@@ -29160,7 +30143,7 @@
           "path": "src-tauri/src/session/selection.rs"
         },
         {
-          "line": 4348,
+          "line": 4400,
           "note": "use crate::config::sessions_persistence::PersistedSession;",
           "path": "src-tauri/src/session/selection.rs"
         }
@@ -29213,47 +30196,47 @@
           "path": "src-tauri/src/session/selection.rs"
         },
         {
-          "line": 4268,
+          "line": 4320,
           "note": "use crate::pty::backend::SessionBackendKind;",
           "path": "src-tauri/src/session/selection.rs"
         },
         {
-          "line": 4439,
+          "line": 4491,
           "note": "use crate::pty::backend::SessionBackendKind;",
           "path": "src-tauri/src/session/selection.rs"
         },
         {
-          "line": 4627,
+          "line": 4679,
           "note": "use crate::pty::backend::SessionBackendKind;",
           "path": "src-tauri/src/session/selection.rs"
         },
         {
-          "line": 4735,
+          "line": 4787,
           "note": "use crate::pty::backend::SessionBackendKind;",
           "path": "src-tauri/src/session/selection.rs"
         },
         {
-          "line": 4875,
+          "line": 4927,
           "note": "use crate::pty::backend::SessionBackendKind;",
           "path": "src-tauri/src/session/selection.rs"
         },
         {
-          "line": 4984,
+          "line": 5036,
           "note": "use crate::pty::backend::PtyBackend;",
           "path": "src-tauri/src/session/selection.rs"
         },
         {
-          "line": 5101,
+          "line": 5153,
           "note": "use crate::pty::backend::SessionBackendKind;",
           "path": "src-tauri/src/session/selection.rs"
         },
         {
-          "line": 5235,
+          "line": 5287,
           "note": "use crate::pty::backend::PtyBackend;",
           "path": "src-tauri/src/session/selection.rs"
         },
         {
-          "line": 5377,
+          "line": 5429,
           "note": "use crate::pty::backend::SessionBackendKind;",
           "path": "src-tauri/src/session/selection.rs"
         }
@@ -29287,7 +30270,7 @@
           "path": "src-tauri/src/session/selection.rs"
         },
         {
-          "line": 5378,
+          "line": 5430,
           "note": "use crate::pty::container_backend::ContainerTransportBackend;",
           "path": "src-tauri/src/session/selection.rs"
         }
@@ -29311,7 +30294,7 @@
           "path": "src-tauri/src/session/selection.rs"
         },
         {
-          "line": 5379,
+          "line": 5431,
           "note": "use crate::pty::container_runtime::ContainerRuntimeHandle;",
           "path": "src-tauri/src/session/selection.rs"
         }
@@ -29430,7 +30413,7 @@
           "path": "src-tauri/src/session/selection.rs"
         },
         {
-          "line": 4053,
+          "line": 4105,
           "note": "use crate::web::broadcast::WsOutMsg;",
           "path": "src-tauri/src/session/selection.rs"
         }
@@ -30437,7 +31420,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 928,
+          "line": 940,
           "note": "use crate::commands::project_settings::get_project_groups_inner;",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -30456,7 +31439,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 931,
+          "line": 943,
           "note": "use crate::config::project_settings::WorkgroupGroup;",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -30480,7 +31463,7 @@
           "path": "src-tauri/src/web/commands.rs"
         },
         {
-          "line": 932,
+          "line": 944,
           "note": "use crate::config::settings::AppSettings;",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -30499,7 +31482,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 933,
+          "line": 945,
           "note": "use crate::pty::git_watcher::GitWatcher;",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -30518,7 +31501,7 @@
       "confidence": "heuristic",
       "evidence": [
         {
-          "line": 934,
+          "line": 946,
           "note": "use crate::pty::idle_detector::IdleDetector;",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -30542,7 +31525,7 @@
           "path": "src-tauri/src/web/commands.rs"
         },
         {
-          "line": 935,
+          "line": 947,
           "note": "use crate::pty::manager::PtyManager;",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -30566,7 +31549,7 @@
           "path": "src-tauri/src/web/commands.rs"
         },
         {
-          "line": 936,
+          "line": 948,
           "note": "use crate::session::manager::SessionManager;",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -30590,7 +31573,7 @@
           "path": "src-tauri/src/web/commands.rs"
         },
         {
-          "line": 937,
+          "line": 949,
           "note": "use crate::web::broadcast::WsBroadcaster;",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -30779,7 +31762,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 848,
+          "line": 850,
           "note": "transport.invoke(\"archive_project\")",
           "path": "src/shared/ipc.ts"
         },
@@ -30789,7 +31772,7 @@
           "path": "src-tauri/src/commands/ac_discovery.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -30808,7 +31791,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 817,
+          "line": 819,
           "note": "transport.invoke(\"check_project_path\")",
           "path": "src/shared/ipc.ts"
         },
@@ -30818,7 +31801,7 @@
           "path": "src-tauri/src/commands/ac_discovery.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -30837,7 +31820,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 819,
+          "line": 821,
           "note": "transport.invoke(\"create_ac_project\")",
           "path": "src/shared/ipc.ts"
         },
@@ -30847,7 +31830,7 @@
           "path": "src-tauri/src/commands/ac_discovery.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -30866,7 +31849,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 806,
+          "line": 808,
           "note": "transport.invoke(\"discover_ac_agents\")",
           "path": "src/shared/ipc.ts"
         },
@@ -30876,7 +31859,7 @@
           "path": "src-tauri/src/commands/ac_discovery.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -30895,7 +31878,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 821,
+          "line": 823,
           "note": "transport.invoke(\"discover_project\")",
           "path": "src/shared/ipc.ts"
         },
@@ -30905,7 +31888,7 @@
           "path": "src-tauri/src/commands/ac_discovery.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -30924,7 +31907,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 809,
+          "line": 811,
           "note": "transport.invoke(\"get_replica_context_files\")",
           "path": "src/shared/ipc.ts"
         },
@@ -30934,7 +31917,7 @@
           "path": "src-tauri/src/commands/ac_discovery.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -30953,7 +31936,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 827,
+          "line": 829,
           "note": "transport.invoke(\"keep_custom_context_template\")",
           "path": "src/shared/ipc.ts"
         },
@@ -30963,7 +31946,7 @@
           "path": "src-tauri/src/commands/ac_discovery.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -30982,7 +31965,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 852,
+          "line": 854,
           "note": "transport.invoke(\"list_archived_projects\")",
           "path": "src/shared/ipc.ts"
         },
@@ -30992,7 +31975,7 @@
           "path": "src-tauri/src/commands/ac_discovery.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31011,7 +31994,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 846,
+          "line": 848,
           "note": "transport.invoke(\"new_project\")",
           "path": "src/shared/ipc.ts"
         },
@@ -31021,7 +32004,7 @@
           "path": "src-tauri/src/commands/ac_discovery.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31040,7 +32023,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 844,
+          "line": 846,
           "note": "transport.invoke(\"open_project\")",
           "path": "src/shared/ipc.ts"
         },
@@ -31050,7 +32033,7 @@
           "path": "src-tauri/src/commands/ac_discovery.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31069,7 +32052,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 834,
+          "line": 836,
           "note": "transport.invoke(\"overwrite_context_template_with_default\")",
           "path": "src/shared/ipc.ts"
         },
@@ -31079,7 +32062,7 @@
           "path": "src-tauri/src/commands/ac_discovery.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31098,7 +32081,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 847,
+          "line": 849,
           "note": "transport.invoke(\"remove_project\")",
           "path": "src/shared/ipc.ts"
         },
@@ -31108,7 +32091,7 @@
           "path": "src-tauri/src/commands/ac_discovery.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31127,7 +32110,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 812,
+          "line": 814,
           "note": "transport.invoke(\"set_replica_context_files\")",
           "path": "src/shared/ipc.ts"
         },
@@ -31137,7 +32120,7 @@
           "path": "src-tauri/src/commands/ac_discovery.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31156,7 +32139,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 850,
+          "line": 852,
           "note": "transport.invoke(\"unarchive_project\")",
           "path": "src/shared/ipc.ts"
         },
@@ -31166,7 +32149,7 @@
           "path": "src-tauri/src/commands/ac_discovery.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31185,7 +32168,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1066,
+          "line": 1068,
           "note": "transport.invoke(\"create_agent_folder\")",
           "path": "src/shared/ipc.ts"
         },
@@ -31195,7 +32178,7 @@
           "path": "src-tauri/src/commands/agent_creator.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31214,7 +32197,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1063,
+          "line": 1065,
           "note": "transport.invoke(\"pick_folder\")",
           "path": "src/shared/ipc.ts"
         },
@@ -31224,7 +32207,7 @@
           "path": "src-tauri/src/commands/agent_creator.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31248,12 +32231,12 @@
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 1716,
+          "line": 1745,
           "note": "#[tauri::command] fn api_server_status",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31272,17 +32255,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 370,
+          "line": 372,
           "note": "transport.invoke(\"apply_coding_agent_profile_selection\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 1080,
+          "line": 1109,
           "note": "#[tauri::command] fn apply_coding_agent_profile_selection",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31301,7 +32284,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 482,
+          "line": 484,
           "note": "transport.invoke(\"drain_error_logs\")",
           "path": "src/shared/ipc.ts"
         },
@@ -31311,7 +32294,7 @@
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31330,17 +32313,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1074,
+          "line": 1076,
           "note": "transport.invoke(\"fetch_home_markdown\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 2181,
+          "line": 2210,
           "note": "#[tauri::command] fn fetch_home_markdown",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31369,7 +32352,7 @@
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31398,7 +32381,7 @@
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31417,17 +32400,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 385,
+          "line": 387,
           "note": "transport.invoke(\"get_update_status\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 2170,
+          "line": 2199,
           "note": "#[tauri::command] fn get_update_status",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31451,12 +32434,12 @@
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 1949,
+          "line": 1978,
           "note": "#[tauri::command] fn get_web_server_owned_status",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31480,12 +32463,12 @@
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 1941,
+          "line": 1970,
           "note": "#[tauri::command] fn get_web_server_status",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31514,7 +32497,7 @@
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31538,12 +32521,12 @@
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 1732,
+          "line": 1761,
           "note": "#[tauri::command] fn mint_api_client",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31567,12 +32550,12 @@
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 1630,
+          "line": 1659,
           "note": "#[tauri::command] fn open_web_remote",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31591,17 +32574,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 363,
+          "line": 365,
           "note": "transport.invoke(\"preview_coding_agent_profile_selection\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 1023,
+          "line": 1052,
           "note": "#[tauri::command] fn preview_coding_agent_profile_selection",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31630,7 +32613,7 @@
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31649,17 +32632,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 379,
+          "line": 381,
           "note": "transport.invoke(\"resolve_coding_agent_profile\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 896,
+          "line": 925,
           "note": "#[tauri::command] fn resolve_coding_agent_profile",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31678,7 +32661,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 480,
+          "line": 482,
           "note": "transport.invoke(\"save_debug_logs\")",
           "path": "src/shared/ipc.ts"
         },
@@ -31688,7 +32671,7 @@
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31717,7 +32700,7 @@
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31736,17 +32719,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 357,
+          "line": 359,
           "note": "transport.invoke(\"set_agent_default_profile\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 834,
+          "line": 863,
           "note": "#[tauri::command] fn set_agent_default_profile",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31765,17 +32748,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 359,
+          "line": 361,
           "note": "transport.invoke(\"set_instance_profile_override\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 864,
+          "line": 893,
           "note": "#[tauri::command] fn set_instance_profile_override",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31794,17 +32777,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 343,
+          "line": 345,
           "note": "transport.invoke(\"set_log_level\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 2149,
+          "line": 2178,
           "note": "#[tauri::command] fn set_log_level",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31823,17 +32806,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 339,
+          "line": 341,
           "note": "transport.invoke(\"set_main_resource_monitor_attached\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 2065,
+          "line": 2094,
           "note": "#[tauri::command] fn set_main_resource_monitor_attached",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31852,17 +32835,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 341,
+          "line": 343,
           "note": "transport.invoke(\"set_rail_collapse\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 2121,
+          "line": 2150,
           "note": "#[tauri::command] fn set_rail_collapse",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31886,12 +32869,12 @@
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 2036,
+          "line": 2065,
           "note": "#[tauri::command] fn set_sounds_enabled",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31911,16 +32894,45 @@
       "evidence": [
         {
           "line": 337,
+          "note": "transport.invoke(\"set_terminal_snapshots_enabled\")",
+          "path": "src/shared/ipc.ts"
+        },
+        {
+          "line": 576,
+          "note": "#[tauri::command] fn set_terminal_snapshots_enabled",
+          "path": "src-tauri/src/commands/config.rs"
+        },
+        {
+          "line": 2587,
+          "note": "registered in tauri::generate_handler![…]",
+          "path": "src-tauri/src/lib.rs"
+        }
+      ],
+      "id": "tauri-command:file:src/shared/ipc.ts->file:src-tauri/src/commands/config.rs#set_terminal_snapshots_enabled",
+      "kind": "tauri-command",
+      "label": "set_terminal_snapshots_enabled",
+      "metadata": {
+        "binding": "tauri",
+        "command": "set_terminal_snapshots_enabled"
+      },
+      "sourceId": "file:src/shared/ipc.ts",
+      "targetId": "file:src-tauri/src/commands/config.rs"
+    },
+    {
+      "confidence": "resolved",
+      "evidence": [
+        {
+          "line": 339,
           "note": "transport.invoke(\"set_theme_light\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 2051,
+          "line": 2080,
           "note": "#[tauri::command] fn set_theme_light",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31944,12 +32956,12 @@
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 1653,
+          "line": 1682,
           "note": "#[tauri::command] fn start_api_server",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -31973,12 +32985,12 @@
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 1880,
+          "line": 1909,
           "note": "#[tauri::command] fn start_web_server",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32002,12 +33014,12 @@
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 1705,
+          "line": 1734,
           "note": "#[tauri::command] fn stop_api_server",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32031,12 +33043,12 @@
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 1931,
+          "line": 1960,
           "note": "#[tauri::command] fn stop_web_server",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32055,17 +33067,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 351,
+          "line": 353,
           "note": "transport.invoke(\"update_coding_agent_env_settings\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 796,
+          "line": 825,
           "note": "#[tauri::command] fn update_coding_agent_env_settings",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32084,17 +33096,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 345,
+          "line": 347,
           "note": "transport.invoke(\"update_coding_agent_profiles\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 772,
+          "line": 801,
           "note": "#[tauri::command] fn update_coding_agent_profiles",
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32123,7 +33135,7 @@
           "path": "src-tauri/src/commands/config.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32142,7 +33154,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 993,
+          "line": 995,
           "note": "transport.invoke(\"create_agent_matrix\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32152,7 +33164,7 @@
           "path": "src-tauri/src/commands/entity_creation.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32171,7 +33183,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1017,
+          "line": 1019,
           "note": "transport.invoke(\"create_team\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32181,7 +33193,7 @@
           "path": "src-tauri/src/commands/entity_creation.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32200,7 +33212,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1051,
+          "line": 1053,
           "note": "transport.invoke(\"create_workgroup\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32210,7 +33222,7 @@
           "path": "src-tauri/src/commands/entity_creation.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32229,7 +33241,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1001,
+          "line": 1003,
           "note": "transport.invoke(\"delete_agent_matrix\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32239,7 +33251,7 @@
           "path": "src-tauri/src/commands/entity_creation.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32258,7 +33270,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1027,
+          "line": 1029,
           "note": "transport.invoke(\"delete_team\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32268,7 +33280,7 @@
           "path": "src-tauri/src/commands/entity_creation.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32287,7 +33299,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1058,
+          "line": 1060,
           "note": "transport.invoke(\"delete_workgroup\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32297,7 +33309,7 @@
           "path": "src-tauri/src/commands/entity_creation.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32316,7 +33328,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1047,
+          "line": 1049,
           "note": "transport.invoke(\"get_team_config\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32326,7 +33338,7 @@
           "path": "src-tauri/src/commands/entity_creation.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32345,7 +33357,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1004,
+          "line": 1006,
           "note": "transport.invoke(\"list_all_agents\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32355,7 +33367,7 @@
           "path": "src-tauri/src/commands/entity_creation.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32374,7 +33386,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1037,
+          "line": 1039,
           "note": "transport.invoke(\"update_team\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32384,7 +33396,7 @@
           "path": "src-tauri/src/commands/entity_creation.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32403,17 +33415,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 862,
+          "line": 864,
           "note": "transport.invoke(\"create_loop\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 66,
+          "line": 58,
           "note": "#[tauri::command] fn create_loop",
           "path": "src-tauri/src/commands/loops.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32432,17 +33444,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 890,
+          "line": 892,
           "note": "transport.invoke(\"delete_loop\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 176,
+          "line": 168,
           "note": "#[tauri::command] fn delete_loop",
           "path": "src-tauri/src/commands/loops.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32461,17 +33473,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 903,
+          "line": 905,
           "note": "transport.invoke(\"get_loop_config\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 268,
+          "line": 260,
           "note": "#[tauri::command] fn get_loop_config",
           "path": "src-tauri/src/commands/loops.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32490,17 +33502,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 906,
+          "line": 908,
           "note": "transport.invoke(\"preview_loop_cron\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 285,
+          "line": 277,
           "note": "#[tauri::command] fn preview_loop_cron",
           "path": "src-tauri/src/commands/loops.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32519,17 +33531,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 900,
+          "line": 902,
           "note": "transport.invoke(\"run_loop_now\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 245,
+          "line": 237,
           "note": "#[tauri::command] fn run_loop_now",
           "path": "src-tauri/src/commands/loops.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32548,17 +33560,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 893,
+          "line": 895,
           "note": "transport.invoke(\"toggle_loop\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 197,
+          "line": 189,
           "note": "#[tauri::command] fn toggle_loop",
           "path": "src-tauri/src/commands/loops.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32577,17 +33589,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 876,
+          "line": 878,
           "note": "transport.invoke(\"update_loop\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 124,
+          "line": 116,
           "note": "#[tauri::command] fn update_loop",
           "path": "src-tauri/src/commands/loops.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32606,7 +33618,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 857,
+          "line": 859,
           "note": "transport.invoke(\"non_stop_report\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32616,7 +33628,7 @@
           "path": "src-tauri/src/commands/non_stop.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32635,7 +33647,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 823,
+          "line": 825,
           "note": "transport.invoke(\"get_project_groups\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32645,7 +33657,7 @@
           "path": "src-tauri/src/commands/project_settings.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32664,7 +33676,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 825,
+          "line": 827,
           "note": "transport.invoke(\"update_project_groups\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32674,7 +33686,7 @@
           "path": "src-tauri/src/commands/project_settings.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32703,7 +33715,7 @@
           "path": "src-tauri/src/commands/pty.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32732,7 +33744,7 @@
           "path": "src-tauri/src/commands/pty.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32761,7 +33773,7 @@
           "path": "src-tauri/src/commands/pty.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32790,7 +33802,7 @@
           "path": "src-tauri/src/commands/pty.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32819,7 +33831,7 @@
           "path": "src-tauri/src/commands/pty.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32848,7 +33860,7 @@
           "path": "src-tauri/src/commands/pty.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32877,7 +33889,7 @@
           "path": "src-tauri/src/commands/pty.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32896,7 +33908,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 393,
+          "line": 395,
           "note": "transport.invoke(\"git_remote_url\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32906,7 +33918,7 @@
           "path": "src-tauri/src/commands/repos.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32925,7 +33937,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 390,
+          "line": 392,
           "note": "transport.invoke(\"search_repos\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32935,7 +33947,7 @@
           "path": "src-tauri/src/commands/repos.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32954,7 +33966,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 581,
+          "line": 583,
           "note": "transport.invoke(\"get_resource_snapshot\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32964,7 +33976,7 @@
           "path": "src-tauri/src/commands/resource_monitor.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -32983,7 +33995,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 583,
+          "line": 585,
           "note": "transport.invoke(\"kill_resource_group\")",
           "path": "src/shared/ipc.ts"
         },
@@ -32993,7 +34005,7 @@
           "path": "src-tauri/src/commands/resource_monitor.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33012,7 +34024,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 911,
+          "line": 913,
           "note": "transport.invoke(\"get_agency_templates_status\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33022,7 +34034,7 @@
           "path": "src-tauri/src/commands/role_templates.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33041,7 +34053,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 910,
+          "line": 912,
           "note": "transport.invoke(\"list_role_templates\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33051,7 +34063,7 @@
           "path": "src-tauri/src/commands/role_templates.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33070,7 +34082,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 913,
+          "line": 915,
           "note": "transport.invoke(\"update_agency_templates\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33080,7 +34092,7 @@
           "path": "src-tauri/src/commands/role_templates.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33099,7 +34111,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 573,
+          "line": 575,
           "note": "transport.invoke(\"screenshot_cancel_capture\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33109,7 +34121,7 @@
           "path": "src-tauri/src/commands/screenshot.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33128,7 +34140,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 569,
+          "line": 571,
           "note": "transport.invoke(\"screenshot_confirm_selection\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33138,7 +34150,7 @@
           "path": "src-tauri/src/commands/screenshot.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33157,7 +34169,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 575,
+          "line": 577,
           "note": "transport.invoke(\"screenshot_get_hotkey_status\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33167,7 +34179,7 @@
           "path": "src-tauri/src/commands/screenshot.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33186,7 +34198,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 564,
+          "line": 566,
           "note": "transport.invoke(\"screenshot_get_overlay_state\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33196,7 +34208,7 @@
           "path": "src-tauri/src/commands/screenshot.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33215,7 +34227,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 577,
+          "line": 579,
           "note": "transport.invoke(\"screenshot_reload_hotkey\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33225,7 +34237,7 @@
           "path": "src-tauri/src/commands/screenshot.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33254,7 +34266,7 @@
           "path": "src-tauri/src/commands/session.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33283,7 +34295,7 @@
           "path": "src-tauri/src/commands/session.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33312,7 +34324,7 @@
           "path": "src-tauri/src/commands/session.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33341,7 +34353,7 @@
           "path": "src-tauri/src/commands/session.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33370,7 +34382,7 @@
           "path": "src-tauri/src/commands/session.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33399,7 +34411,7 @@
           "path": "src-tauri/src/commands/session.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33428,7 +34440,7 @@
           "path": "src-tauri/src/commands/session.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33457,7 +34469,7 @@
           "path": "src-tauri/src/commands/session.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33486,7 +34498,7 @@
           "path": "src-tauri/src/commands/session.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33515,7 +34527,7 @@
           "path": "src-tauri/src/commands/session.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33534,7 +34546,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1218,
+          "line": 1220,
           "note": "transport.invoke(\"spec_board_apply_external\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33544,7 +34556,7 @@
           "path": "src-tauri/src/commands/spec_board.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33563,7 +34575,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1216,
+          "line": 1218,
           "note": "transport.invoke(\"spec_board_checkout_snapshot\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33573,7 +34585,7 @@
           "path": "src-tauri/src/commands/spec_board.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33592,7 +34604,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1222,
+          "line": 1224,
           "note": "transport.invoke(\"spec_board_close\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33602,7 +34614,7 @@
           "path": "src-tauri/src/commands/spec_board.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33621,7 +34633,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1220,
+          "line": 1222,
           "note": "transport.invoke(\"spec_board_keep_mine\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33631,7 +34643,7 @@
           "path": "src-tauri/src/commands/spec_board.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33650,7 +34662,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1214,
+          "line": 1216,
           "note": "transport.invoke(\"spec_board_list_snapshots\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33660,7 +34672,7 @@
           "path": "src-tauri/src/commands/spec_board.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33679,7 +34691,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1202,
+          "line": 1204,
           "note": "transport.invoke(\"spec_board_new\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33689,7 +34701,7 @@
           "path": "src-tauri/src/commands/spec_board.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33708,7 +34720,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1206,
+          "line": 1208,
           "note": "transport.invoke(\"spec_board_open\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33718,7 +34730,7 @@
           "path": "src-tauri/src/commands/spec_board.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33737,7 +34749,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1204,
+          "line": 1206,
           "note": "transport.invoke(\"spec_board_pick_open\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33747,7 +34759,7 @@
           "path": "src-tauri/src/commands/spec_board.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33766,7 +34778,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1210,
+          "line": 1212,
           "note": "transport.invoke(\"spec_board_pick_save\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33776,7 +34788,7 @@
           "path": "src-tauri/src/commands/spec_board.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33795,7 +34807,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1208,
+          "line": 1210,
           "note": "transport.invoke(\"spec_board_save\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33805,7 +34817,7 @@
           "path": "src-tauri/src/commands/spec_board.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33824,7 +34836,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1212,
+          "line": 1214,
           "note": "transport.invoke(\"spec_board_update_content\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33834,7 +34846,7 @@
           "path": "src-tauri/src/commands/spec_board.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33853,7 +34865,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 594,
+          "line": 596,
           "note": "transport.invoke(\"task_clean\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33863,7 +34875,7 @@
           "path": "src-tauri/src/commands/task.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33882,7 +34894,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 597,
+          "line": 599,
           "note": "transport.invoke(\"task_clean_at\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33892,7 +34904,7 @@
           "path": "src-tauri/src/commands/task.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33911,7 +34923,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 588,
+          "line": 590,
           "note": "transport.invoke(\"task_get_title\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33921,7 +34933,7 @@
           "path": "src-tauri/src/commands/task.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33940,7 +34952,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 591,
+          "line": 593,
           "note": "transport.invoke(\"task_set_title\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33950,7 +34962,7 @@
           "path": "src-tauri/src/commands/task.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33969,7 +34981,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 602,
+          "line": 604,
           "note": "transport.invoke(\"telegram_attach\")",
           "path": "src/shared/ipc.ts"
         },
@@ -33979,7 +34991,7 @@
           "path": "src-tauri/src/commands/telegram.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -33998,7 +35010,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 605,
+          "line": 607,
           "note": "transport.invoke(\"telegram_detach\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34008,7 +35020,7 @@
           "path": "src-tauri/src/commands/telegram.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34027,7 +35039,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 610,
+          "line": 612,
           "note": "transport.invoke(\"telegram_get_bridge\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34037,7 +35049,7 @@
           "path": "src-tauri/src/commands/telegram.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34056,7 +35068,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 607,
+          "line": 609,
           "note": "transport.invoke(\"telegram_list_bridges\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34066,7 +35078,7 @@
           "path": "src-tauri/src/commands/telegram.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34085,7 +35097,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 616,
+          "line": 618,
           "note": "transport.invoke(\"telegram_send_image\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34095,7 +35107,7 @@
           "path": "src-tauri/src/commands/telegram.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34114,7 +35126,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 613,
+          "line": 615,
           "note": "transport.invoke(\"telegram_send_test\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34124,7 +35136,7 @@
           "path": "src-tauri/src/commands/telegram.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34143,7 +35155,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 490,
+          "line": 492,
           "note": "transport.invoke(\"ui_automation_complete\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34153,7 +35165,7 @@
           "path": "src-tauri/src/commands/testability.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34172,7 +35184,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 486,
+          "line": 488,
           "note": "transport.invoke(\"ui_automation_enabled\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34182,7 +35194,7 @@
           "path": "src-tauri/src/commands/testability.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34201,7 +35213,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 488,
+          "line": 490,
           "note": "transport.invoke(\"ui_automation_frontend_ready\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34211,7 +35223,7 @@
           "path": "src-tauri/src/commands/testability.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34230,7 +35242,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 475,
+          "line": 477,
           "note": "transport.invoke(\"voice_had_typing\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34240,7 +35252,7 @@
           "path": "src-tauri/src/commands/voice.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34259,7 +35271,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 473,
+          "line": 475,
           "note": "transport.invoke(\"voice_mark_recording\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34269,7 +35281,7 @@
           "path": "src-tauri/src/commands/voice.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34288,7 +35300,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 471,
+          "line": 473,
           "note": "transport.invoke(\"voice_transcribe\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34298,7 +35310,7 @@
           "path": "src-tauri/src/commands/voice.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34317,7 +35329,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 510,
+          "line": 512,
           "note": "transport.invoke(\"attach_terminal\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34327,7 +35339,7 @@
           "path": "src-tauri/src/commands/window.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34346,7 +35358,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 507,
+          "line": 509,
           "note": "transport.invoke(\"detach_terminal\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34356,7 +35368,7 @@
           "path": "src-tauri/src/commands/window.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34375,7 +35387,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 533,
+          "line": 535,
           "note": "transport.invoke(\"dock_resource_monitor_window\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34385,7 +35397,7 @@
           "path": "src-tauri/src/commands/window.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34404,7 +35416,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 521,
+          "line": 523,
           "note": "transport.invoke(\"focus_main_window\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34414,12 +35426,12 @@
           "path": "src-tauri/src/commands/window.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         },
         {
-          "line": 524,
+          "line": 526,
           "note": "transport.invoke(\"focus_main_window\")",
           "path": "src/shared/ipc.ts"
         }
@@ -34438,7 +35450,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 553,
+          "line": 555,
           "note": "transport.invoke(\"get_watchers_scope\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34448,7 +35460,7 @@
           "path": "src-tauri/src/commands/window.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34467,7 +35479,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 513,
+          "line": 515,
           "note": "transport.invoke(\"list_detached_sessions\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34477,7 +35489,7 @@
           "path": "src-tauri/src/commands/window.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34496,7 +35508,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 527,
+          "line": 529,
           "note": "transport.invoke(\"open_external_url\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34506,7 +35518,7 @@
           "path": "src-tauri/src/commands/window.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34525,7 +35537,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1070,
+          "line": 1072,
           "note": "transport.invoke(\"open_guide_window\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34535,7 +35547,7 @@
           "path": "src-tauri/src/commands/window.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34554,7 +35566,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 519,
+          "line": 521,
           "note": "transport.invoke(\"open_in_explorer\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34564,7 +35576,7 @@
           "path": "src-tauri/src/commands/window.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34583,7 +35595,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 530,
+          "line": 532,
           "note": "transport.invoke(\"open_resource_monitor_window\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34593,7 +35605,7 @@
           "path": "src-tauri/src/commands/window.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34612,7 +35624,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1200,
+          "line": 1202,
           "note": "transport.invoke(\"open_spec_board_window\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34622,7 +35634,7 @@
           "path": "src-tauri/src/commands/window.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34641,7 +35653,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 539,
+          "line": 541,
           "note": "transport.invoke(\"open_watchers_window\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34651,7 +35663,7 @@
           "path": "src-tauri/src/commands/window.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34670,7 +35682,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 516,
+          "line": 518,
           "note": "transport.invoke(\"set_detached_geometry\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34680,7 +35692,7 @@
           "path": "src-tauri/src/commands/window.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34699,7 +35711,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 559,
+          "line": 561,
           "note": "transport.invoke(\"set_watchers_geometry\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34709,7 +35721,7 @@
           "path": "src-tauri/src/commands/window.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34738,7 +35750,7 @@
           "path": "src-tauri/src/session/warnings.rs"
         },
         {
-          "line": 2550,
+          "line": 2587,
           "note": "registered in tauri::generate_handler![…]",
           "path": "src-tauri/src/lib.rs"
         }
@@ -34757,12 +35769,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 370,
+          "line": 372,
           "note": "transport.invoke(\"apply_coding_agent_profile_selection\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 512,
+          "line": 524,
           "note": "match arm \"apply_coding_agent_profile_selection\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -34781,7 +35793,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 848,
+          "line": 850,
           "note": "transport.invoke(\"archive_project\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34805,12 +35817,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 510,
+          "line": 512,
           "note": "transport.invoke(\"attach_terminal\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 625,
+          "line": 637,
           "note": "match arm \"attach_terminal\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -34829,7 +35841,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 817,
+          "line": 819,
           "note": "transport.invoke(\"check_project_path\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34901,12 +35913,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 507,
+          "line": 509,
           "note": "transport.invoke(\"detach_terminal\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 625,
+          "line": 637,
           "note": "match arm \"detach_terminal\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -34925,7 +35937,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 821,
+          "line": 823,
           "note": "transport.invoke(\"discover_project\")",
           "path": "src/shared/ipc.ts"
         },
@@ -34973,12 +35985,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1074,
+          "line": 1076,
           "note": "transport.invoke(\"fetch_home_markdown\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 644,
+          "line": 656,
           "note": "match arm \"fetch_home_markdown\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -34997,17 +36009,17 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 521,
+          "line": 523,
           "note": "transport.invoke(\"focus_main_window\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 625,
+          "line": 637,
           "note": "match arm \"focus_main_window\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         },
         {
-          "line": 524,
+          "line": 526,
           "note": "transport.invoke(\"focus_main_window\")",
           "path": "src/shared/ipc.ts"
         }
@@ -35050,12 +36062,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 911,
+          "line": 913,
           "note": "transport.invoke(\"get_agency_templates_status\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 550,
+          "line": 562,
           "note": "match arm \"get_agency_templates_status\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35074,7 +36086,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 823,
+          "line": 825,
           "note": "transport.invoke(\"get_project_groups\")",
           "path": "src/shared/ipc.ts"
         },
@@ -35103,7 +36115,7 @@
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 594,
+          "line": 606,
           "note": "match arm \"get_pty_size\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35146,12 +36158,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 393,
+          "line": 395,
           "note": "transport.invoke(\"git_remote_url\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 625,
+          "line": 637,
           "note": "match arm \"git_remote_url\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35170,7 +36182,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 852,
+          "line": 854,
           "note": "transport.invoke(\"list_archived_projects\")",
           "path": "src/shared/ipc.ts"
         },
@@ -35194,12 +36206,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 513,
+          "line": 515,
           "note": "transport.invoke(\"list_detached_sessions\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 614,
+          "line": 626,
           "note": "match arm \"list_detached_sessions\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35218,12 +36230,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 910,
+          "line": 912,
           "note": "transport.invoke(\"list_role_templates\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 534,
+          "line": 546,
           "note": "match arm \"list_role_templates\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35266,12 +36278,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 527,
+          "line": 529,
           "note": "transport.invoke(\"open_external_url\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 625,
+          "line": 637,
           "note": "match arm \"open_external_url\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35290,12 +36302,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 1070,
+          "line": 1072,
           "note": "transport.invoke(\"open_guide_window\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 625,
+          "line": 637,
           "note": "match arm \"open_guide_window\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35314,12 +36326,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 519,
+          "line": 521,
           "note": "transport.invoke(\"open_in_explorer\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 625,
+          "line": 637,
           "note": "match arm \"open_in_explorer\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35338,7 +36350,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 844,
+          "line": 846,
           "note": "transport.invoke(\"open_project\")",
           "path": "src/shared/ipc.ts"
         },
@@ -35362,12 +36374,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 363,
+          "line": 365,
           "note": "transport.invoke(\"preview_coding_agent_profile_selection\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 500,
+          "line": 512,
           "note": "match arm \"preview_coding_agent_profile_selection\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35434,7 +36446,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 847,
+          "line": 849,
           "note": "transport.invoke(\"remove_project\")",
           "path": "src/shared/ipc.ts"
         },
@@ -35482,12 +36494,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 379,
+          "line": 381,
           "note": "transport.invoke(\"resolve_coding_agent_profile\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 449,
+          "line": 461,
           "note": "match arm \"resolve_coding_agent_profile\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35506,12 +36518,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 480,
+          "line": 482,
           "note": "transport.invoke(\"save_debug_logs\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 691,
+          "line": 703,
           "note": "match arm \"save_debug_logs\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35554,12 +36566,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 390,
+          "line": 392,
           "note": "transport.invoke(\"search_repos\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 647,
+          "line": 659,
           "note": "match arm \"search_repos\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35578,12 +36590,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 357,
+          "line": 359,
           "note": "transport.invoke(\"set_agent_default_profile\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 463,
+          "line": 475,
           "note": "match arm \"set_agent_default_profile\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35602,12 +36614,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 516,
+          "line": 518,
           "note": "transport.invoke(\"set_detached_geometry\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 625,
+          "line": 637,
           "note": "match arm \"set_detached_geometry\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35626,12 +36638,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 359,
+          "line": 361,
           "note": "transport.invoke(\"set_instance_profile_override\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 481,
+          "line": 493,
           "note": "match arm \"set_instance_profile_override\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35674,12 +36686,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 341,
+          "line": 343,
           "note": "transport.invoke(\"set_rail_collapse\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 420,
+          "line": 432,
           "note": "match arm \"set_rail_collapse\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35698,12 +36710,36 @@
       "confidence": "resolved",
       "evidence": [
         {
+          "line": 337,
+          "note": "transport.invoke(\"set_terminal_snapshots_enabled\")",
+          "path": "src/shared/ipc.ts"
+        },
+        {
+          "line": 414,
+          "note": "match arm \"set_terminal_snapshots_enabled\" in the WebSocket router",
+          "path": "src-tauri/src/web/commands.rs"
+        }
+      ],
+      "id": "web-command:file:src/shared/ipc.ts->file:src-tauri/src/web/commands.rs#set_terminal_snapshots_enabled",
+      "kind": "web-command",
+      "label": "set_terminal_snapshots_enabled",
+      "metadata": {
+        "binding": "web",
+        "command": "set_terminal_snapshots_enabled"
+      },
+      "sourceId": "file:src/shared/ipc.ts",
+      "targetId": "file:src-tauri/src/web/commands.rs"
+    },
+    {
+      "confidence": "resolved",
+      "evidence": [
+        {
           "line": 291,
           "note": "transport.invoke(\"subscribe_session\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 570,
+          "line": 582,
           "note": "match arm \"subscribe_session\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35746,7 +36782,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 850,
+          "line": 852,
           "note": "transport.invoke(\"unarchive_project\")",
           "path": "src/shared/ipc.ts"
         },
@@ -35770,12 +36806,12 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 913,
+          "line": 915,
           "note": "transport.invoke(\"update_agency_templates\")",
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 558,
+          "line": 570,
           "note": "match arm \"update_agency_templates\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -35794,7 +36830,7 @@
       "confidence": "resolved",
       "evidence": [
         {
-          "line": 825,
+          "line": 827,
           "note": "transport.invoke(\"update_project_groups\")",
           "path": "src/shared/ipc.ts"
         },
@@ -36015,6 +37051,34 @@
       "label": "fixtures",
       "parentId": "dir:crates/session-bridge/tests",
       "path": "crates/session-bridge/tests/fixtures"
+    },
+    {
+      "id": "dir:crates/terminal-snapshot-renderer/assets",
+      "kind": "directory",
+      "label": "assets",
+      "parentId": "pkg:cargo:crates/terminal-snapshot-renderer/Cargo.toml",
+      "path": "crates/terminal-snapshot-renderer/assets"
+    },
+    {
+      "id": "dir:crates/terminal-snapshot-renderer/src",
+      "kind": "directory",
+      "label": "src",
+      "parentId": "pkg:cargo:crates/terminal-snapshot-renderer/Cargo.toml",
+      "path": "crates/terminal-snapshot-renderer/src"
+    },
+    {
+      "id": "dir:crates/terminal-snapshot-renderer/tests",
+      "kind": "directory",
+      "label": "tests",
+      "parentId": "pkg:cargo:crates/terminal-snapshot-renderer/Cargo.toml",
+      "path": "crates/terminal-snapshot-renderer/tests"
+    },
+    {
+      "id": "dir:crates/terminal-snapshot-renderer/tests/fixtures",
+      "kind": "directory",
+      "label": "fixtures",
+      "parentId": "dir:crates/terminal-snapshot-renderer/tests",
+      "path": "crates/terminal-snapshot-renderer/tests/fixtures"
     },
     {
       "id": "dir:docker",
@@ -36337,6 +37401,13 @@
       "label": "context_scrape",
       "parentId": "dir:src-tauri/src/pty",
       "path": "src-tauri/src/pty/context_scrape"
+    },
+    {
+      "id": "dir:src-tauri/src/pty/terminal_snapshot",
+      "kind": "directory",
+      "label": "terminal_snapshot",
+      "parentId": "dir:src-tauri/src/pty",
+      "path": "src-tauri/src/pty/terminal_snapshot"
     },
     {
       "id": "dir:src-tauri/src/pty/watchers",
@@ -36970,6 +38041,17 @@
       "path": "SECURITY.md"
     },
     {
+      "id": "file:THIRD_PARTY_NOTICES.md",
+      "kind": "file",
+      "label": "THIRD_PARTY_NOTICES.md",
+      "metadata": {
+        "isTest": false,
+        "language": "markdown"
+      },
+      "parentId": "pkg:npm:package.json",
+      "path": "THIRD_PARTY_NOTICES.md"
+    },
+    {
       "id": "file:crates/session-bridge/Cargo.toml",
       "kind": "file",
       "label": "Cargo.toml",
@@ -37046,6 +38128,17 @@
       "path": "crates/session-bridge/tests/fixtures/pty_input_validation.json"
     },
     {
+      "id": "file:crates/session-bridge/tests/terminal_snapshot_helper_process.rs",
+      "kind": "file",
+      "label": "terminal_snapshot_helper_process.rs",
+      "metadata": {
+        "isTest": true,
+        "language": "rust"
+      },
+      "parentId": "dir:crates/session-bridge/tests",
+      "path": "crates/session-bridge/tests/terminal_snapshot_helper_process.rs"
+    },
+    {
       "id": "file:crates/session-bridge/tests/wss_tls_backend.rs",
       "kind": "file",
       "label": "wss_tls_backend.rs",
@@ -37055,6 +38148,188 @@
       },
       "parentId": "dir:crates/session-bridge/tests",
       "path": "crates/session-bridge/tests/wss_tls_backend.rs"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/Cargo.toml",
+      "kind": "file",
+      "label": "Cargo.toml",
+      "metadata": {
+        "isTest": false,
+        "language": "toml"
+      },
+      "parentId": "pkg:cargo:crates/terminal-snapshot-renderer/Cargo.toml",
+      "path": "crates/terminal-snapshot-renderer/Cargo.toml"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/assets/DejaVuSansMono.ttf",
+      "kind": "file",
+      "label": "DejaVuSansMono.ttf",
+      "metadata": {
+        "isTest": false
+      },
+      "parentId": "dir:crates/terminal-snapshot-renderer/assets",
+      "path": "crates/terminal-snapshot-renderer/assets/DejaVuSansMono.ttf"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/assets/LICENSE-DejaVu.txt",
+      "kind": "file",
+      "label": "LICENSE-DejaVu.txt",
+      "metadata": {
+        "isTest": false
+      },
+      "parentId": "dir:crates/terminal-snapshot-renderer/assets",
+      "path": "crates/terminal-snapshot-renderer/assets/LICENSE-DejaVu.txt"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/src/json.rs",
+      "kind": "file",
+      "label": "json.rs",
+      "metadata": {
+        "isTest": false,
+        "language": "rust"
+      },
+      "parentId": "dir:crates/terminal-snapshot-renderer/src",
+      "path": "crates/terminal-snapshot-renderer/src/json.rs"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/src/lib.rs",
+      "kind": "file",
+      "label": "lib.rs",
+      "metadata": {
+        "isTest": false,
+        "language": "rust"
+      },
+      "parentId": "dir:crates/terminal-snapshot-renderer/src",
+      "path": "crates/terminal-snapshot-renderer/src/lib.rs"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/src/png_validation.rs",
+      "kind": "file",
+      "label": "png_validation.rs",
+      "metadata": {
+        "isTest": false,
+        "language": "rust"
+      },
+      "parentId": "dir:crates/terminal-snapshot-renderer/src",
+      "path": "crates/terminal-snapshot-renderer/src/png_validation.rs"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/src/protocol.rs",
+      "kind": "file",
+      "label": "protocol.rs",
+      "metadata": {
+        "isTest": false,
+        "language": "rust"
+      },
+      "parentId": "dir:crates/terminal-snapshot-renderer/src",
+      "path": "crates/terminal-snapshot-renderer/src/protocol.rs"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/src/render.rs",
+      "kind": "file",
+      "label": "render.rs",
+      "metadata": {
+        "isTest": false,
+        "language": "rust"
+      },
+      "parentId": "dir:crates/terminal-snapshot-renderer/src",
+      "path": "crates/terminal-snapshot-renderer/src/render.rs"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/tests/diagnostic_failure_harness.rs",
+      "kind": "file",
+      "label": "diagnostic_failure_harness.rs",
+      "metadata": {
+        "isTest": true,
+        "language": "rust"
+      },
+      "parentId": "dir:crates/terminal-snapshot-renderer/tests",
+      "path": "crates/terminal-snapshot-renderer/tests/diagnostic_failure_harness.rs"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/tests/fixtures/blank-cursor-model.json",
+      "kind": "file",
+      "label": "blank-cursor-model.json",
+      "metadata": {
+        "isTest": true,
+        "language": "json"
+      },
+      "parentId": "dir:crates/terminal-snapshot-renderer/tests/fixtures",
+      "path": "crates/terminal-snapshot-renderer/tests/fixtures/blank-cursor-model.json"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/tests/fixtures/blank-cursor.png",
+      "kind": "file",
+      "label": "blank-cursor.png",
+      "metadata": {
+        "isTest": true
+      },
+      "parentId": "dir:crates/terminal-snapshot-renderer/tests/fixtures",
+      "path": "crates/terminal-snapshot-renderer/tests/fixtures/blank-cursor.png"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/tests/fixtures/diagnostic-failure-harness/Cargo.lock",
+      "kind": "file",
+      "label": "Cargo.lock",
+      "metadata": {
+        "isTest": true
+      },
+      "parentId": "pkg:cargo:crates/terminal-snapshot-renderer/tests/fixtures/diagnostic-failure-harness/Cargo.toml",
+      "path": "crates/terminal-snapshot-renderer/tests/fixtures/diagnostic-failure-harness/Cargo.lock"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/tests/fixtures/diagnostic-failure-harness/Cargo.toml",
+      "kind": "file",
+      "label": "Cargo.toml",
+      "metadata": {
+        "isTest": true,
+        "language": "toml"
+      },
+      "parentId": "pkg:cargo:crates/terminal-snapshot-renderer/tests/fixtures/diagnostic-failure-harness/Cargo.toml",
+      "path": "crates/terminal-snapshot-renderer/tests/fixtures/diagnostic-failure-harness/Cargo.toml"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/tests/fixtures/diagnostic-failure-harness/failures.rs",
+      "kind": "file",
+      "label": "failures.rs",
+      "metadata": {
+        "isTest": true,
+        "language": "rust"
+      },
+      "parentId": "pkg:cargo:crates/terminal-snapshot-renderer/tests/fixtures/diagnostic-failure-harness/Cargo.toml",
+      "path": "crates/terminal-snapshot-renderer/tests/fixtures/diagnostic-failure-harness/failures.rs"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/tests/fixtures/style-grid-model.json",
+      "kind": "file",
+      "label": "style-grid-model.json",
+      "metadata": {
+        "isTest": true,
+        "language": "json"
+      },
+      "parentId": "dir:crates/terminal-snapshot-renderer/tests/fixtures",
+      "path": "crates/terminal-snapshot-renderer/tests/fixtures/style-grid-model.json"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/tests/fixtures/style-grid.png",
+      "kind": "file",
+      "label": "style-grid.png",
+      "metadata": {
+        "isTest": true
+      },
+      "parentId": "dir:crates/terminal-snapshot-renderer/tests/fixtures",
+      "path": "crates/terminal-snapshot-renderer/tests/fixtures/style-grid.png"
+    },
+    {
+      "id": "file:crates/terminal-snapshot-renderer/tests/goldens.rs",
+      "kind": "file",
+      "label": "goldens.rs",
+      "metadata": {
+        "isTest": true,
+        "language": "rust"
+      },
+      "parentId": "dir:crates/terminal-snapshot-renderer/tests",
+      "path": "crates/terminal-snapshot-renderer/tests/goldens.rs"
     },
     {
       "id": "file:docker/ac-claude/Dockerfile",
@@ -37294,6 +38569,17 @@
       },
       "parentId": "dir:docs/features",
       "path": "docs/features/telegram-bridge.md"
+    },
+    {
+      "id": "file:docs/features/terminal-snapshots.md",
+      "kind": "file",
+      "label": "terminal-snapshots.md",
+      "metadata": {
+        "isTest": false,
+        "language": "markdown"
+      },
+      "parentId": "dir:docs/features",
+      "path": "docs/features/terminal-snapshots.md"
     },
     {
       "id": "file:docs/features/voice-to-text.md",
@@ -37887,6 +39173,28 @@
       "path": "plans/1216-ci-rust-cache-and-smoke-bundling.md"
     },
     {
+      "id": "file:plans/1252-break-loops-scheduler-cycle.md",
+      "kind": "file",
+      "label": "1252-break-loops-scheduler-cycle.md",
+      "metadata": {
+        "isTest": false,
+        "language": "markdown"
+      },
+      "parentId": "dir:plans",
+      "path": "plans/1252-break-loops-scheduler-cycle.md"
+    },
+    {
+      "id": "file:plans/1257-nonstop-favorite.md",
+      "kind": "file",
+      "label": "1257-nonstop-favorite.md",
+      "metadata": {
+        "isTest": false,
+        "language": "markdown"
+      },
+      "parentId": "dir:plans",
+      "path": "plans/1257-nonstop-favorite.md"
+    },
+    {
       "id": "file:scripts/01-skills-checker.mjs",
       "kind": "file",
       "label": "01-skills-checker.mjs",
@@ -37896,6 +39204,17 @@
       },
       "parentId": "dir:scripts",
       "path": "scripts/01-skills-checker.mjs"
+    },
+    {
+      "id": "file:scripts/02-module-arc-record.mjs",
+      "kind": "file",
+      "label": "02-module-arc-record.mjs",
+      "metadata": {
+        "isTest": false,
+        "language": "javascript"
+      },
+      "parentId": "dir:scripts",
+      "path": "scripts/02-module-arc-record.mjs"
     },
     {
       "id": "file:scripts/all_agentscommander_standalone_come_to_me.ps1",
@@ -37941,6 +39260,17 @@
       "path": "scripts/check-version-sync.mjs"
     },
     {
+      "id": "file:scripts/classify-test-run.mjs",
+      "kind": "file",
+      "label": "classify-test-run.mjs",
+      "metadata": {
+        "isTest": false,
+        "language": "javascript"
+      },
+      "parentId": "dir:scripts",
+      "path": "scripts/classify-test-run.mjs"
+    },
+    {
       "id": "file:scripts/copy-testable-binary.mjs",
       "kind": "file",
       "label": "copy-testable-binary.mjs",
@@ -37981,6 +39311,17 @@
       },
       "parentId": "dir:scripts",
       "path": "scripts/reclaim-build-artifacts.mjs"
+    },
+    {
+      "id": "file:scripts/report-failed-tests.mjs",
+      "kind": "file",
+      "label": "report-failed-tests.mjs",
+      "metadata": {
+        "isTest": false,
+        "language": "javascript"
+      },
+      "parentId": "dir:scripts",
+      "path": "scripts/report-failed-tests.mjs"
     },
     {
       "id": "file:scripts/smoke-cli-powershell.ps1",
@@ -38599,6 +39940,16 @@
       "path": "src-tauri/icons/ios/AppIcon-83.5x83.5@2x.png"
     },
     {
+      "id": "file:src-tauri/module-arcs.txt",
+      "kind": "file",
+      "label": "module-arcs.txt",
+      "metadata": {
+        "isTest": false
+      },
+      "parentId": "pkg:cargo:src-tauri/Cargo.toml",
+      "path": "src-tauri/module-arcs.txt"
+    },
+    {
       "id": "file:src-tauri/nsis/hooks.nsh",
       "kind": "file",
       "label": "hooks.nsh",
@@ -38772,6 +40123,17 @@
       },
       "parentId": "dir:src-tauri/src/api/handlers",
       "path": "src-tauri/src/api/handlers/session_transport.rs"
+    },
+    {
+      "id": "file:src-tauri/src/api/handlers/terminal_snapshot.rs",
+      "kind": "file",
+      "label": "terminal_snapshot.rs",
+      "metadata": {
+        "isTest": false,
+        "language": "rust"
+      },
+      "parentId": "dir:src-tauri/src/api/handlers",
+      "path": "src-tauri/src/api/handlers/terminal_snapshot.rs"
     },
     {
       "id": "file:src-tauri/src/api/identity.rs",
@@ -39102,6 +40464,17 @@
       },
       "parentId": "dir:src-tauri/src/cli",
       "path": "src-tauri/src/cli/telegram_send_image.rs"
+    },
+    {
+      "id": "file:src-tauri/src/cli/terminal_snapshot.rs",
+      "kind": "file",
+      "label": "terminal_snapshot.rs",
+      "metadata": {
+        "isTest": false,
+        "language": "rust"
+      },
+      "parentId": "dir:src-tauri/src/cli",
+      "path": "src-tauri/src/cli/terminal_snapshot.rs"
     },
     {
       "id": "file:src-tauri/src/cli/workgroup.rs",
@@ -39764,6 +41137,17 @@
       "path": "src-tauri/src/loops/delivery.rs"
     },
     {
+      "id": "file:src-tauri/src/loops/events.rs",
+      "kind": "file",
+      "label": "events.rs",
+      "metadata": {
+        "isTest": false,
+        "language": "rust"
+      },
+      "parentId": "dir:src-tauri/src/loops",
+      "path": "src-tauri/src/loops/events.rs"
+    },
+    {
       "id": "file:src-tauri/src/loops/mod.rs",
       "kind": "file",
       "label": "mod.rs",
@@ -39883,6 +41267,17 @@
       },
       "parentId": "dir:src-tauri/src/phone",
       "path": "src-tauri/src/phone/mod.rs"
+    },
+    {
+      "id": "file:src-tauri/src/phone/terminal_snapshot.rs",
+      "kind": "file",
+      "label": "terminal_snapshot.rs",
+      "metadata": {
+        "isTest": false,
+        "language": "rust"
+      },
+      "parentId": "dir:src-tauri/src/phone",
+      "path": "src-tauri/src/phone/terminal_snapshot.rs"
     },
     {
       "id": "file:src-tauri/src/phone/types.rs",
@@ -40136,6 +41531,39 @@
       },
       "parentId": "dir:src-tauri/src/pty",
       "path": "src-tauri/src/pty/spawn_diagnostics.rs"
+    },
+    {
+      "id": "file:src-tauri/src/pty/terminal_snapshot.rs",
+      "kind": "file",
+      "label": "terminal_snapshot.rs",
+      "metadata": {
+        "isTest": false,
+        "language": "rust"
+      },
+      "parentId": "dir:src-tauri/src/pty",
+      "path": "src-tauri/src/pty/terminal_snapshot.rs"
+    },
+    {
+      "id": "file:src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs",
+      "kind": "file",
+      "label": "acceptance_tests.rs",
+      "metadata": {
+        "isTest": false,
+        "language": "rust"
+      },
+      "parentId": "dir:src-tauri/src/pty/terminal_snapshot",
+      "path": "src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs"
+    },
+    {
+      "id": "file:src-tauri/src/pty/terminal_snapshot/resource_tests.rs",
+      "kind": "file",
+      "label": "resource_tests.rs",
+      "metadata": {
+        "isTest": false,
+        "language": "rust"
+      },
+      "parentId": "dir:src-tauri/src/pty/terminal_snapshot",
+      "path": "src-tauri/src/pty/terminal_snapshot/resource_tests.rs"
     },
     {
       "id": "file:src-tauri/src/pty/watchers/dedupe.rs",
@@ -40842,6 +42270,17 @@
       "path": "src-tauri/tests/cli_workgroup_team.rs"
     },
     {
+      "id": "file:src-tauri/tests/loops_layering.rs",
+      "kind": "file",
+      "label": "loops_layering.rs",
+      "metadata": {
+        "isTest": true,
+        "language": "rust"
+      },
+      "parentId": "dir:src-tauri/tests",
+      "path": "src-tauri/tests/loops_layering.rs"
+    },
+    {
       "id": "file:src-tauri/tests/pty_input_cross_process.rs",
       "kind": "file",
       "label": "pty_input_cross_process.rs",
@@ -40873,6 +42312,17 @@
       },
       "parentId": "dir:src-tauri/tests",
       "path": "src-tauri/tests/pty_writer_inventory.rs"
+    },
+    {
+      "id": "file:src-tauri/tests/terminal_snapshot_host.rs",
+      "kind": "file",
+      "label": "terminal_snapshot_host.rs",
+      "metadata": {
+        "isTest": true,
+        "language": "rust"
+      },
+      "parentId": "dir:src-tauri/tests",
+      "path": "src-tauri/tests/terminal_snapshot_host.rs"
     },
     {
       "id": "file:src-tauri/tests/wake_consumption_measure.rs",
@@ -41917,6 +43367,17 @@
       },
       "parentId": "dir:src/shared/testing",
       "path": "src/shared/testing/session-selection.ts"
+    },
+    {
+      "id": "file:src/shared/testing/ui-harness.animation-frames.test.ts",
+      "kind": "file",
+      "label": "ui-harness.animation-frames.test.ts",
+      "metadata": {
+        "isTest": true,
+        "language": "typescript"
+      },
+      "parentId": "dir:src/shared/testing",
+      "path": "src/shared/testing/ui-harness.animation-frames.test.ts"
     },
     {
       "id": "file:src/shared/testing/ui-harness.archive.test.ts",
@@ -44349,6 +45810,42 @@
       "evidence": [
         {
           "line": 2,
+          "path": "crates/terminal-snapshot-renderer/Cargo.toml"
+        }
+      ],
+      "id": "pkg:cargo:crates/terminal-snapshot-renderer/Cargo.toml",
+      "kind": "crate",
+      "label": "terminal-snapshot-renderer",
+      "metadata": {
+        "ecosystem": "cargo",
+        "hasWorkspacesKey": false,
+        "version": "0.1.0"
+      },
+      "parentId": "repo:AgentsCommander",
+      "path": "crates/terminal-snapshot-renderer"
+    },
+    {
+      "evidence": [
+        {
+          "line": 2,
+          "path": "crates/terminal-snapshot-renderer/tests/fixtures/diagnostic-failure-harness/Cargo.toml"
+        }
+      ],
+      "id": "pkg:cargo:crates/terminal-snapshot-renderer/tests/fixtures/diagnostic-failure-harness/Cargo.toml",
+      "kind": "crate",
+      "label": "terminal-snapshot-diagnostic-failure-harness",
+      "metadata": {
+        "ecosystem": "cargo",
+        "hasWorkspacesKey": false,
+        "version": "0.0.0"
+      },
+      "parentId": "repo:AgentsCommander",
+      "path": "crates/terminal-snapshot-renderer/tests/fixtures/diagnostic-failure-harness"
+    },
+    {
+      "evidence": [
+        {
+          "line": 2,
           "path": "src-tauri/Cargo.toml"
         }
       ],
@@ -44413,23 +45910,23 @@
     }
   ],
   "source": {
-    "commit": "1b0e934824709cb701715aa07d3a95d9dfe33daa",
+    "commit": "5168310b2a63149de3b846e9e45bdb4dcea696fe",
     "kind": "git-repo",
     "root": "AgentsCommander"
   },
   "stats": {
-    "anchors": 4,
+    "anchors": 6,
     "applications": 5,
     "attributedButUnregisteredCommands": [],
-    "commandsBoundToBothBackends": 43,
-    "edgeCount": 1930,
+    "commandsBoundToBothBackends": 44,
+    "edgeCount": 1980,
     "edgesByKind": {
       "bundles": 6,
       "entrypoint": 5,
-      "imports": 1089,
-      "rust-imports": 648,
-      "tauri-command": 137,
-      "web-command": 45
+      "imports": 1090,
+      "rust-imports": 695,
+      "tauri-command": 138,
+      "web-command": 46
     },
     "externalSpecifierNames": [
       "@tauri-apps/api/core",
@@ -44459,15 +45956,15 @@
     "invokeCallSiteFiles": [
       "src/shared/ipc.ts"
     ],
-    "invokeCallSites": 140,
-    "literalCommands": 139,
+    "invokeCallSites": 141,
+    "literalCommands": 140,
     "modifiedTrackedFiles": [],
-    "nodeCount": 817,
+    "nodeCount": 860,
     "nodesByKind": {
       "application": 5,
-      "crate": 2,
-      "directory": 102,
-      "file": 705,
+      "crate": 4,
+      "directory": 107,
+      "file": 741,
       "package": 2,
       "repository": 1
     },
@@ -44477,39 +45974,48 @@
     "registeredButUncalledCommands": [
       "get_instance_label"
     ],
-    "registeredCommands": 138,
+    "registeredCommands": 139,
     "rustCrateRoots": [
       "crates/session-bridge/src/bin/agentscommander-api-helper.rs",
       "crates/session-bridge/src/bin/session-bridge.rs",
       "crates/session-bridge/src/lib.rs",
+      "crates/terminal-snapshot-renderer/src/lib.rs",
       "src-tauri/src/lib.rs",
       "src-tauri/src/main.rs"
     ],
-    "rustCrates": 2,
-    "rustGroupedUseStatements": 812,
+    "rustCrates": 4,
+    "rustGroupedUseStatements": 893,
     "rustModuleShape": {
       "conditionalModules": [
+        "crates/terminal-snapshot-renderer/src/lib.rs:10 mod render;",
+        "crates/terminal-snapshot-renderer/src/lib.rs:4 mod json;",
+        "crates/terminal-snapshot-renderer/src/lib.rs:6 mod png_validation;",
+        "crates/terminal-snapshot-renderer/src/lib.rs:8 mod protocol;",
+        "src-tauri/src/pty/terminal_snapshot.rs:3147 mod acceptance_tests;",
+        "src-tauri/src/pty/terminal_snapshot.rs:3149 mod resource_tests;",
         "src-tauri/src/screenshot/mod.rs:26 mod windows;",
         "src-tauri/src/screenshot/mod.rs:31 mod unsupported;"
       ],
       "directoryModules": 18,
       "inlineModules": 5,
-      "inlineTestModules": 175,
-      "moduleFiles": 181,
+      "inlineTestModules": 184,
+      "moduleFiles": 193,
       "pathAttributes": [],
-      "rootOutsideDirectory": []
+      "rootOutsideDirectory": [
+        "src-tauri/src/pty/terminal_snapshot"
+      ]
     },
     "suppressedTauriOwnedBins": [
       "src-tauri/src/main.rs"
     ],
     "tauriCommandAttributeFiles": 20,
-    "tauriCommandAttributes": 138,
-    "trackedFiles": 705,
+    "tauriCommandAttributes": 139,
+    "trackedFiles": 741,
     "tsPathAliasUsages": 0,
     "tsconfigs": [
       "tsconfig.json"
     ],
-    "webRouterArms": 46
+    "webRouterArms": 47
   },
   "unresolved": [
     {
@@ -44519,7 +46025,7 @@
       },
       "evidence": [
         {
-          "line": 1143,
+          "line": 2091,
           "note": "use super::*;",
           "path": "crates/session-bridge/src/bin/agentscommander-api-helper.rs"
         }
@@ -44537,6 +46043,66 @@
           "line": 353,
           "note": "use super::*;",
           "path": "crates/session-bridge/src/lib.rs"
+        }
+      ],
+      "kind": "rust-imports",
+      "reason": "a glob import cannot be resolved to a specific file without symbol resolution"
+    },
+    {
+      "detail": {
+        "from": "crates/terminal-snapshot-renderer/src/json.rs",
+        "path": "super"
+      },
+      "evidence": [
+        {
+          "line": 1008,
+          "note": "use super::*;",
+          "path": "crates/terminal-snapshot-renderer/src/json.rs"
+        }
+      ],
+      "kind": "rust-imports",
+      "reason": "a glob import cannot be resolved to a specific file without symbol resolution"
+    },
+    {
+      "detail": {
+        "from": "crates/terminal-snapshot-renderer/src/png_validation.rs",
+        "path": "super"
+      },
+      "evidence": [
+        {
+          "line": 182,
+          "note": "use super::*;",
+          "path": "crates/terminal-snapshot-renderer/src/png_validation.rs"
+        }
+      ],
+      "kind": "rust-imports",
+      "reason": "a glob import cannot be resolved to a specific file without symbol resolution"
+    },
+    {
+      "detail": {
+        "from": "crates/terminal-snapshot-renderer/src/protocol.rs",
+        "path": "super"
+      },
+      "evidence": [
+        {
+          "line": 1118,
+          "note": "use super::*;",
+          "path": "crates/terminal-snapshot-renderer/src/protocol.rs"
+        }
+      ],
+      "kind": "rust-imports",
+      "reason": "a glob import cannot be resolved to a specific file without symbol resolution"
+    },
+    {
+      "detail": {
+        "from": "crates/terminal-snapshot-renderer/src/render.rs",
+        "path": "super"
+      },
+      "evidence": [
+        {
+          "line": 710,
+          "note": "use super::*;",
+          "path": "crates/terminal-snapshot-renderer/src/render.rs"
         }
       ],
       "kind": "rust-imports",
@@ -44564,7 +46130,7 @@
       },
       "evidence": [
         {
-          "line": 154,
+          "line": 228,
           "note": "use super::*;",
           "path": "src-tauri/src/api/audit.rs"
         }
@@ -44579,7 +46145,7 @@
       },
       "evidence": [
         {
-          "line": 919,
+          "line": 958,
           "note": "use super::*;",
           "path": "src-tauri/src/api/auth.rs"
         }
@@ -44639,7 +46205,7 @@
       },
       "evidence": [
         {
-          "line": 318,
+          "line": 322,
           "note": "use super::*;",
           "path": "src-tauri/src/api/handlers/pty_input.rs"
         }
@@ -44679,12 +46245,27 @@
     },
     {
       "detail": {
+        "from": "src-tauri/src/api/handlers/terminal_snapshot.rs",
+        "path": "super"
+      },
+      "evidence": [
+        {
+          "line": 344,
+          "note": "use super::*;",
+          "path": "src-tauri/src/api/handlers/terminal_snapshot.rs"
+        }
+      ],
+      "kind": "rust-imports",
+      "reason": "a glob import cannot be resolved to a specific file without symbol resolution"
+    },
+    {
+      "detail": {
         "from": "src-tauri/src/api/identity.rs",
         "path": "super"
       },
       "evidence": [
         {
-          "line": 163,
+          "line": 303,
           "note": "use super::*;",
           "path": "src-tauri/src/api/identity.rs"
         }
@@ -44714,7 +46295,7 @@
       },
       "evidence": [
         {
-          "line": 129,
+          "line": 134,
           "note": "use super::*;",
           "path": "src-tauri/src/api/schema.rs"
         }
@@ -44819,7 +46400,7 @@
       },
       "evidence": [
         {
-          "line": 1250,
+          "line": 1400,
           "note": "use super::*;",
           "path": "src-tauri/src/cli/list_peers.rs"
         }
@@ -44834,7 +46415,7 @@
       },
       "evidence": [
         {
-          "line": 376,
+          "line": 381,
           "note": "use super::*;",
           "path": "src-tauri/src/cli/mod.rs"
         }
@@ -45039,6 +46620,21 @@
     },
     {
       "detail": {
+        "from": "src-tauri/src/cli/terminal_snapshot.rs",
+        "path": "super"
+      },
+      "evidence": [
+        {
+          "line": 718,
+          "note": "use super::*;",
+          "path": "src-tauri/src/cli/terminal_snapshot.rs"
+        }
+      ],
+      "kind": "rust-imports",
+      "reason": "a glob import cannot be resolved to a specific file without symbol resolution"
+    },
+    {
+      "detail": {
         "from": "src-tauri/src/cli/workgroup.rs",
         "path": "super"
       },
@@ -45104,7 +46700,7 @@
       },
       "evidence": [
         {
-          "line": 7618,
+          "line": 7673,
           "note": "use super::*;",
           "path": "src-tauri/src/commands/entity_creation.rs"
         }
@@ -45494,7 +47090,7 @@
       },
       "evidence": [
         {
-          "line": 276,
+          "line": 285,
           "note": "use super::*;",
           "path": "src-tauri/src/config/project_settings.rs"
         }
@@ -45629,7 +47225,7 @@
       },
       "evidence": [
         {
-          "line": 1632,
+          "line": 1859,
           "note": "use super::*;",
           "path": "src-tauri/src/config/teams.rs"
         }
@@ -45659,7 +47255,7 @@
       },
       "evidence": [
         {
-          "line": 879,
+          "line": 911,
           "note": "use super::*;",
           "path": "src-tauri/src/lib.rs"
         }
@@ -45674,7 +47270,7 @@
       },
       "evidence": [
         {
-          "line": 581,
+          "line": 707,
           "note": "use super::*;",
           "path": "src-tauri/src/logging.rs"
         }
@@ -45719,7 +47315,7 @@
       },
       "evidence": [
         {
-          "line": 555,
+          "line": 556,
           "note": "use super::*;",
           "path": "src-tauri/src/loops/scheduler.rs"
         }
@@ -45749,7 +47345,7 @@
       },
       "evidence": [
         {
-          "line": 787,
+          "line": 1921,
           "note": "use super::*;",
           "path": "src-tauri/src/path_identity.rs"
         }
@@ -45794,7 +47390,7 @@
       },
       "evidence": [
         {
-          "line": 10882,
+          "line": 10982,
           "note": "use super::*;",
           "path": "src-tauri/src/phone/mailbox.rs"
         }
@@ -45812,6 +47408,21 @@
           "line": 428,
           "note": "use super::*;",
           "path": "src-tauri/src/phone/messaging.rs"
+        }
+      ],
+      "kind": "rust-imports",
+      "reason": "a glob import cannot be resolved to a specific file without symbol resolution"
+    },
+    {
+      "detail": {
+        "from": "src-tauri/src/phone/terminal_snapshot.rs",
+        "path": "super"
+      },
+      "evidence": [
+        {
+          "line": 1674,
+          "note": "use super::*;",
+          "path": "src-tauri/src/phone/terminal_snapshot.rs"
         }
       ],
       "kind": "rust-imports",
@@ -45839,7 +47450,7 @@
       },
       "evidence": [
         {
-          "line": 3445,
+          "line": 3488,
           "note": "use super::*;",
           "path": "src-tauri/src/pty/container_backend.rs"
         }
@@ -45914,7 +47525,7 @@
       },
       "evidence": [
         {
-          "line": 208,
+          "line": 210,
           "note": "use super::*;",
           "path": "src-tauri/src/pty/container_tokens.rs"
         }
@@ -46064,7 +47675,7 @@
       },
       "evidence": [
         {
-          "line": 1549,
+          "line": 1554,
           "note": "use super::*;",
           "path": "src-tauri/src/pty/local_backend.rs"
         }
@@ -46079,7 +47690,7 @@
       },
       "evidence": [
         {
-          "line": 1623,
+          "line": 1628,
           "note": "use super::*;",
           "path": "src-tauri/src/pty/local_backend.rs"
         }
@@ -46094,7 +47705,7 @@
       },
       "evidence": [
         {
-          "line": 2211,
+          "line": 2216,
           "note": "use super::*;",
           "path": "src-tauri/src/pty/local_backend.rs"
         }
@@ -46124,7 +47735,7 @@
       },
       "evidence": [
         {
-          "line": 857,
+          "line": 1092,
           "note": "use super::*;",
           "path": "src-tauri/src/pty/manager.rs"
         }
@@ -46139,7 +47750,7 @@
       },
       "evidence": [
         {
-          "line": 593,
+          "line": 841,
           "note": "use super::*;",
           "path": "src-tauri/src/pty/output.rs"
         }
@@ -46157,6 +47768,51 @@
           "line": 1063,
           "note": "use super::*;",
           "path": "src-tauri/src/pty/spawn_diagnostics.rs"
+        }
+      ],
+      "kind": "rust-imports",
+      "reason": "a glob import cannot be resolved to a specific file without symbol resolution"
+    },
+    {
+      "detail": {
+        "from": "src-tauri/src/pty/terminal_snapshot.rs",
+        "path": "super"
+      },
+      "evidence": [
+        {
+          "line": 3153,
+          "note": "use super::*;",
+          "path": "src-tauri/src/pty/terminal_snapshot.rs"
+        }
+      ],
+      "kind": "rust-imports",
+      "reason": "a glob import cannot be resolved to a specific file without symbol resolution"
+    },
+    {
+      "detail": {
+        "from": "src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs",
+        "path": "super"
+      },
+      "evidence": [
+        {
+          "line": 16,
+          "note": "use super::*;",
+          "path": "src-tauri/src/pty/terminal_snapshot/acceptance_tests.rs"
+        }
+      ],
+      "kind": "rust-imports",
+      "reason": "a glob import cannot be resolved to a specific file without symbol resolution"
+    },
+    {
+      "detail": {
+        "from": "src-tauri/src/pty/terminal_snapshot/resource_tests.rs",
+        "path": "super"
+      },
+      "evidence": [
+        {
+          "line": 18,
+          "note": "use super::*;",
+          "path": "src-tauri/src/pty/terminal_snapshot/resource_tests.rs"
         }
       ],
       "kind": "rust-imports",
@@ -46439,7 +48095,7 @@
       },
       "evidence": [
         {
-          "line": 2075,
+          "line": 2294,
           "note": "use super::*;",
           "path": "src-tauri/src/session/manager.rs"
         }
@@ -46709,7 +48365,7 @@
       },
       "evidence": [
         {
-          "line": 927,
+          "line": 939,
           "note": "use super::*;",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -46773,7 +48429,7 @@
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 570,
+          "line": 582,
           "note": "match arm \"subscribe_session\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
@@ -46792,7 +48448,7 @@
           "path": "src/shared/ipc.ts"
         },
         {
-          "line": 594,
+          "line": 606,
           "note": "match arm \"get_pty_size\" in the WebSocket router",
           "path": "src-tauri/src/web/commands.rs"
         }
