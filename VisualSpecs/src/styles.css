@@ -452,11 +452,37 @@ input:disabled {
   min-height: 0;
 }
 
+/* The Explorer holds a scrollable body and a mode bar anchored to its foot (#48).
+   The panel itself stops scrolling — `.sidebar-scroll` does it — so the bar cannot be
+   carried below the window edge by a long legend. `min-height: 0` is what lets the
+   scroller actually shrink inside the flex column instead of growing the panel. */
 .sidebar {
   grid-column: 1;
   grid-row: 1;
   border-right: 1px solid var(--line);
   padding: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: hidden;
+}
+
+.sidebar-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* The reserved height, and the whole cost of the decision: two rows plus its border,
+   three when `proposed basis` appears. It grows UPWARD into the scroller, so a growing
+   bar never pushes `levels` out of view. */
+.modes {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
 }
 
 .detail-panel {

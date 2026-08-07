@@ -193,6 +193,19 @@ export function mountUi(
   const detailHost = el('div', { class: 'detail-body' }, []);
   const listHost = el('div', { class: 'node-list', role: 'listbox', 'aria-label': 'All nodes' }, []);
   const legendHost = el('div', { class: 'legend' }, []);
+  /**
+   * The view modes, anchored to the foot of the Explorer (Issue #48).
+   *
+   * They used to be the last rows of the legend, and the legend's length is a function of
+   * how many kinds the CORPUS has — so how much of the feature a person could reach
+   * depended on their window height and on their repository. Neither is a property of the
+   * control: `levels` needed a 1293 px window to be visible without scrolling, and a 1080p
+   * screen gives about 1000.
+   *
+   * They are not part of the legend in the first place. The legend answers "what is each
+   * colour"; these change what the map IS.
+   */
+  const modesHost = el('div', { class: 'modes', 'aria-label': 'View modes' }, []);
   const bannerHost = el('div', { class: 'banners' }, []);
   const projectRail = el('aside', {
     class: 'project-rail',
@@ -877,7 +890,10 @@ export function mountUi(
     el('span', { class: 'spacer' }, []),
   ]);
 
-  const sidebar = el('aside', { class: 'panel sidebar', id: 'explorer-panel', 'aria-label': 'Explorer' }, [
+  // Everything above the anchored modes scrolls together, exactly as the whole panel used
+  // to. Only `modesHost` is pulled out of the flow, so the height reserved permanently is
+  // just the mode bar's — the ~74 px the decision accepted, and not a pixel more.
+  const sidebarScroll = el('div', { class: 'sidebar-scroll' }, [
     el('div', { class: 'field' }, [search]),
     countsHost,
     // The user placed the toggle "immediately below the counts box" and the
@@ -889,6 +905,11 @@ export function mountUi(
     listHost,
     el('h3', { class: 'legend-title' }, ['Legend']),
     legendHost,
+  ]);
+
+  const sidebar = el('aside', { class: 'panel sidebar', id: 'explorer-panel', 'aria-label': 'Explorer' }, [
+    sidebarScroll,
+    modesHost,
   ]);
 
   const detailPanel = el('aside', { class: 'panel detail-panel', id: 'details-panel', 'aria-label': 'Details', tabindex: '-1' }, [
@@ -993,6 +1014,9 @@ export function mountUi(
       scene: () => controller.derived.scene.scene,
       viewport: () => controller.state.view.viewport,
       raw: () => controller.state.raw,
+      // Read-only, like every other hook here: it answers "what mode is the app in",
+      // which is what an anchored control has to keep dispatching unchanged (#48).
+      levels: () => ({ ...controller.state.levels }),
       interaction: () => ({
         selection: {
           nodeIds: [...controller.state.selection.nodeIds],
@@ -1800,6 +1824,7 @@ export function mountUi(
     renderList(state, derived);
     renderFocusControls(state, derived);
     renderLegend(state);
+    renderModes(state);
     renderDetail(detailHost, state, derived, cb);
     announce(state, derived);
     positionProjectOverlay();
@@ -2030,8 +2055,19 @@ export function mountUi(
       );
     }
 
+  }
+
+  /**
+   * The view modes, in their own anchored bar (Issue #48).
+   *
+   * Same rows and the SAME COMMANDS as when they lived at the bottom of the legend —
+   * `SetFilter` and `SetLevels`, unchanged. What moved is where they are drawn.
+   */
+  function renderModes(state: AppState): void {
+    clear(modesHost);
+
     const testsOn = state.filters.hideTests;
-    legendHost.appendChild(
+    modesHost.appendChild(
       toggleRow('hide tests', '#94a3b8', 'Mask files the extractor marked as tests', testsOn, 'edge', () => {
         controller.dispatch({ type: 'SetFilter', hideTests: !testsOn });
       }),
@@ -2042,7 +2078,7 @@ export function mountUi(
     // boxes move. `observed` is the default — it is what was measured, while `proposed` is
     // the output of a heuristic — and it is always labelled as such on screen.
     const levelsOn = state.levels.active;
-    legendHost.appendChild(
+    modesHost.appendChild(
       toggleRow(
         'levels',
         '#8ea0bf',
@@ -2054,9 +2090,12 @@ export function mountUi(
         },
       ),
     );
+    // The bar grows from two rows to three here. It grows DOWNWARD into the scrollable
+    // area above it, never pushing `levels` out of view — that is what anchoring buys, and
+    // it is acceptance criterion 3.
     if (levelsOn) {
       const proposed = state.levels.basis === 'proposed';
-      legendHost.appendChild(
+      modesHost.appendChild(
         toggleRow(
           'proposed basis',
           '#d99a4e',
