@@ -58,7 +58,7 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  fixture.cleanup();
+  fixture?.cleanup(); // see #54: `beforeAll` can throw before assigning
 });
 
 interface EmittedDoc {

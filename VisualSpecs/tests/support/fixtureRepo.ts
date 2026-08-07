@@ -22,17 +22,32 @@ export interface FixtureRepo {
 
 export function makeFixtureRepo(): FixtureRepo {
   const root = mkdtempSync(join(tmpdir(), 'visual-specs-fixture-'));
-  cpSync(FIXTURE_SOURCE, root, { recursive: true });
 
-  const git = (args: string[]): void => {
-    execFileSync('git', args, { cwd: root, stdio: 'pipe', windowsHide: true });
-  };
-  git(['init', '--quiet']);
-  git(['config', 'user.email', 'fixture@example.com']);
-  git(['config', 'user.name', 'Fixture']);
-  git(['config', 'commit.gpgsign', 'false']);
-  git(['add', '-A']);
-  git(['commit', '--quiet', '-m', 'fixture']);
+  // Everything that can fail runs INSIDE the guard, because the handle that owns
+  // `cleanup` only reaches the caller on the success path — so a throw from here used to
+  // strand the directory with nobody left holding a reference to it. One leaked
+  // directory per failure, and under the contention in #20 that is not a rare path
+  // (#54). `git` failing to write a loose object is a real, recurring failure here.
+  //
+  // The original error is re-thrown untouched: it names the cause, and it is the one the
+  // reader needs. Losing it behind a teardown error is what made #20 get debugged from
+  // the wrong end.
+  try {
+    cpSync(FIXTURE_SOURCE, root, { recursive: true });
+
+    const git = (args: string[]): void => {
+      execFileSync('git', args, { cwd: root, stdio: 'pipe', windowsHide: true });
+    };
+    git(['init', '--quiet']);
+    git(['config', 'user.email', 'fixture@example.com']);
+    git(['config', 'user.name', 'Fixture']);
+    git(['config', 'commit.gpgsign', 'false']);
+    git(['add', '-A']);
+    git(['commit', '--quiet', '-m', 'fixture']);
+  } catch (error) {
+    rmSync(root, { recursive: true, force: true });
+    throw error;
+  }
 
   return {
     root,

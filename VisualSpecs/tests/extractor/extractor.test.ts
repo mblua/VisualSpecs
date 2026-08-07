@@ -41,7 +41,10 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  fixture.cleanup();
+  // `?.` because `beforeAll` can throw before assigning: the helper now removes its own
+  // half-built directory, so there is genuinely nothing to tear down, and calling into
+  // an undefined handle would bury the real error under a `TypeError` (#54).
+  fixture?.cleanup();
 });
 
 const node = (id: string) => doc.nodes.find((n) => n.id === id);

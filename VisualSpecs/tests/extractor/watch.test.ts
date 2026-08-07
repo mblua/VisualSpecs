@@ -53,21 +53,31 @@ function makeTinyRepo(prefix: string): TinyRepo {
     mkdirSync(join(root, rel, '..'), { recursive: true });
     writeFileSync(join(root, rel), content);
   };
-  write('package.json', '{"name":"tiny"}\n');
-  // A tsconfig makes the TS import pass run, and the two committed deps give
-  // edits a way to CHANGE the document (an edge appears/moves). Without them,
-  // content edits are invisible to the extractor and every rewrite would be
-  // skip-identical'd - correct, but useless for these tests.
-  write('tsconfig.json', '{"compilerOptions":{"allowImportingTsExtensions":true,"noEmit":true}}\n');
-  write('src/main.ts', 'export const x = 1;\n');
-  write('src/dep1.ts', 'export const d1 = 1;\n');
-  write('src/dep2.ts', 'export const d2 = 2;\n');
-  git(['init', '--quiet']);
-  git(['config', 'user.email', 't@example.com']);
-  git(['config', 'user.name', 'T']);
-  git(['config', 'commit.gpgsign', 'false']);
-  git(['add', '-A']);
-  git(['commit', '--quiet', '-m', 'tiny']);
+  // Same guard as `makeFixtureRepo`, for the same reason (#54): the handle that owns
+  // `cleanup` is only returned on the success path, so a throw from the writes or from
+  // git used to leave the directory behind with nobody holding a reference. The original
+  // error is re-thrown untouched — it is the one that names the cause.
+  try {
+    write('package.json', '{"name":"tiny"}\n');
+    // A tsconfig makes the TS import pass run, and the two committed deps give
+    // edits a way to CHANGE the document (an edge appears/moves). Without them,
+    // content edits are invisible to the extractor and every rewrite would be
+    // skip-identical'd - correct, but useless for these tests.
+    write('tsconfig.json', '{"compilerOptions":{"allowImportingTsExtensions":true,"noEmit":true}}\n');
+    write('src/main.ts', 'export const x = 1;\n');
+    write('src/dep1.ts', 'export const d1 = 1;\n');
+    write('src/dep2.ts', 'export const d2 = 2;\n');
+    git(['init', '--quiet']);
+    git(['config', 'user.email', 't@example.com']);
+    git(['config', 'user.name', 'T']);
+    git(['config', 'commit.gpgsign', 'false']);
+    git(['add', '-A']);
+    git(['commit', '--quiet', '-m', 'tiny']);
+  } catch (error) {
+    rmSync(root, { recursive: true, force: true });
+    throw error;
+  }
+
   return {
     root,
     git,
@@ -103,7 +113,7 @@ describe('fingerprintRepo (hybrid)', () => {
     repo = makeTinyRepo('vs-fp-');
   });
   afterAll(() => {
-    repo.cleanup();
+    repo?.cleanup(); // see #54: `beforeAll` can throw before assigning
   });
 
   it('walks the pinned scenario chain', () => {
@@ -367,8 +377,11 @@ describe('watch loop integration (two tiny repos, manual ticks)', () => {
     workRoot = mkdtempSync(join(tmpdir(), 'vs-loop-out-'));
   });
   afterAll(() => {
-    repoA.cleanup();
-    repoB.cleanup();
+    // This is the exact pair that produced the `TypeError` in #54: `makeTinyRepo` threw
+    // on `git commit` (Permission denied under contention), `repoA` stayed undefined,
+    // and the teardown error is what a reader saw instead of the git one.
+    repoA?.cleanup();
+    repoB?.cleanup();
     rmSync(workRoot, { recursive: true, force: true });
   });
 

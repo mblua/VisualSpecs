@@ -81,7 +81,7 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  repo.cleanup();
+  repo?.cleanup(); // see #54: `beforeAll` can throw before assigning
 });
 
 const shape = () => (doc.stats ?? {})['rustModuleShape'] as Record<string, unknown>;

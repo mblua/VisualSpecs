@@ -125,7 +125,7 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  repo.cleanup();
+  repo?.cleanup(); // see #54: `beforeAll` can throw before assigning
 });
 
 const rustEdges = () => doc.edges.filter((e) => e.kind === 'rust-imports');

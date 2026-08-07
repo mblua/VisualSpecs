@@ -112,7 +112,7 @@ describe('a hostile manifest creates no application and no edge', () => {
     doc = extract(extractOptions(repo.root)).doc;
   });
 
-  afterAll(() => repo.cleanup());
+  afterAll(() => repo?.cleanup()); // see #54: `beforeAll` can throw before assigning
 
   it('emits no application for an npm bin that is not inside the package', () => {
     expect(doc.nodes.filter((n) => n.kind === 'application')).toEqual([]);

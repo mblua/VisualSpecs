@@ -19,12 +19,6 @@ export interface TempRepo {
 export function makeTempRepo(files: Record<string, string>): TempRepo {
   const root = mkdtempSync(join(tmpdir(), 'visual-specs-temp-'));
 
-  for (const [relative, content] of Object.entries(files)) {
-    const absolute = join(root, ...relative.split('/'));
-    mkdirSync(dirname(absolute), { recursive: true });
-    writeFileSync(absolute, content, 'utf8');
-  }
-
   const git = (args: string[]): void => {
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
@@ -40,7 +34,16 @@ export function makeTempRepo(files: Record<string, string>): TempRepo {
     }
   };
 
+  // The writes are INSIDE the guard too (#54). This helper already tore the directory
+  // down when git failed, but a throw from `writeFileSync` — a path the caller controls,
+  // since `files` comes from the test — landed before the guard and leaked.
   try {
+    for (const [relative, content] of Object.entries(files)) {
+      const absolute = join(root, ...relative.split('/'));
+      mkdirSync(dirname(absolute), { recursive: true });
+      writeFileSync(absolute, content, 'utf8');
+    }
+
     git(['init', '--quiet']);
     git(['config', 'user.email', 'fixture@example.com']);
     git(['config', 'user.name', 'Fixture']);
