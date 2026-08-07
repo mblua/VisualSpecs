@@ -2090,9 +2090,11 @@ export function mountUi(
         },
       ),
     );
-    // The bar grows from two rows to three here. It grows DOWNWARD into the scrollable
-    // area above it, never pushing `levels` out of view — that is what anchoring buys, and
-    // it is acceptance criterion 3.
+    // The bar grows from two rows to three here. It grows UPWARD, into the scrollable area
+    // above it: its bottom edge is pinned to the foot of the panel and its top edge rises,
+    // so a third row can never push `levels` past the bottom of the viewport. Measured —
+    // `.modes` bottom stays put (661 → 661) while top rises (594 → 564). That is what
+    // anchoring buys, and it is acceptance criterion 3.
     if (levelsOn) {
       const proposed = state.levels.basis === 'proposed';
       modesHost.appendChild(
