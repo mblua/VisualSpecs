@@ -366,14 +366,14 @@ describe('extract → apply focus → export → re-extract (I-F1, I-F2)', () =>
 // ── the same question, adjudicated by the real corpus ────────────────────────
 
 describe('the committed AgentsCommander corpus is indifferent to focus', () => {
-  it('817 nodes: projection, counts and observations bit-identical under focus', () => {
+  it('860 nodes: projection, counts and observations bit-identical under focus', () => {
     const corpusText = readFileSync(CORPUS, 'utf8');
     const base = stateOf(corpusText);
 
     // The title names a corpus figure, so the title is ASSERTED. An unchecked number in
     // a GREEN log is how "787" survived two dataset refreshes: a red test tells you it
     // is stale, a decorative title never does.
-    expect(base.model.nodes.length).toBe(817);
+    expect(base.model.nodes.length).toBe(860);
 
     const pair = pickOverridePair(base.model);
     const focused = dispatchAll(base, [
