@@ -1781,6 +1781,11 @@ export function mountUi(
     onFitContainer: (id: string): void => {
       fitContainers([id]);
     },
+    onResetLayoutScope: (id: string): void => {
+      // Scoped, so the rest of the document keeps the layout the user made. The panel
+      // already stated how many pins this discards before offering the button.
+      controller.dispatch({ type: 'ResetLayout', scope: id });
+    },
   };
 
   let lastRendered: { state: AppState; derived: Derived } | null = null;
@@ -2031,6 +2036,40 @@ export function mountUi(
         controller.dispatch({ type: 'SetFilter', hideTests: !testsOn });
       }),
     );
+
+    // Levels (Issue #44). Two controls, because the basis is not a colour: `observed` and
+    // `proposed` are two ARRANGEMENTS of the same document, so switching re-ranks and the
+    // boxes move. `observed` is the default — it is what was measured, while `proposed` is
+    // the output of a heuristic — and it is always labelled as such on screen.
+    const levelsOn = state.levels.active;
+    legendHost.appendChild(
+      toggleRow(
+        'levels',
+        '#8ea0bf',
+        'Lay each container out by dependency level: high rank on top, so every dependency points down',
+        levelsOn,
+        'edge',
+        () => {
+          controller.dispatch({ type: 'SetLevels', active: !levelsOn });
+        },
+      ),
+    );
+    if (levelsOn) {
+      const proposed = state.levels.basis === 'proposed';
+      legendHost.appendChild(
+        toggleRow(
+          'proposed basis',
+          '#d99a4e',
+          'Show the levels a proposed cut would produce. The rank is exact given the cut; ' +
+            'what is heuristic is the cut, and badges say so with *',
+          proposed,
+          'edge',
+          () => {
+            controller.dispatch({ type: 'SetLevels', basis: proposed ? 'observed' : 'proposed' });
+          },
+        ),
+      );
+    }
   }
 
   function toggleRow(

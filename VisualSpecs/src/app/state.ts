@@ -16,6 +16,7 @@ import { withExpanded } from '../contract/view.ts';
 import type { InternalBucketId, VisibleEdgeId } from '../projection/types.ts';
 import { project } from '../projection/project.ts';
 import { matchNodes } from './search.ts';
+import { LEVELS_OFF, type LevelsMode, type RankBasis } from './levelView.ts';
 
 export interface Filters {
   /** The node kinds that are SHOWN. */
@@ -36,6 +37,13 @@ export interface AppState {
   };
   readonly search: { readonly query: string; readonly matches: ReadonlySet<string> };
   readonly filters: Filters;
+  /**
+   * Levels mode (Issue #44). Session state, like `search` and `filters` and NOT like
+   * `view`: a way of looking is not human work, and putting it under `view` would drag
+   * format, validate, export and autosave behind it — and would make the same document
+   * export differently depending on the mode you happened to be in.
+   */
+  readonly levels: LevelsMode;
   /** set when `requires[]` is unsatisfiable (§3.4) */
   readonly readOnly: boolean;
   readonly warnings: readonly Warning[];
@@ -47,6 +55,7 @@ export type AppCommand =
   | { type: 'Select'; nodeIds: readonly string[]; edgeId: VisibleEdgeId | InternalBucketId | null }
   | { type: 'SetSearch'; query: string }
   | { type: 'SetFilter'; nodeKinds?: ReadonlySet<string>; edgeKinds?: ReadonlySet<string>; hideTests?: boolean }
+  | { type: 'SetLevels'; active?: boolean; basis?: RankBasis }
   | { type: 'Import'; loaded: LoadedDoc }
   | { type: 'Refresh'; loaded: LoadedDoc; loss: LossReport };
 
@@ -109,6 +118,7 @@ export function stateFromLoaded(loaded: LoadedDoc, loss: LossReport | null = nul
     selection: { nodeIds: [], edgeId: null },
     search: { query: '', matches: new Set<string>() },
     filters: { nodeKinds, edgeKinds, hideTests: false },
+    levels: LEVELS_OFF,
     readOnly: loaded.readOnly,
     warnings: loaded.warnings,
     loss,
@@ -199,6 +209,15 @@ export function apply(state: AppState, cmd: AppCommand, ctx: CommandContext): Ap
         },
       };
 
+    case 'SetLevels': {
+      const next: LevelsMode = {
+        active: cmd.active ?? state.levels.active,
+        basis: cmd.basis ?? state.levels.basis,
+      };
+      if (next.active === state.levels.active && next.basis === state.levels.basis) return state;
+      return { ...state, levels: next };
+    }
+
     case 'Import':
       return stateFromLoaded(cmd.loaded, null);
 
@@ -210,6 +229,8 @@ export function apply(state: AppState, cmd: AppCommand, ctx: CommandContext): Ap
       // selection each time would clear the entity the user is inspecting.
       return {
         ...next,
+        // The mode is session state, so a re-extraction does not drop the user out of it.
+        levels: state.levels,
         selection: carrySelection(state, next),
         search:
           state.search.query === ''

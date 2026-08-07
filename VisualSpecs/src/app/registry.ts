@@ -106,6 +106,26 @@ export const UNKNOWN_EDGE_STYLE: EdgeStyle = {
   title: 'Unknown relation kind — rendered through the fallback style',
 };
 
+/**
+ * A level band's fill (Issue #44) — a two-step LUMINANCE zebra, not a colour ramp.
+ *
+ * Two reasons it is not a ramp. With up to ten levels, ten steps of a sequential ramp
+ * over `--bg: #0b0e16` are not discriminable between non-adjacent pairs, so the reader
+ * cannot tell "this is level 6" from the colour — and the ORDER is already carried by the
+ * vertical position, which does it better. And the band is painted OVER the container's
+ * own fill, which comes from six different kinds through `withAlpha`: a chromatic ramp on
+ * top of six different backgrounds has no constant contrast, while an alternation of
+ * luminance does.
+ *
+ * The rank travels in the badge, which is the authority. This only has to make the
+ * staircase legible as a staircase.
+ */
+export function bandStyle(rank: number): { fill: string; text: string } {
+  return rank % 2 === 0
+    ? { fill: 'rgba(255, 255, 255, 0.038)', text: '#8ea0bf' }
+    : { fill: 'rgba(255, 255, 255, 0.012)', text: '#8ea0bf' };
+}
+
 export function nodeStyle(kind: string): NodeStyle {
   return NODE_STYLES[kind] ?? UNKNOWN_NODE_STYLE;
 }

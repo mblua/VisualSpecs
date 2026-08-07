@@ -17,6 +17,17 @@ import type { Derived } from '../app/controller.ts';
 import type { AppState } from '../app/state.ts';
 import { edgeStyle, nodeStyle } from '../app/registry.ts';
 import type { InternalBucket, InternalBucketId, VisibleEdge } from '../projection/types.ts';
+import { LOWER_BOUND_PREMISE } from '../projection/levels.ts';
+import { buildOutlineParents, resetLayoutPreview } from '../domain/commands.ts';
+import { DEFAULT_LIMITS } from '../contract/limits.ts';
+import type { OutlineNodeId } from '../domain/outline.ts';
+import {
+  containerLevelSummary,
+  DEPENDENCY_KINDS,
+  formatSiblingInstability,
+  groupSummary,
+  rankBadge,
+} from '../app/levelView.ts';
 import { clear, el } from './dom.ts';
 
 export interface DetailCallbacks {
@@ -29,6 +40,9 @@ export interface DetailCallbacks {
    *  non-canvas route to the feature (§9.4, FIT-8): the on-canvas glyph is invisible to
    *  a screen reader and unusable at small zoom, so the panel must offer real DOM. */
   onFitContainer(id: string): void;
+  /** Re-pack ONE container by level, keeping the rest of the document's layout
+   *  (Issue #44). The panel states how many pins it discards before it does. */
+  onResetLayoutScope(id: string): void;
 }
 
 export function renderDetail(
@@ -109,6 +123,12 @@ function nodeDetail(
   const focusRow = focusSection(state, derived, outlineId, entity, buckets);
   if (focusRow !== null) sections.push(focusRow);
 
+  // Levels (Issue #44). This is where every number this feature shows gets its premise
+  // and its scope — a rank without them is not reproducible, and a rank read as global
+  // is a claim we would have made for the reader.
+  const levelRow = levelSection(state, derived, outlineId, cb);
+  if (levelRow !== null) sections.push(levelRow);
+
   // Fit to content — the accessible, keyboard-and-screen-reader route to the same
   // command the header glyph fires (§9.4 / FIT-8). Only meaningful on an EXPANDED
   // container; the command itself re-guards on childrenShown.
@@ -170,6 +190,123 @@ function nodeDetail(
  * quietly false for the overwhelming majority of relations until the user expands,
  * and this is the one number that says so.
  */
+/**
+ * What Levels mode says about this box, in the one place a canvas glyph can be explained.
+ *
+ * Everything here carries what it was computed over. The rank is LOCAL — in the repository
+ * root 1751 of 1947 relations are internal to a single unit — so a reader who takes `L0`
+ * for "base of the system" is reading something we told them, and the scope line is what
+ * stops us from telling them that.
+ */
+function levelSection(
+  state: AppState,
+  derived: Derived,
+  outlineId: string,
+  cb: DetailCallbacks,
+): HTMLElement | null {
+  if (!state.levels.active) return null;
+  const id = outlineId as OutlineNodeId;
+
+  const rows: Array<[string, string]> = [];
+
+  // As a CONTAINER: what its own children were ranked into.
+  const own = derived.rankings.get(id);
+  if (own !== undefined) {
+    rows.push(['Levels here', containerLevelSummary(own, state.outline)]);
+    if (!derived.geometry.bands.has(id)) {
+      // The declared degradation, spelled out. The marker on the box says something is
+      // off; this says what, because a glyph cannot explain itself.
+      rows.push([
+        'Lanes hidden',
+        'the lanes no longer describe the boxes in them — pinned children and a layout ' +
+          'from another basis. Realign this container to get them back.',
+      ]);
+    }
+  }
+
+  // As a CHILD: what its own container says about it.
+  const parents = buildOutlineParents(state.outline);
+  const container = parents.get(id) ?? null;
+  const ranking = container === null ? undefined : derived.rankings.get(container);
+  if (ranking !== undefined) {
+    const badge = rankBadge(ranking, id);
+    rows.push([
+      'Level',
+      badge === undefined
+        ? 'no data — takes part in no relation among its siblings'
+        : `${badge} of 0–${String(ranking.maxRank)}, ${ranking.basis}`,
+    ]);
+
+    const group = groupSummary(ranking, id);
+    if (group !== null) rows.push(['Mutually needed', group]);
+
+    let ce = 0;
+    let ca = 0;
+    for (const e of ranking.edges) {
+      if (e.sourceId === id) ce += 1;
+      if (e.targetId === id) ca += 1;
+    }
+    rows.push([
+      'Sibling instability',
+      formatSiblingInstability(ranking.siblingInstability.get(id), ce, ca),
+    ]);
+
+    if (ranking.hidesInternal.has(id)) {
+      rows.push([
+        'Hides relations',
+        'relations of the ranked kinds run entirely inside this box, so this level of ' +
+          'aggregation cannot speak about them',
+      ]);
+    }
+  }
+
+  if (rows.length === 0) return null;
+
+  const children: HTMLElement[] = [el('h3', {}, ['Levels']), kv(rows)];
+
+  // Realign this container to its lanes, without discarding the document's layout
+  // (`ResetLayout { scope }`). It STATES how many pins it will discard BEFORE discarding
+  // them — LVL-13 — and the number it states is `pinned`, not `positions`: derived
+  // positions are dropped too, but they are not work anybody did by hand, and counting
+  // them as loss would overstate what is lost.
+  if (own !== undefined && state.view.expanded.has(outlineId)) {
+    const preview = resetLayoutPreview(
+      { model: state.model, outline: state.outline, geometry: derived.geometry, limits: DEFAULT_LIMITS },
+      state.view,
+      id,
+    );
+    if (preview.pinned > 0 || preview.unfitted > 0) {
+      const label =
+        preview.pinned === 1
+          ? 'Realign to levels — discards 1 pinned position'
+          : `Realign to levels — discards ${String(preview.pinned)} pinned positions`;
+      const button = el(
+        'button',
+        {
+          type: 'button',
+          class: 'detail-action',
+          title:
+            'Re-pack this container by level. Only this container: the rest of the ' +
+            'document keeps the layout you made.',
+        },
+        [label],
+      );
+      button.addEventListener('click', () => {
+        cb.onResetLayoutScope(outlineId);
+      });
+      children.push(button);
+    }
+  }
+
+  return el('section', { class: 'detail-section' }, [
+    ...children,
+    el('p', { class: 'muted' }, [LOWER_BOUND_PREMISE]),
+    el('p', { class: 'muted' }, [
+      `Ranked over: ${[...DEPENDENCY_KINDS].sort().join(', ')}. Filters do not change it.`,
+    ]),
+  ]);
+}
+
 function focusSection(
   state: AppState,
   derived: Derived,

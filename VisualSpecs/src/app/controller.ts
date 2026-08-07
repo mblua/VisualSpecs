@@ -16,18 +16,34 @@ import { importDoc, refresh, type LoadedDoc } from '../contract/load.ts';
 import { DEFAULT_LIMITS, type Limits } from '../contract/limits.ts';
 import { exportDoc } from '../contract/export.ts';
 import type { ViewState } from '../contract/view.ts';
-import { computeGeometry, type Geometry } from '../domain/layoutEngine.ts';
+import { computeGeometry, DEFAULT_AUTO_LAYOUT, type Geometry } from '../domain/layoutEngine.ts';
 import type { CommandContext } from '../domain/commands.ts';
+import { computeVisibility } from '../domain/visibility.ts';
+import { LevelPack } from '../domain/layout/levelPack.ts';
 import { project } from '../projection/project.ts';
 import type { VisibleGraph } from '../projection/types.ts';
 import type { GraphRenderer, RendererEvent } from '../ports/renderer.ts';
 import { apply, stateFromLoaded, type AppCommand, type AppState } from './state.ts';
 import { buildScene, type SceneResult } from './scene.ts';
+import {
+  DEPENDENCY_KINDS,
+  NO_RANKINGS,
+  packConstraintsFrom,
+  RankCache,
+  rankVisibleContainers,
+  type Rankings,
+} from './levelView.ts';
+
+/** Levels mode swaps the layout, and nothing else: `DEFAULT_AUTO_LAYOUT` stays GridPack,
+ *  so every existing test and every existing document keeps the geometry it had. */
+const LEVEL_LAYOUT = new LevelPack();
 
 export interface Derived {
   geometry: Geometry;
   graph: VisibleGraph;
   scene: SceneResult;
+  /** Empty unless Levels mode is on. The sidebar and the detail panel read it. */
+  rankings: Rankings;
 }
 
 export type Listener = (state: AppState, derived: Derived) => void;
@@ -46,12 +62,20 @@ export class Controller {
    * injected a narrow band at the contract boundary.
    */
   private readonly limits: Limits;
+  /**
+   * Memoized rankings, keyed by `(container, kinds, basis)` — NOT by `expanded`, because
+   * `rank()` lifts endpoints to direct children and is invariant under expansion.
+   *
+   * It lives on the controller and not in a module: two controllers in one process would
+   * otherwise share a memo keyed by container id, and the tests build several.
+   */
+  private readonly rankCache = new RankCache();
 
   constructor(renderer: GraphRenderer, initial: AppState, limits: Limits = DEFAULT_LIMITS) {
     this.renderer = renderer;
     this.currentState = initial;
     this.limits = limits;
-    this.currentDerived = derive(initial);
+    this.currentDerived = derive(initial, this.rankCache);
   }
 
   get state(): AppState {
@@ -131,7 +155,7 @@ export class Controller {
     this.currentState = apply(before, cmd, this.context());
     if (this.currentState === before) return;
 
-    this.currentDerived = derive(this.currentState);
+    this.currentDerived = derive(this.currentState, this.rankCache);
 
     if (this.currentState.view.viewport !== before.view.viewport) {
       this.renderer.setViewport(this.currentState.view.viewport);
@@ -165,7 +189,7 @@ export class Controller {
     const loadedState = stateFromLoaded(loaded);
     this.currentState =
       viewOverride === undefined ? loadedState : { ...loadedState, view: viewOverride };
-    this.currentDerived = derive(this.currentState);
+    this.currentDerived = derive(this.currentState, this.rankCache);
     this.renderer.setViewport(this.currentState.view.viewport);
     installRelated();
     this.render();
@@ -178,7 +202,7 @@ export class Controller {
   /** Atomic sibling of `installLoaded` for a view-only application transition. */
   installView(view: ViewState, installRelated: () => void): void {
     this.currentState = { ...this.currentState, view };
-    this.currentDerived = derive(this.currentState);
+    this.currentDerived = derive(this.currentState, this.rankCache);
     this.renderer.setViewport(this.currentState.view.viewport);
     installRelated();
     this.render();
@@ -292,17 +316,43 @@ export class Controller {
   }
 }
 
-export function derive(state: AppState): Derived {
+/**
+ * The pipeline, and why the rank comes FIRST (Issue #44).
+ *
+ * `derive()` used to compute the geometry before the projection. The rank is a projection
+ * result and the layout consumes it, so the order inverts to
+ * `rank → computeGeometry → project → buildScene`. There is no cycle: none of them
+ * depends on the geometry.
+ *
+ * `cache` is threaded rather than global: two controllers in one process — which the
+ * tests do — must not share a memo keyed by container id.
+ */
+export function derive(state: AppState, cache: RankCache = new RankCache()): Derived {
+  const rankings = state.levels.active
+    ? rankVisibleContainers(
+        state.model,
+        state.outline,
+        // Only containers whose children are on screen: a collapsed one is not
+        // stratified, so ranking it is work nobody looks at.
+        computeVisibility(state.outline, state.view.expanded).childrenShown,
+        DEPENDENCY_KINDS,
+        state.levels.basis,
+        cache,
+      )
+    : NO_RANKINGS;
+
   const geometry = computeGeometry(
     state.model,
     state.outline,
     state.view.expanded,
     state.view.positions,
     state.view.fitted,
+    state.levels.active ? LEVEL_LAYOUT : DEFAULT_AUTO_LAYOUT,
+    packConstraintsFrom(rankings),
   );
   const graph = project(state.model, state.outline, state.view.expanded);
-  const scene = buildScene(state, geometry, graph);
-  return { geometry, graph, scene };
+  const scene = buildScene(state, geometry, graph, rankings);
+  return { geometry, graph, scene, rankings };
 }
 
 export function controllerFrom(renderer: GraphRenderer, loaded: LoadedDoc): Controller {

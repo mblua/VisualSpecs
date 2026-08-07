@@ -41,6 +41,21 @@ export const MIN_COLLAPSED_CONTAINER_WIDTH = 150;
 export const MAX_COLLAPSED_CONTAINER_WIDTH = 320;
 /** Wrap the grid pack at this content width. */
 export const MAX_ROW_WIDTH = 1500;
+/**
+ * Legibility floor for one level band (LVL-4', Issue #44).
+ *
+ * A band's height is `its content + padding`, never less than this. The two are
+ * different mechanisms and both are needed: the floor only helps bands whose content
+ * is shorter than it, while the padding applies always.
+ *
+ * It is `LEAF_HEIGHT + CHILD_GAP` because that is what a one-row band of leaves
+ * already measures once it takes its half-gap from each side — so on the current
+ * constants the floor is INERT, and that is the finding, not an oversight: band
+ * padding coming out of `CHILD_GAP` already satisfies LVL-4' on this corpus. It is
+ * written down as a floor anyway, so that lowering `LEAF_HEIGHT` or the gap for a
+ * layout reason cannot silently produce a band too thin to carry its own label.
+ */
+export const MIN_BAND_HEIGHT = LEAF_HEIGHT + CHILD_GAP;
 
 // A fixed proportional model. Three buckets is enough for stable, legible boxes,
 // and it is exactly reproducible anywhere.
